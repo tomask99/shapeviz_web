@@ -37,6 +37,32 @@ test('hero letters dissolve as the user scrolls and restore on return', async ({
   await expect(letter).toHaveCSS('opacity', '1');
 });
 
+test('project image and video use the premium hover lift on a fine pointer', async ({ page }) => {
+  await page.goto('/');
+  const image = page.getByRole('button', { name: 'Enlarge Milenium interior visual' });
+  await image.scrollIntoViewIfNeeded();
+  await image.hover();
+  await page.waitForTimeout(450);
+  const imageStyle = await image.evaluate(element => ({
+    transform: getComputedStyle(element).transform,
+    shadow: getComputedStyle(element).boxShadow,
+    radius: getComputedStyle(element).borderRadius,
+    overflow: getComputedStyle(element).overflow,
+  }));
+  expect(imageStyle.transform).not.toBe('none');
+  expect(imageStyle.shadow).toContain('70px');
+  expect(imageStyle.radius).toBe('28px');
+  expect(imageStyle.overflow).toBe('hidden');
+
+  const video = page.locator('.video-frame');
+  await video.hover();
+  await page.waitForTimeout(450);
+  await expect.poll(() => video.evaluate(element => getComputedStyle(element).boxShadow)).toContain('70px');
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(450);
+  await expect.poll(() => video.evaluate(element => getComputedStyle(element).transform)).toBe('matrix(1, 0, 0, 1, 0, 0)');
+});
+
 test('video autoplays muted, accepts pause and sound controls, and pauses offscreen', async ({ page }) => {
   await page.goto('/');
   const video = page.locator('video');
@@ -75,6 +101,9 @@ test('reduced motion keeps text visible and does not autoplay video', async ({ p
   await page.getByText('SORRYWECAN', { exact: true }).scrollIntoViewIfNeeded();
   await expect(page.locator('.client-list li').nth(8)).toHaveCSS('opacity', '1');
   await expect(page.locator('.client-list li').nth(8)).toHaveCSS('filter', 'none');
+  const image = page.getByRole('button', { name: 'Enlarge Milenium interior visual' });
+  await image.hover();
+  await expect(image).toHaveCSS('transform', 'none');
 });
 
 async function fillForm(page) {

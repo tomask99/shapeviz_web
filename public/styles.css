@@ -92,6 +92,23 @@ figcaption > :last-child { color: var(--muted); font-weight: 400; letter-spacing
 figcaption .accent { margin-inline: 6px; }
 .video-frame { border-radius: 28px; overflow: hidden; position: relative; background: #100c08; }
 .video-frame video { width: 100%; height: auto; aspect-ratio: 9 / 16; object-fit: contain; }
+
+/* Premium media lift — kept on the rounded clipping element itself. */
+.image-button,
+.video-frame {
+  box-shadow: 0 22px 48px rgba(0, 0, 0, .18);
+  transform: translateY(0) rotate(0) scale(1);
+  transform-origin: center;
+  transition: transform 400ms ease-out, box-shadow 400ms ease-out;
+}
+@media (hover: hover) and (pointer: fine) {
+  .image-button:hover,
+  .video-frame:hover {
+    transform: translateY(-8px) rotate(-2deg) scale(1.012);
+    box-shadow: 0 28px 70px rgba(0, 0, 0, .28);
+    z-index: 2;
+  }
+}
 .video-controls { position: absolute; inset: auto 0 0; padding: 35px 12px 12px; display: flex; align-items: center; justify-content: space-between; gap: 5px; background: linear-gradient(transparent, rgba(0, 0, 0, .75)); }
 .video-controls button { background: rgba(0, 0, 0, .3); border: 1px solid rgba(241, 237, 230, .3); border-radius: 50%; display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; font-size: 13px; }
 .video-controls button:hover { background: var(--accent); color: #000; }
@@ -269,7 +286,11 @@ figcaption .accent { margin-inline: 6px; }
   .hero-annotation { margin-bottom: 15px; }
   .hero-title-line { margin-top: 25px; }
 }
-@media (pointer: coarse) { #fluid-glow { display: none; } .video-controls button { width: 44px; height: 44px; } }
+@media (pointer: coarse) {
+  #fluid-glow { display: none; }
+  .video-controls button { width: 44px; height: 44px; }
+  .image-button, .video-frame { transform: none; box-shadow: 0 22px 48px rgba(0, 0, 0, .18); }
+}
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
@@ -278,4 +299,5 @@ figcaption .accent { margin-inline: 6px; }
   .hero { position: relative; }
   .about { margin-top: 0; }
   .hero h1 span, .hero-fade, [data-dissolve], .motion-ready [data-reveal] { opacity: 1 !important; filter: none !important; transform: none !important; }
+  .image-button, .image-button:hover, .video-frame, .video-frame:hover { transform: none !important; box-shadow: 0 22px 48px rgba(0, 0, 0, .18); }
 }
