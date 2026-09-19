@@ -1,25 +1,23 @@
 # Portfolio gallery
 
-The gallery below the featured projects opens a pinned, full-viewport scene.
-Natural document scroll advances 11 pairs in place, then resumes the rest of the site.
-Its persistent collapse button returns focus and scroll position to the opening button.
-All 22 files in `assets/galery/` are represented: 20 images and two videos.
-The original media remain untouched. Only `public/media/gallery/` is served.
+The expandable collection below the featured projects uses natural page scrolling.
+Four accessible category tabs show Lifestyle (10), Details & materials (6), Studio
+(4), and Films (2). All 22 source files remain included. The category navigation
+and close control stay available while browsing; closing restores focus and scroll
+position to the opening button.
+
+There are no pinned scenes, scroll listeners, parallax, fading, or scroll-driven
+transforms in the gallery. Aligned grids, consistent image frames, spacious type
+and understated dividers provide the visual structure. The existing media hover,
+rounded clipping and image lightbox are retained. Details use three desktop
+columns, other categories two; mobile uses one column.
 
 Images have up to three WebP sizes (640, 1280, 1920 pixels wide, without upscaling).
-No gallery media is requested while initially collapsed. After expansion, images
-load for the current and next pair; videos autoplay muted only in the active pair and pause offscreen,
-on collapse, or while an image is enlarged. Reduced motion disables autoplay,
-scroll transforms, reveals and hover transforms; video playback can still be started manually.
-
-Pairs align side by side on desktop and stack within the scene on mobile. Each
-transition uses 280–460px of scroll (48% of viewport height). The outgoing pair
-fades and separates left/right while the next rises from below. A short 65ms
-response smooths wheel input without trapping scrolling. Previous/Next controls
-also advance pairs. Inactive pages are inert; their videos cannot play. Transforms
-run on outer slots, independently of the media hover. Reduced motion uses a
-static gallery instead of pinning. Original HTML sections remain the generated
-source and are regrouped into pairs by `public/gallery.js`.
+No gallery media is requested while initially collapsed. Only the selected
+category receives image sources, then browser lazy loading handles images below
+the viewport. Videos autoplay muted when visible and pause on category changes,
+collapse, backgrounding or lightbox opening. Reduced motion disables autoplay
+and hover movement. Originals remain untouched; public/media/gallery is served.
 
 ## Updating the gallery
 
@@ -32,6 +30,9 @@ node scripts/prepare-gallery-posters.js
 npx playwright test tests/browser/gallery.spec.js tests/browser/site.spec.js
 npm run build
 ```
+
+For layout-only changes, run `node scripts/prepare-gallery.js --markup-only`;
+this preserves the optimized media.
 
 The first script prepares WebP files, copies the original videos, generates
 `public/media/gallery/manifest.json`, and replaces only the gallery block in

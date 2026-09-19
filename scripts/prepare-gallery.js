@@ -4,6 +4,7 @@ import path from 'node:path';
 
 // Run explicitly after changing assets/galery; production serves the prepared files.
 const source = 'assets/galery', output = 'public/media/gallery';
+const prepareMedia = !process.argv.includes('--markup-only');
 await mkdir(output, { recursive: true });
 const groups = [
   { id: 'lifestyle', title: 'Lifestyle shots', description: 'Objects in their element. Spaces with a story.', items: [] },
@@ -40,7 +41,7 @@ for (const file of (await readdir(source)).sort()) {
   const id = path.basename(file, ext).toLowerCase().replace(/[^a-z0-9_]+/g, '-');
   const input = path.join(source, file);
   if (ext === '.mp4') {
-    await copyFile(input, `${output}/${id}.mp4`);
+    if (prepareMedia) await copyFile(input, `${output}/${id}.mp4`);
     groups[3].items.push({ id, video: true, file });
     continue;
   }
@@ -50,7 +51,7 @@ for (const file of (await readdir(source)).sort()) {
   const variants = [];
   for (const width of widths) {
     const filename = `${id}-${width}.webp`;
-    await sharp(input).rotate().resize({ width, withoutEnlargement: true }).webp({ quality: 82, effort: 5 }).toFile(`${output}/${filename}`);
+    if (prepareMedia) await sharp(input).rotate().resize({ width, withoutEnlargement: true }).webp({ quality: 82, effort: 5 }).toFile(`${output}/${filename}`);
     variants.push({ width, url: `/media/gallery/${filename}` });
   }
   fullBytes += (await stat(`public${variants.at(-1).url}`)).size;
@@ -63,9 +64,10 @@ const video = item => `<div class="video-frame"><div class="media-clip"><video w
 const markup = `<!-- GALLERY START -->
       <div class="gallery-toggle-wrap"><button id="gallery-toggle" class="gallery-toggle micro" aria-expanded="false" aria-controls="expanded-gallery"><span>EXPAND GALLERY</span>${arrow}</button><span class="gallery-count micro">20 IMAGES / 02 FILMS</span></div>
       <div id="expanded-gallery" hidden>
-        <div class="gallery-toolbar"><span class="micro accent">A CLOSER LOOK</span><button class="gallery-collapse micro" type="button" aria-controls="expanded-gallery">COLLAPSE GALLERY ${arrow}</button></div>
-        ${groups.map((group, index) => `<section class="gallery-section" aria-labelledby="gallery-${group.id}"><header class="gallery-heading" data-reveal><span class="micro accent">0${index + 1} / ${String(group.items.length).padStart(2, '0')} ${index === 3 ? 'FILMS' : 'IMAGES'}</span><h3 id="gallery-${group.id}">${group.title}</h3><p>${group.description}</p></header><div class="gallery-grid">${group.items.map((item, i) => `<div class="gallery-slot"><figure class="gallery-item${item.video ? ' gallery-film' : ''}" data-gallery-file="${item.file}">${item.video ? video(item) : image(item)}<figcaption><span>${group.id === 'videos' ? 'MOTION STUDY' : 'SHAPEVIZ'}</span><span>${String(i + 1).padStart(2, '0')} / ${String(group.items.length).padStart(2, '0')}</span></figcaption></figure></div>`).join('\n')}</div></section>`).join('\n')}
-        <div class="gallery-end"><p class="micro">EVERY DETAIL. A DIFFERENT PERSPECTIVE.</p><button class="gallery-collapse micro" type="button" aria-controls="expanded-gallery">COLLAPSE GALLERY ${arrow}</button></div>
+        <header class="gallery-intro"><div><span class="micro accent">THE SHAPEVIZ COLLECTION</span><h3>A study in<br><span>desire.</span></h3></div><p>Spaces, surfaces and stories.<br>A closer look at the worlds we create.</p></header>
+        <div class="gallery-toolbar"><div class="gallery-tabs" role="tablist" aria-label="Gallery categories">${groups.map((group, index) => `<button type="button" role="tab" id="tab-${group.id}" aria-controls="collection-${group.id}" aria-selected="${index === 0}" tabindex="${index === 0 ? 0 : -1}">${['Lifestyle', 'Details & materials', 'Studio', 'Films'][index]}<sup>${String(group.items.length).padStart(2, '0')}</sup></button>`).join('')}</div><button class="gallery-collapse micro" type="button" aria-controls="expanded-gallery">CLOSE ${arrow}</button></div>
+        ${groups.map((group, index) => `<section class="gallery-section" id="collection-${group.id}" role="tabpanel" aria-labelledby="tab-${group.id}" tabindex="0"${index ? ' hidden' : ''}><header class="gallery-heading"><span class="micro accent">0${index + 1} / ${String(group.items.length).padStart(2, '0')} ${index === 3 ? 'FILMS' : 'IMAGES'}</span><h3 id="gallery-${group.id}">${group.title}</h3><p>${group.description}</p></header><div class="gallery-grid">${group.items.map((item, i) => `<div class="gallery-slot"><figure class="gallery-item${item.video ? ' gallery-film' : ''}" data-gallery-file="${item.file}">${item.video ? video(item) : image(item)}<figcaption><span>${group.id === 'videos' ? 'MOTION STUDY' : 'SHAPEVIZ'}</span><span>${String(i + 1).padStart(2, '0')} / ${String(group.items.length).padStart(2, '0')}</span></figcaption></figure></div>`).join('\n')}</div></section>`).join('\n')}
+        <div class="gallery-end"><p class="micro">DESIGNED TO BE DESIRED.</p><button class="gallery-collapse micro" type="button" aria-controls="expanded-gallery">CLOSE GALLERY ${arrow}</button></div>
       </div>
       <!-- GALLERY END -->`;
 let html = await readFile('public/index.html', 'utf8');
