@@ -9,7 +9,12 @@ Images have up to three WebP sizes (640, 1280, 1920 pixels wide, without upscali
 No gallery media is requested while initially collapsed. After expansion, images
 load lazily and videos load near the viewport, autoplay muted, and pause offscreen,
 on collapse, or while an image is enlarged. Reduced motion disables autoplay,
-parallax, reveals and hover transforms; video playback can still be started manually.
+scroll transforms, reveals and hover transforms; video playback can still be started manually.
+
+Gallery cards align in even rows with matching frame ratios. As a row enters the
+viewport, its cards fade and slide inward; as it leaves, they separate left/right
+and fade out. Scroll transforms run on the figure, independently of the media hover.
+Stationary outer slots supply geometry so animation stays stable and reversible.
 
 ## Updating the gallery
 

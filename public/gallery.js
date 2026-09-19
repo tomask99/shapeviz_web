@@ -1,24 +1,29 @@
 const toggle = document.querySelector('#gallery-toggle');
 const gallery = document.querySelector('#expanded-gallery');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const visibleImages = new Set();
+const slots = [...gallery.querySelectorAll('.gallery-slot')];
+const smooth = value => { const t = Math.max(0, Math.min(1, value)); return t * t * (3 - 2 * t); };
 let frame = 0;
 
 function draw() {
   frame = 0;
   if (gallery.hidden || document.hidden) return;
-  visibleImages.forEach(image => {
-    const bounds = image.getBoundingClientRect();
-    const progress = Math.max(-1, Math.min(1, (bounds.top + bounds.height / 2 - innerHeight / 2) / innerHeight));
-    image.style.setProperty('--gallery-drift', reducedMotion.matches ? '0px' : `${progress * 12}px`);
+  // Measure stationary slots, then animate their children: transforms never feed
+  // back into the scroll calculation or fight with the media's hover transform.
+  const bounds = slots.map(slot => slot.getBoundingClientRect());
+  slots.forEach((slot, index) => {
+    const rect = bounds[index];
+    const enter = smooth((innerHeight - rect.top) / Math.min(240, innerHeight * .28));
+    const leave = smooth((-rect.top - rect.height * .35) / (rect.height * .65));
+    const amount = reducedMotion.matches ? 0 : Math.max(1 - enter, leave);
+    const direction = [...slot.parentElement.children].indexOf(slot) % 2 ? 1 : -1;
+    const distance = Math.min(90, innerWidth * .09);
+    slot.style.setProperty('--gallery-x', `${direction * amount * distance}px`);
+    slot.style.setProperty('--gallery-opacity', String(1 - amount));
+    slot.style.setProperty('--gallery-scale', String(1 - amount * .065));
   });
 }
 function requestDraw() { if (!frame && !gallery.hidden) frame = requestAnimationFrame(draw); }
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(entry => entry.isIntersecting ? visibleImages.add(entry.target) : visibleImages.delete(entry.target));
-  requestDraw();
-});
-gallery.querySelectorAll('img').forEach(image => observer.observe(image));
 
 function setExpanded(expanded) {
   // If closing from deep inside the gallery, return to its trigger before removing
@@ -51,3 +56,4 @@ gallery.querySelectorAll('.gallery-collapse').forEach(button => button.addEventL
 addEventListener('scroll', requestDraw, { passive: true });
 addEventListener('resize', requestDraw, { passive: true });
 reducedMotion.addEventListener('change', requestDraw);
+document.addEventListener('visibilitychange', requestDraw);

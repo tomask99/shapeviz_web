@@ -1,6 +1,32 @@
 import { test, expect } from '@playwright/test';
 import { readdir } from 'node:fs/promises';
 
+test('gallery rows align and scroll separates and fades the images reversibly', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/');
+  await page.locator('#gallery-toggle').click();
+  const slots = page.locator('.gallery-section').first().locator('.gallery-slot');
+  const geometry = await slots.evaluateAll(items => items.slice(0, 2).map(item => {
+    const box = item.getBoundingClientRect();
+    return { top: box.top + scrollY, height: box.height, mediaHeight: item.querySelector('img').getBoundingClientRect().height };
+  }));
+  expect(geometry[0].top).toBeCloseTo(geometry[1].top, 0);
+  expect(geometry[0].mediaHeight).toBeCloseTo(geometry[1].mediaHeight, 0);
+  await page.evaluate(top => scrollTo({ top: top - 100, behavior: 'instant' }), geometry[0].top);
+  const left = slots.nth(0).locator('figure'), right = slots.nth(1).locator('figure');
+  await expect(left).toHaveCSS('opacity', '1');
+  await expect.poll(() => slots.evaluateAll(items => items.slice(0, 2).every(item => item.querySelector('img').naturalWidth > 0))).toBe(true);
+  await page.screenshot({ path: '.cache/gallery-aligned.png' });
+  await page.evaluate(({ top, height }) => scrollTo({ top: top + height * .68, behavior: 'instant' }), geometry[0]);
+  await expect.poll(() => left.evaluate(el => Number(getComputedStyle(el).opacity))).toBeLessThan(.6);
+  expect(await left.evaluate(el => new DOMMatrix(getComputedStyle(el).transform).m41)).toBeLessThan(-20);
+  expect(await right.evaluate(el => new DOMMatrix(getComputedStyle(el).transform).m41)).toBeGreaterThan(20);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(1440);
+  await page.screenshot({ path: '.cache/gallery-scroll-exit.png' });
+  await page.evaluate(top => scrollTo({ top: top - 100, behavior: 'instant' }), geometry[0].top);
+  await expect(left).toHaveCSS('opacity', '1');
+});
+
 test('gallery defers media, includes every source and collapses safely from the bottom', async ({ page }) => {
   const requests = [], errors = [];
   page.on('request', request => { if (request.url().includes('/media/gallery/')) requests.push(request.url()); });
