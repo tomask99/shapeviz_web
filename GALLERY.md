@@ -1,20 +1,25 @@
 # Portfolio gallery
 
-The gallery below the two featured projects expands into the page's normal scroll.
-Its sticky collapse button returns focus and scroll position to the opening button.
+The gallery below the featured projects opens a pinned, full-viewport scene.
+Natural document scroll advances 11 pairs in place, then resumes the rest of the site.
+Its persistent collapse button returns focus and scroll position to the opening button.
 All 22 files in `assets/galery/` are represented: 20 images and two videos.
 The original media remain untouched. Only `public/media/gallery/` is served.
 
 Images have up to three WebP sizes (640, 1280, 1920 pixels wide, without upscaling).
 No gallery media is requested while initially collapsed. After expansion, images
-load lazily and videos load near the viewport, autoplay muted, and pause offscreen,
+load for the current and next pair; videos autoplay muted only in the active pair and pause offscreen,
 on collapse, or while an image is enlarged. Reduced motion disables autoplay,
 scroll transforms, reveals and hover transforms; video playback can still be started manually.
 
-Gallery cards align in even rows with matching frame ratios. As a row enters the
-viewport, its cards fade and slide inward; as it leaves, they separate left/right
-and fade out. Scroll transforms run on the figure, independently of the media hover.
-Stationary outer slots supply geometry so animation stays stable and reversible.
+Pairs align side by side on desktop and stack within the scene on mobile. Each
+transition uses 280–460px of scroll (48% of viewport height). The outgoing pair
+fades and separates left/right while the next rises from below. A short 65ms
+response smooths wheel input without trapping scrolling. Previous/Next controls
+also advance pairs. Inactive pages are inert; their videos cannot play. Transforms
+run on outer slots, independently of the media hover. Reduced motion uses a
+static gallery instead of pinning. Original HTML sections remain the generated
+source and are regrouped into pairs by `public/gallery.js`.
 
 ## Updating the gallery
 

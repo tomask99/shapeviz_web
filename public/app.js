@@ -93,7 +93,7 @@ function loadVideo(video) {
 }
 function syncVideo(video) {
   const state = videoStates.get(video);
-  const canPlay = state.visible && !video.closest('[hidden]') && !state.userPaused && (!reducedMotion.matches || state.userStarted) && !document.hidden && !dialog.open;
+  const canPlay = state.visible && !video.closest('[hidden], [inert]') && !state.userPaused && (!reducedMotion.matches || state.userStarted) && !document.hidden && !dialog.open;
   if (canPlay) { loadVideo(video); video.play().catch(() => updateVideoControls(video)); }
   else video.pause();
 }
@@ -114,7 +114,7 @@ const videoObserver = new IntersectionObserver(entries => {
 }, { threshold: .25 });
 const videoPreload = new IntersectionObserver(entries => {
   entries.forEach(entry => {
-    if (entry.isIntersecting && !reducedMotion.matches) { loadVideo(entry.target); videoPreload.unobserve(entry.target); }
+    if (entry.isIntersecting && !entry.target.closest('[inert]') && !reducedMotion.matches) { loadVideo(entry.target); videoPreload.unobserve(entry.target); }
   });
 }, { rootMargin: '250px' });
 videos.forEach(video => {
