@@ -108,7 +108,8 @@ The build command is `npm run build`, output is `dist`, and the clean route is
 implemented by `vercel.json`. The framework preset is explicitly `null` (Other)
 so Vercel serves static files and the three API functions.
 
-Production is deployed at `https://shapevizweb.vercel.app`, with Milenium at
-`/p/milenium` and the universal starter deck at `/p/shapeviz`. Supabase server
+Production is deployed at `https://shapevizweb.vercel.app`; live presentation
+URLs are managed through `/adminlogin`. The initial demo decks have been removed.
+Supabase server
 variables are configured for production and preview. Connecting `shapeviz.com`
 is a separate DNS/domain step; the presentation paths remain the same.

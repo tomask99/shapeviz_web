@@ -5,8 +5,8 @@ The private presentation studio is at `/adminlogin`. See
 company variants and analytics.
 
 The repository also contains the reusable Shapeviz Presentation System. The
-Milenium deck and reusable introduction are delivered at `/p/milenium` and
-`/p/shapeviz`. Production reads the registry and media from Supabase; new decks
+system delivers uploaded decks at `/p/{slug}`. Production reads the registry
+and media from Supabase; new decks
 and personalized template instances need no redeployment. Local source preview
 remains available with `PRESENTATIONS_REMOTE=false`. See
 `docs/presentation-system.md` for architecture and backend status and

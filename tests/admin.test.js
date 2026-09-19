@@ -31,3 +31,11 @@ test('admin requires verified user, owner role and same-origin writes',async()=>
   assert.equal((await fetch(origin+'/?action=logout',{headers:{Cookie:'sv_access=test'}})).status,405);
  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
 });
+
+test('deletion requires confirmation and only removes the selected registry row',async()=>{
+ const writes=[];const env={SUPABASE_URL:'https://example.supabase.co',SUPABASE_SECRET_KEY:'test'};
+ const send=async(url,options={})=>{if(url.endsWith('/auth/v1/user'))return Response.json({id:'owner'});if(url.includes('presentation_admins?'))return Response.json([{role:'owner'}]);if(options.method==='DELETE'){writes.push(url);return new Response(null,{status:204});}return Response.json([{deck_slug:'sample'}]);};
+ const server=createServer(createAdminHandler({env,send}));await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;
+ const post=body=>fetch(origin+'/?action=delete',{method:'POST',headers:{Origin:origin,Cookie:'sv_access=test','Content-Type':'application/json'},body:JSON.stringify(body)});
+ try{assert.equal((await post({slug:'sample',confirmSlug:'wrong'})).status,400);assert.equal(writes.length,0);assert.equal((await post({slug:'sample',confirmSlug:'sample'})).status,200);assert.deepEqual(writes,['https://example.supabase.co/rest/v1/presentation_projects?deck_slug=eq.sample']);}finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
+});

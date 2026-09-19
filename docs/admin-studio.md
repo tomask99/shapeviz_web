@@ -44,6 +44,12 @@ Presentation settings support title changes, published/draft/archived states
 and converting existing decks into templates. Archived and draft links return
 404. Published links are unlisted, not password-protected.
 
+Delete removes a presentation's registry entry and its sessions/events after
+confirming the exact URL name. Its link returns 404. Existing variants stay
+independent. Stored source revisions and shared media are retained so deleting
+a template cannot break a variant's assets. The initial demonstration decks
+and their statistics have been removed from the live registry.
+
 ## Statistics
 
 Choose 7, 30 or 90 days. The dashboard shows sessions, active time, average
@@ -51,6 +57,7 @@ active time and total slide views, plus daily visits. Presentation details
 show per-slide repeat views, active seconds, unique slides per session,
 furthest slide and the latest 100 sessions in the period. A session does not
 identify a person. Daily grouping uses UTC; session timestamps use browser time.
+Hover, focus or tap a daily bar for the exact visit count and active time.
 
 The tracker flushes time on slide changes, visibility changes and exit. Hidden
 tabs and inactivity after 60 seconds are excluded; visible video playback

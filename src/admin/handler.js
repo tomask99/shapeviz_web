@@ -114,6 +114,14 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
         else reply(201,await saveDeck({...body,isTemplate:false},transformed.html,original.deck_slug));
         return;
       }
+      if(action==='delete') {
+        const p=await project(body.slug);
+        if(body.confirmSlug!==p.deck_slug) throw fail(400,'Confirm the presentation URL name before deleting.');
+        // FK cascades remove this deck's sessions/events; variants retain their own HTML.
+        await call(`/rest/v1/presentation_projects?deck_slug=eq.${p.deck_slug}`,{method:'DELETE'});
+        // Media can be shared by independent variants, so retain their assets.
+        reply(200,{ok:true});return;
+      }
       if(action==='update') {
         const p=await project(body.slug), patch={};
         if(body.status!==undefined) {if(!['published','draft','archived'].includes(body.status)) throw fail(400,'Invalid status.');patch.status=body.status;}
