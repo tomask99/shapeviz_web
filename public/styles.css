@@ -82,7 +82,7 @@ main, .site-footer { position: relative; z-index: 2; }
 .work-heading, .clients-intro { display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; margin-bottom: 55px; }
 .work-heading p, .clients-intro p { color: var(--muted); font-size: 15px; line-height: 1.6; padding-bottom: 5px; }
 .media-pair { display: grid; grid-template-columns: 1fr .375fr; gap: 28px; align-items: start; }
-.image-button { display: block; width: 100%; position: relative; padding: 0; border: 0; border-radius: 28px; background: transparent; overflow: hidden; cursor: zoom-in; }
+.image-button { display: block; width: 100%; position: relative; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
 .image-button img { width: 100%; height: auto; transition: filter .32s; }
 .image-button:hover img { filter: saturate(1.06); }
 .image-expand { position: absolute; right: 20px; bottom: 20px; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: rgba(9, 7, 5, .7); backdrop-filter: blur(12px); font-size: 20px; transition: background .25s, color .25s; }
@@ -90,16 +90,26 @@ main, .site-footer { position: relative; z-index: 2; }
 figcaption { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; padding-top: 20px; font-size: 10px; font-weight: 600; letter-spacing: .1em; }
 figcaption > :last-child { color: var(--muted); font-weight: 400; letter-spacing: .015em; }
 figcaption .accent { margin-inline: 6px; }
-.video-frame { border-radius: 28px; overflow: hidden; position: relative; background: #100c08; }
+.video-frame { position: relative; background: #100c08; }
 .video-frame video { width: 100%; height: auto; aspect-ratio: 9 / 16; object-fit: contain; }
 
-/* Premium media lift — kept on the rounded clipping element itself. */
+/* Animate the outer frame; keep the media's rounded clip on a permanent inner layer. */
 .image-button,
 .video-frame {
+  --media-radius: 28px;
+  border-radius: var(--media-radius);
   box-shadow: 0 22px 48px rgba(0, 0, 0, .18);
   transform: translateY(0) rotate(0) scale(1);
   transform-origin: center;
   transition: transform 400ms ease-out, box-shadow 400ms ease-out;
+}
+.media-clip {
+  display: block;
+  position: relative;
+  border-radius: inherit;
+  overflow: hidden;
+  clip-path: inset(0 round var(--media-radius));
+  transform: translateZ(0);
 }
 @media (hover: hover) and (pointer: fine) {
   .image-button:hover,
@@ -258,7 +268,8 @@ figcaption .accent { margin-inline: 6px; }
   .work-heading h2 { font-size: 9.2vw; }
   .work-heading p { font-size: 14px; }
   .media-pair { grid-template-columns: 1fr; gap: 38px; }
-  .image-button, .video-frame, .lightbox img { border-radius: 20px; }
+  .image-button, .video-frame { --media-radius: 20px; }
+  .lightbox img { border-radius: 20px; }
   .video-project { width: 73%; justify-self: end; }
   .video-controls .micro { display: block; }
   .video-controls { padding: 35px 12px 12px; }

@@ -47,7 +47,7 @@ test('project image and video use the premium hover lift on a fine pointer', asy
     transform: getComputedStyle(element).transform,
     shadow: getComputedStyle(element).boxShadow,
     radius: getComputedStyle(element).borderRadius,
-    overflow: getComputedStyle(element).overflow,
+    overflow: getComputedStyle(element.querySelector('.media-clip')).overflow,
   }));
   expect(imageStyle.transform).not.toBe('none');
   expect(imageStyle.shadow).toContain('70px');
