@@ -54,7 +54,7 @@ test('project image and video use the premium hover lift on a fine pointer', asy
   expect(imageStyle.radius).toBe('28px');
   expect(imageStyle.overflow).toBe('hidden');
 
-  const video = page.locator('.video-frame');
+  const video = page.locator('.media-pair .video-frame');
   await video.hover();
   await page.waitForTimeout(450);
   await expect.poll(() => video.evaluate(element => getComputedStyle(element).boxShadow)).toContain('70px');
@@ -65,7 +65,7 @@ test('project image and video use the premium hover lift on a fine pointer', asy
 
 test('video autoplays muted, accepts pause and sound controls, and pauses offscreen', async ({ page }) => {
   await page.goto('/');
-  const video = page.locator('video');
+  const video = page.locator('#project-video');
   await video.scrollIntoViewIfNeeded();
   await expect.poll(() => video.evaluate(v => v.paused)).toBe(false);
   expect(await video.evaluate(v => v.muted && v.loop && v.playsInline)).toBe(true);
@@ -96,8 +96,8 @@ test('reduced motion keeps text visible and does not autoplay video', async ({ p
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await expect(page.locator('#fluid-glow')).toHaveCSS('display', 'none');
-  await page.locator('video').scrollIntoViewIfNeeded();
-  await expect.poll(() => page.locator('video').evaluate(v => v.paused)).toBe(true);
+  await page.locator('#project-video').scrollIntoViewIfNeeded();
+  await expect.poll(() => page.locator('#project-video').evaluate(v => v.paused)).toBe(true);
   await page.getByText('SORRYWECAN', { exact: true }).scrollIntoViewIfNeeded();
   await expect(page.locator('.client-list li').nth(8)).toHaveCSS('opacity', '1');
   await expect(page.locator('.client-list li').nth(8)).toHaveCSS('filter', 'none');

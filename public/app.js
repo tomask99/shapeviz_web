@@ -1,3 +1,4 @@
+import './gallery.js';
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = matchMedia('(pointer: fine)');
 const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
@@ -92,7 +93,7 @@ function loadVideo(video) {
 }
 function syncVideo(video) {
   const state = videoStates.get(video);
-  const canPlay = state.visible && !state.userPaused && (!reducedMotion.matches || state.userStarted) && !document.hidden && !dialog.open;
+  const canPlay = state.visible && !video.closest('[hidden]') && !state.userPaused && (!reducedMotion.matches || state.userStarted) && !document.hidden && !dialog.open;
   if (canPlay) { loadVideo(video); video.play().catch(() => updateVideoControls(video)); }
   else video.pause();
 }
@@ -137,11 +138,14 @@ videos.forEach(video => {
 });
 
 let lightboxTrigger;
+addEventListener('gallerychange', () => videos.forEach(syncVideo));
 function closeLightbox() { dialog.close(); }
 document.querySelectorAll('[data-lightbox]').forEach(button => {
   button.addEventListener('click', () => {
     lightboxTrigger = button;
     dialog.querySelector('img').src = button.dataset.lightbox;
+    dialog.querySelector('img').alt = button.querySelector('img').alt;
+    dialog.querySelector('p').textContent = button.querySelector('img').alt;
     dialog.showModal();
     document.body.classList.add('modal-open');
     videos.forEach(syncVideo);

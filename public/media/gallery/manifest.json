@@ -1,0 +1,452 @@
+[
+  {
+    "id": "lifestyle",
+    "title": "Lifestyle shots",
+    "description": "Objects in their element. Spaces with a story.",
+    "items": [
+      {
+        "id": "final-2w",
+        "file": "Final 2w.webp",
+        "width": 2000,
+        "height": 2500,
+        "alt": "Minimal kitchen with warm cabinetry and soft natural light",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/final-2w-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/final-2w-1280.webp"
+          },
+          {
+            "width": 1920,
+            "url": "/media/gallery/final-2w-1920.webp"
+          }
+        ]
+      },
+      {
+        "id": "shapeviz-kitchen-scene1_4_girl_2",
+        "file": "Shapeviz Kitchen Scene1_4_girl_2.png",
+        "width": 2000,
+        "height": 2500,
+        "alt": "Woman in a minimal kitchen with pale cabinetry and natural light",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/shapeviz-kitchen-scene1_4_girl_2-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/shapeviz-kitchen-scene1_4_girl_2-1280.webp"
+          },
+          {
+            "width": 1920,
+            "url": "/media/gallery/shapeviz-kitchen-scene1_4_girl_2-1920.webp"
+          }
+        ]
+      },
+      {
+        "id": "lifestyle_01",
+        "file": "lifestyle_01.jpg",
+        "width": 1664,
+        "height": 2224,
+        "alt": "Cream modular sofa in a sunlit room with tall windows",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/lifestyle_01-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/lifestyle_01-1280.webp"
+          },
+          {
+            "width": 1664,
+            "url": "/media/gallery/lifestyle_01-1664.webp"
+          }
+        ]
+      },
+      {
+        "id": "lifestyle_02",
+        "file": "lifestyle_02.jpg",
+        "width": 1664,
+        "height": 2224,
+        "alt": "Cream sofa beside a fireplace in a warm classical interior",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/lifestyle_02-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/lifestyle_02-1280.webp"
+          },
+          {
+            "width": 1664,
+            "url": "/media/gallery/lifestyle_02-1664.webp"
+          }
+        ]
+      },
+      {
+        "id": "lifestyle_03",
+        "file": "lifestyle_03.jpg",
+        "width": 1664,
+        "height": 2224,
+        "alt": "Sunlight and a resting hand across a cream modular sofa",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/lifestyle_03-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/lifestyle_03-1280.webp"
+          },
+          {
+            "width": 1664,
+            "url": "/media/gallery/lifestyle_03-1664.webp"
+          }
+        ]
+      },
+      {
+        "id": "lifestyle_05",
+        "file": "lifestyle_05.jpeg",
+        "width": 1664,
+        "height": 2224,
+        "alt": "Mustard chair in a light-filled interior with tall windows",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/lifestyle_05-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/lifestyle_05-1280.webp"
+          },
+          {
+            "width": 1664,
+            "url": "/media/gallery/lifestyle_05-1664.webp"
+          }
+        ]
+      },
+      {
+        "id": "lifestyle_06",
+        "file": "lifestyle_06.jpg",
+        "width": 1664,
+        "height": 2224,
+        "alt": "Green lounge chair framed by windows and flowing curtains",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/lifestyle_06-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/lifestyle_06-1280.webp"
+          },
+          {
+            "width": 1664,
+            "url": "/media/gallery/lifestyle_06-1664.webp"
+          }
+        ]
+      },
+      {
+        "id": "lifestyle_07",
+        "file": "lifestyle_07.jpg",
+        "width": 1792,
+        "height": 2304,
+        "alt": "Open kitchen drawer with neatly arranged utensils",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/lifestyle_07-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/lifestyle_07-1280.webp"
+          },
+          {
+            "width": 1792,
+            "url": "/media/gallery/lifestyle_07-1792.webp"
+          }
+        ]
+      },
+      {
+        "id": "lifestyle_08",
+        "file": "lifestyle_08.jpg",
+        "width": 1792,
+        "height": 2304,
+        "alt": "Kitchen storage with ceramics and warm natural materials",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/lifestyle_08-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/lifestyle_08-1280.webp"
+          },
+          {
+            "width": 1792,
+            "url": "/media/gallery/lifestyle_08-1792.webp"
+          }
+        ]
+      },
+      {
+        "id": "social_ad_03",
+        "file": "social_ad_03.jpg",
+        "width": 1664,
+        "height": 2224,
+        "alt": "Green upholstered chair styled with dried grasses and warm materials",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/social_ad_03-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/social_ad_03-1280.webp"
+          },
+          {
+            "width": 1664,
+            "url": "/media/gallery/social_ad_03-1664.webp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "details",
+    "title": "Details / material variations",
+    "description": "A closer look. Texture, colour and the feeling of a finish.",
+    "items": [
+      {
+        "id": "detail_01",
+        "file": "detail_01.jpeg",
+        "width": 1664,
+        "height": 2224,
+        "alt": "Mustard upholstered chair with sculpted stitching in sunlight",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/detail_01-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/detail_01-1280.webp"
+          },
+          {
+            "width": 1664,
+            "url": "/media/gallery/detail_01-1664.webp"
+          }
+        ]
+      },
+      {
+        "id": "detail_02",
+        "file": "detail_02.jpeg",
+        "width": 1664,
+        "height": 2224,
+        "alt": "Close-up of a textured green armchair and its curved upholstery",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/detail_02-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/detail_02-1280.webp"
+          },
+          {
+            "width": 1664,
+            "url": "/media/gallery/detail_02-1664.webp"
+          }
+        ]
+      },
+      {
+        "id": "detail_04",
+        "file": "detail_04.jpeg",
+        "width": 1664,
+        "height": 2224,
+        "alt": "Hand resting on a cream sofa, highlighting soft upholstery and seams",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/detail_04-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/detail_04-1280.webp"
+          },
+          {
+            "width": 1664,
+            "url": "/media/gallery/detail_04-1664.webp"
+          }
+        ]
+      },
+      {
+        "id": "material-variation_01",
+        "file": "material variation_01.jpeg",
+        "width": 1664,
+        "height": 2224,
+        "alt": "Modular sofa in a light cream material",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/material-variation_01-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/material-variation_01-1280.webp"
+          },
+          {
+            "width": 1664,
+            "url": "/media/gallery/material-variation_01-1664.webp"
+          }
+        ]
+      },
+      {
+        "id": "material-variation_02",
+        "file": "material variation_02.png",
+        "width": 896,
+        "height": 1200,
+        "alt": "Modular sofa in a warm brown material",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/material-variation_02-640.webp"
+          },
+          {
+            "width": 896,
+            "url": "/media/gallery/material-variation_02-896.webp"
+          }
+        ]
+      },
+      {
+        "id": "material-variation_03",
+        "file": "material variation_03.png",
+        "width": 896,
+        "height": 1200,
+        "alt": "Modular sofa in a cool grey material",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/material-variation_03-640.webp"
+          },
+          {
+            "width": 896,
+            "url": "/media/gallery/material-variation_03-896.webp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "studio",
+    "title": "Studio shots",
+    "description": "Pure form. Nothing to distract from the design.",
+    "items": [
+      {
+        "id": "studio_01",
+        "file": "studio_01.png",
+        "width": 2400,
+        "height": 1792,
+        "alt": "Terracotta modular sofa against a neutral studio background",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/studio_01-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/studio_01-1280.webp"
+          },
+          {
+            "width": 1920,
+            "url": "/media/gallery/studio_01-1920.webp"
+          }
+        ]
+      },
+      {
+        "id": "studio_02",
+        "file": "studio_02.png",
+        "width": 2400,
+        "height": 1792,
+        "alt": "Studio close-up of a terracotta sofa arm and textured fabric",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/studio_02-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/studio_02-1280.webp"
+          },
+          {
+            "width": 1920,
+            "url": "/media/gallery/studio_02-1920.webp"
+          }
+        ]
+      },
+      {
+        "id": "studio_03",
+        "file": "studio_03.png",
+        "width": 2666,
+        "height": 1568,
+        "alt": "Cream modular corner sofa against a white studio background",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/studio_03-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/studio_03-1280.webp"
+          },
+          {
+            "width": 1920,
+            "url": "/media/gallery/studio_03-1920.webp"
+          }
+        ]
+      },
+      {
+        "id": "studio_04",
+        "file": "studio_04.png",
+        "width": 2688,
+        "height": 1568,
+        "alt": "Rear view of a cream modular sofa against a white background",
+        "variants": [
+          {
+            "width": 640,
+            "url": "/media/gallery/studio_04-640.webp"
+          },
+          {
+            "width": 1280,
+            "url": "/media/gallery/studio_04-1280.webp"
+          },
+          {
+            "width": 1920,
+            "url": "/media/gallery/studio_04-1920.webp"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "videos",
+    "title": "Videos",
+    "description": "Light, form and atmosphere. In motion.",
+    "items": [
+      {
+        "id": "video_creative_02",
+        "video": true,
+        "file": "video_creative_02.mp4"
+      },
+      {
+        "id": "video_creative_03",
+        "video": true,
+        "file": "video_creative_03.mp4"
+      }
+    ]
+  }
+]
