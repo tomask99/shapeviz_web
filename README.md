@@ -1,9 +1,10 @@
 # Shapeviz Web
 
 The repository also contains the reusable Shapeviz Presentation System. The
-actual Milenium HTML deck is available locally at
-`http://localhost:3000/p/milenium`; new decks are discovered from
-`presentations/{slug}/project.json` without router edits. See
+Milenium deck and reusable introduction are delivered at `/p/milenium` and
+`/p/shapeviz`. Production reads the registry and media from Supabase; new decks
+and personalized template instances need no redeployment. Local source preview
+remains available with `PRESENTATIONS_REMOTE=false`. See
 `docs/presentation-system.md` for architecture and backend status and
 `docs/adding-a-presentation.md` for the repeatable authoring workflow.
 

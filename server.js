@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createContactHandler } from './src/contact.js';
 import { createPresentationEventHandler } from './src/presentations/events.js';
+import { createPresentationPageHandler } from './src/presentations/page.js';
 import { discoverProjects } from './src/presentations/registry.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -48,6 +49,7 @@ async function serveFile(req, res, filename, pathname, extraHeaders = {}) {
 export function createApp({ publicDir = path.join(root, 'public'), presentationsDir = path.join(root, 'presentations'), builtPresentations = false, env = process.env, send = fetch } = {}) {
   const contact = createContactHandler({ env, send });
   const presentationEvent = createPresentationEventHandler({ env, send, presentationsRoot: path.join(root, 'presentations') });
+  const presentationPage = createPresentationPageHandler({ env, send });
   return http.createServer(async (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -58,6 +60,7 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
     catch { res.writeHead(400).end('Bad request'); return; }
     if (pathname === '/api/contact') { await contact(req, res); return; }
     if (pathname === '/api/presentation-events') { await presentationEvent(req, res); return; }
+    if (pathname === '/api/presentation-page') { await presentationPage(req, res); return; }
     if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405, { Allow: 'GET, HEAD' }).end(); return; }
 
     const deckMatch = /^\/p\/([a-z0-9]+(?:-[a-z0-9]+)*)(\/.*)?$/.exec(pathname);
@@ -67,6 +70,12 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
       res.setHeader('Content-Security-Policy', presentationCsp);
       const [, slug, suffix = ''] = deckMatch;
       if (suffix === '/') { res.writeHead(308, { Location: `/p/${slug}` }).end(); return; }
+      if (env.PRESENTATIONS_REMOTE === 'true') {
+        if (suffix) { res.writeHead(404).end('Not found'); return; }
+        req.query = { slug };
+        await presentationPage(req, res);
+        return;
+      }
       let deckRoot;
       let relative;
       if (builtPresentations) {

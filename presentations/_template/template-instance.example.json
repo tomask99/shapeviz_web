@@ -1,0 +1,18 @@
+{
+  "slug": "company-x",
+  "template": "shapeviz-introduction-v1",
+  "client": "Company X",
+  "title": "A visual partnership",
+  "date": "September 2026",
+  "description": "A tailored introduction to Shapeviz.",
+  "locale": "en",
+  "status": "draft",
+  "analytics": true,
+  "content": {
+    "headline": "A visual partnership for Company X.",
+    "intro": "A short, client-specific introduction prepared by Shapeviz.",
+    "opportunity": "Build a distinctive visual world people recognize and want to return to.",
+    "focus": "A tailored combination of visual direction, CGI, motion and content.",
+    "cta": "Let’s discuss where strong visual direction can take Company X next."
+  }
+}

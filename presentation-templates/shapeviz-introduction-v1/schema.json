@@ -1,0 +1,5 @@
+{
+  "key": "shapeviz-introduction-v1",
+  "label": "Shapeviz introduction",
+  "requiredContent": ["headline", "intro", "opportunity", "focus", "cta"]
+}

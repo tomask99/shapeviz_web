@@ -1,92 +1,114 @@
 # Shapeviz Presentation System
 
-The repository serves standalone HTML presentations under `/p/{slug}`. Decks do
-not inherit the website header, footer, CSS, or JavaScript. The first production
-deck is Milenium at `/p/milenium`.
+The public route is always `/p/{slug}`. A project in Supabase decides whether
+the route renders a bespoke standalone HTML deck or a client-specific instance
+of a shared Shapeviz template. Adding an instance changes database content and
+does not require a router edit or a Vercel deployment.
 
-## Current operating mode
+## Delivery model
 
-Phase 1 is complete and works without a backend. Milenium is `unlisted`: anyone
-with the exact URL can open it. It is excluded from indexing by both an HTML
-`robots` meta tag and `X-Robots-Tag`. This is discoverability control, not access
-control.
+`presentation_projects` is the operational registry. `source_type` supports:
 
-The event adapter is implemented and fails silently for viewers until Supabase
-is configured. The server returns `X-Analytics-Status: not-configured` and does
-not invent statistics. Run the migration in
-`supabase/migrations/20260919144703_presentation_system.sql`, then set
-`SUPABASE_URL` and `SUPABASE_SECRET_KEY` on the server. The secret key must never
-be exposed in presentation HTML or browser code. `SUPABASE_PUBLISHABLE_KEY` is
-reserved for a future authenticated owner interface.
+- `standalone`: the small HTML source is read from the private
+  `presentation-source` bucket. Images and videos are served directly from the
+  public CDN-backed `presentation-media` bucket.
+- `template`: Vercel renders a versioned file from `presentation-templates/`
+  using escaped, allowlisted values from the project's `content` object.
 
-Password and unique-link delivery are intentionally unavailable while the deck
-uses `media.provider: local`. Local presentation files are emitted as public
-Vercel assets and therefore cannot be made confidential by a login screen. The
-registry rejects `password` or `link` together with local media, and the build
-rejects protected output. Real protected delivery requires a private media
-provider with authorization and video Range support, plus Supabase Auth. No
-cosmetic password screen is included.
+Vercel rewrites `/p/{slug}` to the server-side presentation handler. The
+handler validates the slug and project state before returning HTML with
+`noindex`, a conservative referrer policy and a presentation-specific CSP.
+Draft, archived, unknown and currently unsupported protected projects are not
+served. The website's normal SEO headers remain unchanged.
 
-## Architecture
+The private HTML gateway is intentionally small. Videos never pass through a
+Vercel Function; the browser requests them directly from Supabase Storage, so
+byte-range playback and CDN delivery remain available. The `SUPABASE_SECRET_KEY`
+is used only on the server and is sent in the `apikey` header. It never appears
+in browser HTML, JavaScript, logs, Git or public metadata.
 
-- `presentations/{slug}/project.json` is private build metadata and is never
-  copied to `dist`.
-- `presentations/{slug}/index.html` remains a standalone document.
-- `src/presentations/registry.js` validates metadata, paths, states, and local
-  references.
-- `scripts/build.js` discovers decks generically and emits published unlisted
-  decks to `dist/p/{slug}`.
-- `public/presentation-system/tracker.js` is the small shared tracking adapter.
-- `api/presentation-events.js` validates event payloads and writes through one
-  server-only Supabase RPC when configured.
-- `vercel.json` maps the clean URL to the generated `index.html` and adds deck
-  privacy/security headers without changing website SEO headers.
+## Publishing
 
-The adapter records anonymous sessions, first views of meaningful slides,
-furthest reached slide, video start, video completion at 90%, active heartbeats,
-and a best-effort session end. It pauses engaged time when the tab is hidden or
-idle. It stores a broad device category but no IP address, exact fingerprint,
-password, token, or recipient identity. Browser close and attention metrics are
-approximate. Review the required privacy/consent basis before enabling behavioral
-analytics for recipients.
+`scripts/publish-presentation.js` validates a standalone deck, replaces its
+asset references with Supabase media URLs, uploads media directly to
+Storage, stores HTML privately and upserts the registry row. It supports a safe
+dry run before any remote write.
+
+Uploads use a content-derived revision folder. The registry switches only after
+all files are uploaded; existing versions remain available. The HTML base stays
+on Shapeviz so the tracking script and event endpoint keep the correct origin.
+Remote HTML uses `private, no-store` so archiving takes effect on the next visit.
+Set `PRESENTATIONS_REMOTE=true` during the Vercel build to omit local deck copies
+from `dist`. The local sources remain available until their uploads are verified.
+
+`scripts/create-template-presentation.js` validates a template descriptor
+against the template schema and creates or updates one client instance. The
+first shared template is `shapeviz-introduction-v1`. All inserted strings are
+HTML escaped by the renderer.
+
+The current upload workflow is deliberately CLI/assistant-driven. A future
+`/studio/presentations` UI can call the same registry and Storage model without
+changing public URLs.
+
+## Analytics
+
+`public/presentation-system/tracker.js` records anonymous sessions, first views
+of meaningful slides, furthest reached slide, video start, video completion at
+90%, active heartbeats and a best-effort session end. It pauses engaged time
+when the tab is hidden or idle. It stores a broad device category but no IP
+address, exact fingerprint, password, raw share key or claimed recipient
+identity.
+
+Events pass through the server-side endpoint and the narrow
+`record_presentation_event` RPC. A unique event ID prevents network retries from
+double-counting active time. If Supabase is unavailable, tracking fails silently
+and never blocks the deck. `delete_expired_presentation_events()` removes raw
+events older than 180 days by default when scheduled.
 
 ## Supabase setup
 
-1. Create or select a dedicated Shapeviz Supabase project.
-2. Link the local folder with `npx supabase link --project-ref <ref>`.
-3. Review and apply with `npx supabase db push`.
-4. Add one authenticated owner to `presentation_admins` only when the owner UI
-   is implemented.
-5. Configure the three `SUPABASE_*` names from `.env.example` in Vercel. Use a
-   modern `sb_secret_...` key for `SUPABASE_SECRET_KEY`.
+The checked-in migrations create the registry, RLS policies, analytics
+tables, RPCs and these buckets:
 
-RLS is enabled on every presentation table. Anonymous and authenticated clients
-cannot insert analytics. The server's secret role can call the narrow
-`record_presentation_event` RPC. Owner read policies exist for a future
-authenticated dashboard. The RPC uses a unique browser-generated event ID so a
-retried request does not double-count active time. The restricted
-`delete_expired_presentation_events()` function removes raw events older than
-180 days by default; schedule it only after selecting the operational retention
-policy. Session aggregates remain until separately removed.
+- `presentation-source`: private HTML/JSON, maximum 5 MB per object.
+- `presentation-media`: public images, videos and fonts, maximum 50 MB per
+  object. Public media is suitable for unlisted decks and is not confidential.
 
-## Vercel and domains
+Apply migrations to the `shapeviz_web` project, then set:
 
-The build command is `npm run build` and output is `dist`. The original embedded
-Milenium source is deliberately excluded from Git and Vercel; the importer
-creates deduplicated, external assets where every individual file is below the
-GitHub 100 MB file limit. `.vercelignore` also excludes source media that the
-production build does not need.
+```text
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_...
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+PRESENTATIONS_REMOTE=true
+```
 
-After a preview has been checked, attach `shapeviz.com` to the Vercel project and
-set `SITE_URL=https://shapeviz.com`. Until DNS is attached, only the Vercel
-preview URL is live.
+Use a separate modern secret key for the Vercel backend. New Supabase secret
+keys are sent as `apikey`; they are not JWT bearer tokens. Configure the same
+server values in Vercel. The publishable key is reserved for the authenticated
+owner interface.
 
-## Protected-deck migration
+RLS is enabled on every presentation table. Anonymous clients cannot read the
+registry or write analytics. Authenticated owner policies are backed by
+`presentation_admins`; add an owner only when the private dashboard is enabled.
 
-For a confidential deck, upload its HTML and media to a private provider that
-supports signed delivery and byte ranges. Change `media.provider` to
-`supabase-private` (or a documented remote provider), keep raw assets out of
-`dist`, and implement the authorized delivery adapter before switching
-`access.mode`. Revocation must invalidate both new token exchanges and existing
-grants for sensitive work. Do not proxy large video bodies through a Vercel
-Function.
+## Access limitations
+
+The current public runtime supports `unlisted`, which means anyone with the
+exact URL can open the deck. `noindex` controls discovery and is not security.
+
+Password and unique-link modes remain unavailable until confidential media is
+kept in a private bucket and every HTML/media request is authorized. The build
+and registry intentionally refuse the old combination of a protected mode with
+public local media. Do not describe an unlisted deck as confidential.
+
+## Vercel
+
+The build command is `npm run build`, output is `dist`, and the clean route is
+implemented by `vercel.json`. The framework preset is explicitly `null` (Other)
+so Vercel serves static files and the three API functions.
+
+Production is deployed at `https://shapevizweb.vercel.app`, with Milenium at
+`/p/milenium` and the universal starter deck at `/p/shapeviz`. Supabase server
+variables are configured for production and preview. Connecting `shapeviz.com`
+is a separate DNS/domain step; the presentation paths remain the same.

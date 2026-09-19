@@ -1,3 +1,4 @@
+import { readJson, requestOrigin } from './http.js';
 export const services = ['Visual identity', 'CGI & 3D', 'Motion & content', 'Something else'];
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -22,7 +23,7 @@ export function createContactHandler({ env, send }) {
     if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); reply(405, 'Use the contact form to send an inquiry.'); return; }
     if (!req.headers['content-type']?.startsWith('application/json')) { reply(415, 'Please submit the contact form.'); return; }
     if (req.headers.origin) {
-      const allowed = env.SITE_URL ? new URL(env.SITE_URL).origin : `http://${req.headers.host}`;
+      const allowed = requestOrigin(req, env);
       if (req.headers.origin !== allowed) { reply(403, 'This request could not be accepted.'); return; }
     }
     const now = Date.now();
@@ -35,15 +36,8 @@ export function createContactHandler({ env, send }) {
     attempts.set(ip, attempt);
     let body;
     try {
-      const chunks = [];
-      let size = 0;
-      for await (const chunk of req) {
-        size += chunk.length;
-        if (size > 16_384) { reply(413, 'Your message is too long. Please keep it under 5,000 characters.'); return; }
-        chunks.push(chunk);
-      }
-      body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-    } catch { reply(400, 'The form could not be read. Please try again.'); return; }
+      body = await readJson(req, 16_384);
+    } catch (error) { reply(error.status || 400, 'The form could not be read. Please try again.'); return; }
     if (body?.website) { reply(400, 'This request could not be accepted.'); return; }
     const error = validateContact(body);
     if (error) { reply(400, error); return; }

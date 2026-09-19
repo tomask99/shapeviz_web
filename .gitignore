@@ -14,6 +14,7 @@ build/
 out/
 coverage/
 .cache/
+.vercel/
 *.tsbuildinfo
 
 # Local logs and operating system files
@@ -29,3 +30,6 @@ playwright-report/
 # Large one-file source used only by the repeatable Milenium importer. The
 # externalized presentation in presentations/milenium/ is the versioned source.
 /presentations/prezentacia_milenium.html
+
+.vercel
+.env*

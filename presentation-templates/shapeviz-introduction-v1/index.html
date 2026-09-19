@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="{{project.locale}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>{{project.client}} · {{project.title}} · Shapeviz</title>
+  <style>
+    :root{--black:#080706;--paper:#f2eee8;--muted:#9d958b;--orange:#dc842f;font-family:Helvetica,Arial,sans-serif;color:var(--paper);background:var(--black)}
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--black)}
+    button{font:inherit}.deck{position:relative;width:100vw;height:100svh}.slide{position:absolute;inset:0;display:none;padding:clamp(28px,6vw,96px);overflow:hidden}.slide.active{display:grid;animation:enter .55s ease-out both}
+    .slide:not(.split){place-content:center}.split{grid-template-columns:1.2fr .8fr;align-items:center;gap:8vw}.eyebrow{color:var(--orange);font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:4vh}
+    h1,h2{margin:0;text-transform:uppercase;letter-spacing:-.055em;line-height:.92}h1{font-size:clamp(52px,8vw,132px)}h2{font-size:clamp(42px,6vw,100px);max-width:1100px}h1 em,h2 em{color:var(--orange);font-style:normal}
+    p{max-width:760px;color:var(--muted);font-size:clamp(17px,1.45vw,24px);line-height:1.5;margin:4vh 0 0}.client{font-size:clamp(44px,8vw,140px);color:var(--orange)}
+    .card{border:1px solid #33271c;border-radius:28px;padding:clamp(28px,4vw,64px);background:linear-gradient(145deg,#17110c,#0c0907)}.mark{font-size:clamp(78px,14vw,220px);font-weight:800;color:var(--orange);letter-spacing:-.08em}
+    nav{position:fixed;z-index:10;bottom:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:18px;padding:9px 14px;border:1px solid #33271c;background:#0b0907e8}nav button{border:0;background:transparent;color:var(--paper);cursor:pointer;font-size:20px}#count{min-width:64px;text-align:center;color:var(--muted);font-size:11px;letter-spacing:.12em}
+    #progress{position:fixed;z-index:11;bottom:0;left:0;height:2px;background:var(--orange);transition:width .35s ease}.cta{display:inline-block;margin-top:5vh;color:var(--orange);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+    @keyframes enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    @media(max-width:720px){.slide{padding:42px 22px 90px}.split{grid-template-columns:1fr;gap:4vh}.split .card{display:none}h1{font-size:clamp(46px,16vw,74px)}h2{font-size:clamp(40px,13vw,66px)}p{font-size:16px}.eyebrow{margin-bottom:3vh}}
+    @media(prefers-reduced-motion:reduce){.slide.active{animation:none}#progress{transition:none}}
+  </style>
+</head>
+<body>
+  <main class="deck">
+    <section class="slide split active" data-slide="1"><div><div class="eyebrow">Shapeviz × {{project.client}}</div><h1>{{content.headline}}</h1><p>{{content.intro}}</p></div><div class="card"><div class="mark">S.</div><p>Designed to be desired.</p></div></section>
+    <section class="slide" data-slide="2"><div class="eyebrow">Opportunity</div><h2>{{content.opportunity}}</h2></section>
+    <section class="slide" data-slide="3"><div class="eyebrow">What we bring</div><h2>Visual identity.<br><em>CGI &amp; 3D.</em><br>Motion &amp; content.</h2></section>
+    <section class="slide" data-slide="4"><div class="eyebrow">Focus for {{project.client}}</div><h2>{{content.focus}}</h2></section>
+    <section class="slide" data-slide="5"><div class="eyebrow">Shapeviz × {{project.client}}</div><h2>Let’s make something <em>desired.</em></h2><p>{{content.cta}}</p><a class="cta" href="/#contact">Start a conversation &#8599;</a></section>
+  </main>
+  <nav aria-label="Presentation navigation"><button id="prev" type="button" aria-label="Previous slide">‹</button><span id="count"></span><button id="next" type="button" aria-label="Next slide">›</button></nav>
+  <div id="progress"></div>
+  <script>
+    const slides=[...document.querySelectorAll('.slide')];let current=0;
+    function show(next){current=(next+slides.length)%slides.length;slides.forEach((slide,index)=>slide.classList.toggle('active',index===current));document.querySelector('#count').textContent=String(current+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0');document.querySelector('#progress').style.width=((current+1)/slides.length*100)+'%';document.dispatchEvent(new CustomEvent('shapeviz:slidechange'))}
+    document.querySelector('#prev').onclick=()=>show(current-1);document.querySelector('#next').onclick=()=>show(current+1);addEventListener('keydown',event=>{if(['ArrowRight','PageDown',' '].includes(event.key))show(current+1);if(['ArrowLeft','PageUp'].includes(event.key))show(current-1)});show(0);
+  </script>
+  <script src="/presentation-system/tracker.js" data-deck="{{project.slug}}" data-analytics="{{project.analytics}}" defer></script>
+</body>
+</html>

@@ -1,11 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": false,
   "functions": {
     "api/presentation-events.js": {
       "includeFiles": "presentations/*/project.json"
+    },
+    "api/presentation-page.js": {
+      "includeFiles": "presentation-templates/**"
     }
   },
   "redirects": [
@@ -18,7 +22,7 @@
   "rewrites": [
     {
       "source": "/p/:slug",
-      "destination": "/p/:slug/index.html"
+      "destination": "/api/presentation-page?slug=:slug"
     }
   ],
   "headers": [
@@ -28,8 +32,7 @@
         { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" },
         { "key": "Referrer-Policy", "value": "no-referrer" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; font-src 'self' data:; base-uri 'self'; form-action 'none'; frame-ancestors 'none'" }
+        { "key": "X-Frame-Options", "value": "DENY" }
       ]
     },
     {
