@@ -49,11 +49,19 @@ export function createPresentationEventHandler({ env = process.env, send = fetch
   const attempts = new Map();
   return async function presentationEvent(req, res) {
     res.setHeader('Cache-Control', 'no-store');
+    // HTML decks run in an opaque sandbox origin; analytics is public and never uses credentials.
+    if (req.headers.origin === 'null') {
+      res.setHeader('Access-Control-Allow-Origin', 'null');
+      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.setHeader('Vary', 'Origin');
+      if (req.method === 'OPTIONS') { res.writeHead(204).end(); return; }
+    }
     if (req.method !== 'POST') { res.writeHead(405, { Allow: 'POST' }).end(); return; }
     if (!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type'] || '')) { json(res, 415, { ok: false }); return; }
 
     const expectedOrigin = requestOrigin(req, env);
-    if (req.headers.origin && expectedOrigin && req.headers.origin !== expectedOrigin) { json(res, 403, { ok: false }); return; }
+    if (req.headers.origin && req.headers.origin !== 'null' && expectedOrigin && req.headers.origin !== expectedOrigin) { json(res, 403, { ok: false }); return; }
 
     const peer = req.socket?.remoteAddress || 'unknown';
     const now = Date.now();

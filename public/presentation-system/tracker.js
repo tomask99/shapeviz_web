@@ -7,17 +7,18 @@
   const endpoint = '/api/presentation-events';
   const slides = [...document.querySelectorAll('[data-slide], .slide')];
   const videos = [...document.querySelectorAll('video')];
-  const sentSlides = new Set();
   const completedVideos = new Set();
   let maxSlide = 0;
   let lastSlide = 0;
   let lastActivity = performance.now();
   let activeSince = performance.now();
+  let pendingSeconds = 0;
+  let wasVisible = document.visibilityState === 'visible';
 
   const send = (eventType, detail = {}, beacon = false) => {
     const body = JSON.stringify({ deck, sessionId, eventId: crypto.randomUUID(), eventType, ...detail });
     if (beacon && navigator.sendBeacon) return navigator.sendBeacon(endpoint, new Blob([body], { type: 'application/json' }));
-    fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
+    fetch(endpoint, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
   };
   const slideIndex = () => {
     const explicit = slides.findIndex(slide => slide.classList.contains('active'));
@@ -31,15 +32,28 @@
     });
     return best || 1;
   };
+  const accumulate = () => {
+    const now = performance.now();
+    const playing = videos.some(video => !video.paused && !video.ended);
+    if (wasVisible) pendingSeconds += Math.max(0, Math.min(now, playing ? now : lastActivity + 60_000) - activeSince) / 1000;
+    activeSince = now;
+  };
+  const flush = (beacon = false) => {
+    accumulate();
+    const seconds = Math.min(300, Math.floor(pendingSeconds));
+    pendingSeconds -= seconds;
+    if (seconds && lastSlide) send('session_heartbeat', { activeSeconds: seconds, slideIndex: lastSlide }, beacon);
+  };
   const recordSlide = () => {
     const index = slideIndex();
     if (!index || index === lastSlide) return;
+    flush();
     lastSlide = index;
     maxSlide = Math.max(maxSlide, index);
-    if (!sentSlides.has(index)) { sentSlides.add(index); send('slide_viewed', { slideIndex: index }); }
+    send('slide_viewed', { slideIndex: index });
     send('slide_reached_max', { slideIndex: maxSlide });
   };
-  const activity = () => { lastActivity = performance.now(); };
+  const activity = () => { accumulate(); lastActivity = performance.now(); };
   ['pointerdown', 'pointermove', 'keydown', 'scroll'].forEach(type => addEventListener(type, activity, { passive: true }));
   send('session_started', { slideCount: slides.length || null });
   recordSlide();
@@ -56,13 +70,8 @@
       }
     });
   });
-  setInterval(() => {
-    const now = performance.now();
-    const engaged = document.visibilityState === 'visible' && now - lastActivity < 60_000;
-    const activeSeconds = engaged ? Math.max(0, Math.round((now - activeSince) / 1000)) : 0;
-    activeSince = now;
-    if (activeSeconds) send('session_heartbeat', { activeSeconds, slideIndex: maxSlide });
-  }, 15_000);
-  document.addEventListener('visibilitychange', () => { activeSince = performance.now(); if (!document.hidden) activity(); });
-  addEventListener('pagehide', () => send('session_ended', { slideIndex: maxSlide }, true));
+  setInterval(() => flush(), 15_000);
+  document.addEventListener('visibilitychange', () => { flush(true); wasVisible = !document.hidden; activeSince = performance.now(); if (!document.hidden) activity(); });
+  addEventListener('pagehide', () => { flush(true); wasVisible = false; send('session_ended', { slideIndex: maxSlide }, true); });
+  addEventListener('pageshow', () => { wasVisible = !document.hidden; activeSince = performance.now(); });
 })();

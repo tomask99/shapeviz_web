@@ -46,13 +46,13 @@ against the template schema and creates or updates one client instance. The
 first shared template is `shapeviz-introduction-v1`. All inserted strings are
 HTML escaped by the renderer.
 
-The current upload workflow is deliberately CLI/assistant-driven. A future
-`/studio/presentations` UI can call the same registry and Storage model without
-changing public URLs.
+The owner interface at `/adminlogin` supports HTML uploads, template variants,
+visibility changes and analytics. The CLI remains available for assistant-driven
+publishing. See `docs/admin-studio.md` for the account and upload workflow.
 
 ## Analytics
 
-`public/presentation-system/tracker.js` records anonymous sessions, first views
+`public/presentation-system/tracker.js` records anonymous sessions, repeated views
 of meaningful slides, furthest reached slide, video start, video completion at
 90%, active heartbeats and a best-effort session end. It pauses engaged time
 when the tab is hidden or idle. It stores a broad device category but no IP

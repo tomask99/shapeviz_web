@@ -1,5 +1,9 @@
 # Shapeviz Web
 
+The private presentation studio is at `/adminlogin`. See
+[`docs/admin-studio.md`](docs/admin-studio.md) for account setup, HTML uploads,
+company variants and analytics.
+
 The repository also contains the reusable Shapeviz Presentation System. The
 Milenium deck and reusable introduction are delivered at `/p/milenium` and
 `/p/shapeviz`. Production reads the registry and media from Supabase; new decks

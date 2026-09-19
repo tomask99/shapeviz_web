@@ -4,6 +4,7 @@ import { stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createContactHandler } from './src/contact.js';
+import { createAdminHandler } from './src/admin/handler.js';
 import { createPresentationEventHandler } from './src/presentations/events.js';
 import { createPresentationPageHandler } from './src/presentations/page.js';
 import { discoverProjects } from './src/presentations/registry.js';
@@ -48,6 +49,7 @@ async function serveFile(req, res, filename, pathname, extraHeaders = {}) {
 
 export function createApp({ publicDir = path.join(root, 'public'), presentationsDir = path.join(root, 'presentations'), builtPresentations = false, env = process.env, send = fetch } = {}) {
   const contact = createContactHandler({ env, send });
+  const admin = createAdminHandler({ env, send });
   const presentationEvent = createPresentationEventHandler({ env, send, presentationsRoot: path.join(root, 'presentations') });
   const presentationPage = createPresentationPageHandler({ env, send });
   return http.createServer(async (req, res) => {
@@ -59,6 +61,12 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
     try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
     catch { res.writeHead(400).end('Bad request'); return; }
     if (pathname === '/api/contact') { await contact(req, res); return; }
+    if (pathname === '/api/admin') { await admin(req, res); return; }
+    if (pathname === '/adminlogin' || pathname === '/admin') {
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+      res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-src 'self' blob:; img-src 'self' https://*.supabase.co data: blob:; media-src 'self' https://*.supabase.co blob:; font-src 'self' https://*.supabase.co data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+      await serveFile(req,res,path.join(publicDir,'admin/index.html'),pathname,{'Cache-Control':'no-store'});return;
+    }
     if (pathname === '/api/presentation-events') { await presentationEvent(req, res); return; }
     if (pathname === '/api/presentation-page') { await presentationPage(req, res); return; }
     if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405, { Allow: 'GET, HEAD' }).end(); return; }
