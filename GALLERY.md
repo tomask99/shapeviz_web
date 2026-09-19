@@ -1,23 +1,23 @@
 # Portfolio gallery
 
-The expandable collection below the featured projects uses natural page scrolling.
-Four accessible category tabs show Lifestyle (10), Details & materials (6), Studio
-(4), and Films (2). All 22 source files remain included. The category navigation
-and close control stay available while browsing; closing restores focus and scroll
-position to the opening button.
+The expandable collection is a single curated grid of 11 works: three lifestyle
+images, three studio images, three details, and both films. There are no category
+tabs or sections to switch. The curated IDs and display order live in the
+selection array in scripts/prepare-gallery.js. All originals and prepared media
+remain available; unselected files are not included or requested by the page.
 
-There are no pinned scenes, scroll listeners, parallax, fading, or scroll-driven
-transforms in the gallery. Aligned grids, consistent image frames, spacious type
-and understated dividers provide the visual structure. The existing media hover,
-rounded clipping and image lightbox are retained. Details use three desktop
-columns, other categories two; mobile uses one column.
+The desktop composition alternates wide images with smaller supporting frames.
+Photos use intentional crops and per-image focal points; clicking opens the full
+image. On mobile the photographs use landscape frames in one column. Videos use
+object-fit: contain on desktop and their natural aspect ratio on mobile, so the
+full video stays visible without cropping. Rounded corners and the existing
+hover interaction are retained.
 
-Images have up to three WebP sizes (640, 1280, 1920 pixels wide, without upscaling).
-No gallery media is requested while initially collapsed. Only the selected
-category receives image sources, then browser lazy loading handles images below
-the viewport. Videos autoplay muted when visible and pause on category changes,
-collapse, backgrounding or lightbox opening. Reduced motion disables autoplay
-and hover movement. Originals remain untouched; public/media/gallery is served.
+Scrolling is natural with no scroll animations or pinned scenes. The close
+control remains available during browsing and restores focus and scroll position
+to the gallery trigger. Images are responsive WebP with lazy loading; gallery
+media is not requested until expansion. Videos autoplay muted when visible,
+pause offscreen/on collapse, and respect reduced motion.
 
 ## Updating the gallery
 
