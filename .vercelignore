@@ -1,0 +1,11 @@
+.cache/
+assets/
+dist/
+markdown files/
+node_modules/
+playwright-report/
+presentations/prezentacia_milenium.html
+test-results/
+tests/
+supabase/.branches/
+supabase/.temp/

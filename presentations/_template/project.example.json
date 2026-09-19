@@ -1,0 +1,23 @@
+{
+  "id": "company-x",
+  "slug": "company-x",
+  "client": "Company X",
+  "title": "Project title",
+  "date": "September 2026",
+  "description": "Private proposal by Shapeviz.",
+  "cover": null,
+  "entry": "index.html",
+  "locale": "en",
+  "status": "draft",
+  "access": {
+    "mode": "unlisted"
+  },
+  "analytics": {
+    "enabled": false,
+    "slideCount": null
+  },
+  "media": {
+    "provider": "local",
+    "baseUrl": null
+  }
+}

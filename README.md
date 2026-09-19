@@ -1,5 +1,12 @@
 # Shapeviz Web
 
+The repository also contains the reusable Shapeviz Presentation System. The
+actual Milenium HTML deck is available locally at
+`http://localhost:3000/p/milenium`; new decks are discovered from
+`presentations/{slug}/project.json` without router edits. See
+`docs/presentation-system.md` for architecture and backend status and
+`docs/adding-a-presentation.md` for the repeatable authoring workflow.
+
 Repozitár projektu: https://github.com/tomask99/shapeviz_web
 
 ## Spustenie webu

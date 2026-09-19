@@ -25,3 +25,7 @@ Desktop.ini
 # Browser test artifacts
 test-results/
 playwright-report/
+
+# Large one-file source used only by the repeatable Milenium importer. The
+# externalized presentation in presentations/milenium/ is the versioned source.
+/presentations/prezentacia_milenium.html

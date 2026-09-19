@@ -1,0 +1,15 @@
+{
+  "id": "test-company",
+  "slug": "test-company",
+  "client": "Test Company",
+  "title": "Fixture deck",
+  "date": "September 2026",
+  "description": "Test-only presentation fixture.",
+  "cover": null,
+  "entry": "index.html",
+  "locale": "en",
+  "status": "published",
+  "access": { "mode": "unlisted" },
+  "analytics": { "enabled": false, "slideCount": 1 },
+  "media": { "provider": "local", "baseUrl": null }
+}

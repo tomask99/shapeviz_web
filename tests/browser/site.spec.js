@@ -42,7 +42,7 @@ test('project image and video use the premium hover lift on a fine pointer', asy
   const image = page.getByRole('button', { name: 'Enlarge Milenium interior visual' });
   await image.scrollIntoViewIfNeeded();
   await image.hover();
-  await page.waitForTimeout(450);
+  await page.waitForTimeout(550);
   const imageStyle = await image.evaluate(element => ({
     transform: getComputedStyle(element).transform,
     shadow: getComputedStyle(element).boxShadow,
