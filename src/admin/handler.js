@@ -16,7 +16,10 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
     const response = await send(`${root}${url}`, {method, headers:{apikey:env.SUPABASE_SECRET_KEY,...(token ? {Authorization:`Bearer ${token}`} : {}),...(body ? {'Content-Type':'application/json'} : {}),...headers}, ...(body ? {body:JSON.stringify(body)} : {}), signal:AbortSignal.timeout(25_000)});
     const value = await response.text();
     let data; try {data = value ? JSON.parse(value) : null;} catch {data = null;}
-    if (!response.ok) throw fail(response.status === 409 ? 409 : response.status === 429 ? 429 : 502, response.status === 409 ? 'This URL is already in use. Choose another name.' : 'The service could not complete this request. Please try again.');
+    if (!response.ok) {
+      const status=[400,401,403,409,413,429].includes(response.status) ? response.status : 502;
+      throw Object.assign(fail(status,response.status===409 ? 'This URL is already in use. Choose another name.' : `The service could not complete this request (HTTP ${response.status}). Please try again.`),{retryAfter:response.headers.get('Retry-After')});
+    }
     return data;
   }
   async function owner(user) {
@@ -32,10 +35,10 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
   async function session(req,res) {
     const jar = Object.fromEntries((req.headers.cookie || '').split(';').map(s=>s.trim().split(/=(.*)/s).slice(0,2)));
     let token = jar.sv_access, user;
-    if (token) try {user=await call('/auth/v1/user',{token});} catch {}
+    if (token) try {user=await call('/auth/v1/user',{token});} catch(error) {if(![401,403].includes(error.status))throw error;}
     if (!user && jar.sv_refresh) {
       let refreshed;
-      try {refreshed=await call('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:jar.sv_refresh}});} catch {cookies(res,null);throw fail(401,'Your session expired. Please sign in again.');}
+      try {refreshed=await call('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:jar.sv_refresh}});} catch(error) {if(![400,401,403].includes(error.status))throw error;cookies(res,null);throw fail(401,'Your session expired. Please sign in again.');}
       user=refreshed.user;token=refreshed.access_token;
       await owner(user);cookies(res,refreshed);
     }
@@ -109,7 +112,8 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
         if(!/^[a-zA-Z0-9_-]+\.(html|png|jpg|jpeg|webp|avif|gif|svg|mp4|webm|mp3|m4a|ogg|wav|woff2|woff|css|js)$/.test(filename||'')) throw fail(400,'Unsupported file type.');
         const bucket=filename.endsWith('.html') ? 'presentation-source' : 'presentation-media';
         const object=`uploads/${user.id}/${id}/${filename}`;
-        const signed=await call(`/storage/v1/object/upload/sign/${bucket}/${object}`,{method:'POST',body:{}});
+        // A retry after a lost response must replace the same upload, not create duplicates.
+        const signed=await call(`/storage/v1/object/upload/sign/${bucket}/${object}`,{method:'POST',body:{},headers:{'x-upsert':'true'}});
         reply(200,{uploadId:id,object,bucket,url:`${root}/storage/v1${signed.url}`,publicUrl:`${root}/storage/v1/object/public/${bucket}/${object}`});return;
       }
       if(action==='abort-upload') {
@@ -165,6 +169,6 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
         await call(`/rest/v1/presentation_projects?deck_slug=eq.${p.deck_slug}`,{method:'PATCH',body:patch});reply(200,{ok:true});return;
       }
       throw fail(404,'Unknown action.');
-    } catch(error) {reply(error.status || 500,{error:error.status ? error.message : 'Something went wrong. Please try again.'});}
+    } catch(error) {if(error.retryAfter && /^(?:\d+|[A-Za-z0-9,: -]{1,64})$/.test(error.retryAfter))res.setHeader('Retry-After',error.retryAfter);reply(error.status || 500,{error:error.status ? error.message : 'Something went wrong. Please try again.'});}
   };
 }

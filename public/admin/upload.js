@@ -1,15 +1,26 @@
 const mimeExtensions={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/avif':'avif','image/gif':'gif','image/svg+xml':'svg','video/mp4':'mp4','video/webm':'webm','audio/mpeg':'mp3','audio/mp3':'mp3','audio/mp4':'m4a','audio/ogg':'ogg','audio/wav':'wav','audio/x-wav':'wav','audio/webm':'webm','font/woff2':'woff2','font/woff':'woff'};
 const extensionMime={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',avif:'image/avif',gif:'image/gif',svg:'image/svg+xml',mp4:'video/mp4',webm:'video/webm',mp3:'audio/mpeg',m4a:'audio/mp4',ogg:'audio/ogg',wav:'audio/wav',woff2:'font/woff2',woff:'font/woff',css:'text/css',js:'text/javascript'};
 
+import {retryUpload} from './upload-retry.js';
+
 export async function uploadPresentation(file, companions, api, progress) {
   if(file.size>200*1024*1024) throw new Error('The HTML file must be smaller than 200 MB.');
-  let html=await file.text(), uploadId;
+  let html=await file.text(), uploadId=crypto.randomUUID();
   let uploaded=0;
   async function upload(blob,name) {
     if(blob.size>50*1024*1024) throw new Error(`${name} exceeds the 50 MB media limit. Compress this asset first.`);
-    const signed=await api('sign-upload',{filename:name,uploadId});uploadId=signed.uploadId;
-    const response=await fetch(signed.url,{method:'PUT',headers:{'Content-Type':blob.type || 'application/octet-stream'},body:blob,signal:AbortSignal.timeout(300000)});
-    if(!response.ok) throw new Error(`Could not upload ${name}. Please try again.`);
+    const signed=await retryUpload(()=>api('sign-upload',{filename:name,uploadId}),progress,`Preparing ${name}`);
+    await retryUpload(async()=>{
+      let response;
+      try {response=await fetch(signed.url,{method:'PUT',headers:{'Content-Type':blob.type || 'application/octet-stream'},body:blob,signal:AbortSignal.timeout(300000)});}
+      catch(error) {throw Object.assign(new Error(`Could not upload ${name}: connection interrupted or timed out.`),{name:error.name});}
+      if(!response.ok) {
+        const data=await response.json().catch(()=>null);
+        // Only show a short machine code, never raw upstream responses or signed URLs.
+        const code=typeof data?.code==='string' && /^[a-zA-Z0-9_ -]{1,64}$/.test(data.code) ? `, ${data.code}` : '';
+        throw Object.assign(new Error(`Could not upload ${name} (HTTP ${response.status}${code}). Please try again.`),{status:response.status,retryAfter:response.headers.get('Retry-After')});
+      }
+    },progress,`Uploading ${name}`);
     progress(`Uploaded ${++uploaded} files…`);
     return signed;
   }
@@ -75,8 +86,8 @@ export async function uploadPresentation(file, companions, api, progress) {
   progress('Saving HTML…');return await upload(blob,'source.html');
   } catch(error) {
     if(uploadId) {
-      try { await api('abort-upload',{uploadId}); }
-      catch { throw new Error(`${error.message} Automatic cleanup failed; some uploaded files may remain.`); }
+      try { await retryUpload(()=>api('abort-upload',{uploadId}),progress,'Cleaning up incomplete upload'); }
+      catch { throw new Error(`${error.message} Automatic cleanup failed; some uploaded files may remain. Upload ID: ${uploadId}`); }
     }
     throw error;
   }

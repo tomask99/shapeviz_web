@@ -10,7 +10,7 @@ const notify=message=>{clearTimeout(noticeTimer);$('#notice').textContent=messag
 async function api(action,body,params={}) {
  const query=new URLSearchParams({action,...params});
  const response=await fetch(`/api/admin?${query}`,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(60000)});
- const data=await response.json().catch(()=>({error:'The server did not finish this request. Please try again.'}));if(!response.ok){if(response.status===401 && action!=='login' && action!=='verify')showLogin();throw new Error(data.error||'Request failed.');}return data;
+ const data=await response.json().catch(()=>({error:'The server did not finish this request. Please try again.'}));if(!response.ok){if(response.status===401 && action!=='login' && action!=='verify')showLogin();throw Object.assign(new Error(data.error||'Request failed.'),{status:response.status,retryAfter:response.headers.get('Retry-After')});}return data;
 }
 function showLogin(setup=false){$('#studio').hidden=true;$('#login').hidden=false;$('#signin').hidden=setup;$('#set-password').hidden=!setup;$('#login-title').textContent=setup?'Make it yours.':'Welcome back.';$('#login-hint').textContent=setup?'Set a password with at least 12 characters.':'Sign in to your Shapeviz studio.';}
 function formData(form){const data=Object.fromEntries(new FormData(form));for(const name of ['publish','isTemplate'])if(form.elements[name])data[name]=form.elements[name].checked;return data;}

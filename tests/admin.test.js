@@ -5,6 +5,34 @@ import {createAdminHandler} from '../src/admin/handler.js';
 import {transformDeck} from '../src/admin/html.js';
 import {parse} from 'parse5';
 
+test('auth throttling keeps the session and forwards Retry-After without refreshing',async()=>{
+ const urls=[];
+ const send=async url=>{urls.push(url);return Response.json({error:'busy'},{status:429,headers:{'Retry-After':'5'}});};
+ const server=createServer(createAdminHandler({env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_SECRET_KEY:'test'},send}));
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ try {
+  const response=await fetch(`http://127.0.0.1:${server.address().port}/?action=me`,{headers:{Cookie:'sv_access=test; sv_refresh=test'}});
+  assert.equal(response.status,429);assert.equal(response.headers.get('Retry-After'),'5');assert.equal(response.headers.get('Set-Cookie'),null);
+  assert.equal(urls.length,1);assert.ok(urls[0].endsWith('/auth/v1/user'));
+ }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
+});
+
+test('signed uploads enable idempotent replacement only under the verified owner path',async()=>{
+ let signed;
+ const send=async(url,options)=>{
+  if(url.endsWith('/auth/v1/user'))return Response.json({id:'owner'});
+  if(url.includes('presentation_admins?'))return Response.json([{role:'owner'}]);
+  signed={url,options};return Response.json({url:'/signed'});
+ };
+ const server=createServer(createAdminHandler({env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_SECRET_KEY:'test'},send}));
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;
+ try {
+  const response=await fetch(origin+'/?action=sign-upload',{method:'POST',headers:{Origin:origin,Cookie:'sv_access=test','Content-Type':'application/json'},body:JSON.stringify({filename:'embedded-31.webp',uploadId:'00000000-0000-4000-8000-000000000001'})});
+  assert.equal(response.status,200);assert.equal(signed.options.headers['x-upsert'],'true');
+  assert.match(signed.url,/presentation-media\/uploads\/owner\/00000000-0000-4000-8000-000000000001\/embedded-31.webp$/);
+ }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
+});
+
 test('variants change visible company text without modifying scripts, media URLs or injecting markup',()=>{
  const html='<html><head><title>MILENIUM</title></head><body><section class="slide"><h1>Milenium</h1><img src="https://example.com/MILENIUM.jpg" alt="Milenium"><script>const company="MILENIUM";</script></section></body></html>';
  const result=transformDeck(html,{from:'MILENIUM',company:'Hrno <img onerror=alert(1)>',slug:'hrno'});
