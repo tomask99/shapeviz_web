@@ -11,7 +11,8 @@ aside nav button.active{box-shadow:inset 0 0 0 1px #d8873924}
 .project-list{display:grid;gap:12px}
 .project-row{border:1px solid #f1ede60b;border-radius:22px;padding:21px;background:#ffffff03;transition:background .25s,border-color .25s}
 .project-row:hover{background:#d8873908;border-color:#d8873926}
-.project-icon{border-radius:15px;border:0;background:#d8873912}
+.project-icon{border-radius:15px;border:0;background:#d8873912;transition:background .2s,color .2s}
+.project-icon:hover,.project-icon:focus-visible{background:#d8873930;color:#f1ede6}
 .badge{border-radius:999px}.row-actions{flex-wrap:wrap;justify-content:end}
 input:not([type=checkbox]):not([type=radio]),select{border-radius:14px;background:#ffffff03;border-color:#f1ede614}
 .url-input>span{border-radius:14px 0 0 14px}.url-input input{border-radius:0 14px 14px 0}
