@@ -5,6 +5,9 @@
   "outputDirectory": "dist",
   "cleanUrls": false,
   "functions": {
+    "api/contact.js": {
+      "maxDuration": 60
+    },
     "api/site-events.js": {
       "maxDuration": 30
     },

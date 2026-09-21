@@ -23,6 +23,7 @@
     "supabase": "^2.117.0"
   },
   "dependencies": {
+    "nodemailer": "10.0.10",
     "parse5": "8.0.1"
   }
 }

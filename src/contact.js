@@ -1,4 +1,5 @@
 import { readJson, requestOrigin } from './http.js';
+import nodemailer from 'nodemailer';
 export const services = ['Visual identity', 'CGI & 3D', 'Motion & content', 'Something else'];
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -13,7 +14,7 @@ export function validateContact(body) {
   return null;
 }
 
-export function createContactHandler({ env, send }) {
+export function createContactHandler({ env, send, createTransport = nodemailer.createTransport }) {
   const attempts = new Map();
   return async (req, res) => {
     const reply = (status, message) => {
@@ -41,10 +42,34 @@ export function createContactHandler({ env, send }) {
     if (body?.website) { reply(400, 'This request could not be accepted.'); return; }
     const error = validateContact(body);
     if (error) { reply(400, error); return; }
-    if (!env.RESEND_API_KEY || !env.CONTACT_TO_EMAIL || !env.CONTACT_FROM_EMAIL) {
+    const gmail = env.CONTACT_PROVIDER === 'gmail' || (!env.CONTACT_PROVIDER && !!env.GMAIL_APP_PASSWORD);
+    const gmailUser = env.GMAIL_USER?.trim();
+    const password = env.GMAIL_APP_PASSWORD?.replace(/\s/g, '');
+    if (!env.CONTACT_TO_EMAIL || (gmail ? !gmailUser || !password : !env.RESEND_API_KEY || !env.CONTACT_FROM_EMAIL)) {
       reply(503, 'The contact form is not accepting messages yet. Your message has not been sent. Please try again later.'); return;
     }
     try {
+      if (gmail) {
+        const transport = createTransport({
+          host: 'smtp.gmail.com', port: 465, secure: true,
+          auth: { user: gmailUser, pass: password },
+          connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000,
+          dnsTimeout: 5000, logger: false, debug: false,
+          disableFileAccess: true, disableUrlAccess: true,
+        });
+        try {
+          const receipt = await transport.sendMail({
+            from: { name: 'SHAPEVIZ', address: gmailUser },
+            to: [{ address: env.CONTACT_TO_EMAIL.trim() }],
+            replyTo: { address: body.email.trim() },
+            subject: `Shapeviz inquiry — ${body.name.trim()}`,
+            text: `Name: ${body.name.trim()}\nEmail: ${body.email.trim()}\nCompany: ${body.company.trim() || 'Not specified'}\nInterested in: ${body.services.join(', ') || 'Let’s discuss'}\n\n${body.message.trim()}\n\nPermission to respond: yes`,
+          });
+          if (!receipt.accepted?.some(address => address.toLowerCase() === env.CONTACT_TO_EMAIL.trim().toLowerCase())) throw new Error('Recipient not accepted');
+        } finally { transport.close(); }
+        reply(200, 'Thank you. Your inquiry is on its way. We’ll be in touch.');
+        return;
+      }
       const result = await send('https://api.resend.com/emails', {
         method: 'POST',
         headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },

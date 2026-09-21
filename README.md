@@ -48,6 +48,14 @@ Skopíruj `.env.example` do `.env` a nastav:
 - `CONTACT_TO_EMAIL`: adresa, na ktorú majú prichádzať správy.
 - `CONTACT_FROM_EMAIL`: adresa odosielateľa na doméne overenej v Resend.
 - `RESEND_API_KEY`: súkromný API kľúč služby Resend.
+
+Alternatívne odosielanie cez Gmail: nastav `CONTACT_PROVIDER=gmail`, `GMAIL_USER`
+na Gmail odosielateľa, `GMAIL_APP_PASSWORD` na Google heslo aplikácie a
+`CONTACT_TO_EMAIL` na príjemcu. Heslo patrí iba do ignorovaného `.env` a citlivých
+produkčných premenných Vercelu. Gmail používa TLS SMTP a Reply-To zákazníka;
+nepoužíva ani záložne Resend. Úspech znamená prijatie SMTP serverom, nie potvrdenie
+umiestnenia do doručenej pošty. Gmail má limity a môže blokovať nové serverové
+prihlásenia; je to dočasné riešenie do overenia vlastnej odosielacej domény.
 - `SITE_URL`: verejný pôvod webu, napríklad `https://tvoja-domena.sk`.
 
 Implementácia používa [Resend Send Email API](https://resend.com/docs/api-reference/emails/send-email).
