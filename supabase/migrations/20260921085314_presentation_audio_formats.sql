@@ -1,0 +1,1 @@
+update storage.buckets set allowed_mime_types = array(select distinct mime from unnest(coalesce(allowed_mime_types, array[]::text[]) || array['audio/mpeg','audio/mp3','audio/mp4','audio/ogg','audio/wav','audio/x-wav','audio/webm']) as mime) where id = 'presentation-media';

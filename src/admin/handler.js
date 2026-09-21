@@ -96,11 +96,17 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
       if(action==='sign-upload') {
         const id=body.uploadId || randomUUID();if(!/^[a-f0-9-]{36}$/.test(id)) throw fail(400,'Invalid upload.');
         const filename=body.filename;
-        if(!/^[a-zA-Z0-9_-]+\.(html|png|jpg|jpeg|webp|avif|gif|svg|mp4|webm|woff2|woff|css|js)$/.test(filename||'')) throw fail(400,'Unsupported file type.');
+        if(!/^[a-zA-Z0-9_-]+\.(html|png|jpg|jpeg|webp|avif|gif|svg|mp4|webm|mp3|m4a|ogg|wav|woff2|woff|css|js)$/.test(filename||'')) throw fail(400,'Unsupported file type.');
         const bucket=filename.endsWith('.html') ? 'presentation-source' : 'presentation-media';
         const object=`uploads/${user.id}/${id}/${filename}`;
         const signed=await call(`/storage/v1/object/upload/sign/${bucket}/${object}`,{method:'POST',body:{}});
         reply(200,{uploadId:id,object,bucket,url:`${root}/storage/v1${signed.url}`,publicUrl:`${root}/storage/v1/object/public/${bucket}/${object}`});return;
+      }
+      if(action==='abort-upload') {
+        if(!/^[a-f0-9-]{36}$/.test(body.uploadId||''))throw fail(400,'Invalid upload.');
+        const prefix=`uploads/${user.id}/${body.uploadId}/`;
+        const result=await removeProjectFiles({deck_slug:'__abandoned_upload__',content:{_storageScopes:[{bucket:'presentation-source',prefix},{bucket:'presentation-media',prefix}]}},call);
+        reply(200,{ok:true,...result});return;
       }
       if(action==='finalize') {
         if(!/^uploads\/[a-f0-9-]+\/[a-f0-9-]{36}\/source\.html$/.test(body.object||'')||!body.object.startsWith(`uploads/${user.id}/`)) throw fail(400,'Invalid upload source.');

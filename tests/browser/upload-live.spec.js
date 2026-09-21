@@ -19,7 +19,7 @@ test('real Supabase upload, finalize, publish and file cleanup',async({page})=>{
  const api=async(action,body)=>page.evaluate(async({action,body})=>{const r=await fetch('/api/admin?action='+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return {status:r.status,data:await r.json()};},{action,body});
  try{
   await page.goto(origin+'/adminlogin');await page.locator('#upload-top').click();
-  await page.locator('#html-file').setInputFiles({name:'test.html',mimeType:'text/html',buffer:Buffer.from('<!doctype html><title>Upload check</title><section class="slide"><h1>Upload check</h1><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII="></section>')});
+  await page.locator('#html-file').setInputFiles({name:'test.html',mimeType:'text/html',buffer:Buffer.from('<!doctype html><title>Upload check</title><section class="slide"><h1>Upload check</h1><audio src="data:audio/mpeg;base64,SUQzBAAAAAAA"></audio></section>')});
   await page.locator('#upload-form [name=client]').fill('Upload check');await page.locator('#upload-form [name=title]').fill('Integration test');await page.locator('#upload-form [name=slug]').fill(slug);
   await page.locator('#upload-form button[type=submit]').click();
   await expect(page.locator('#upload-dialog')).not.toBeVisible({timeout:45000});

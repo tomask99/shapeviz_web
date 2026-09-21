@@ -16,7 +16,8 @@ if (!dryRun && !hasSupabase(process.env)) throw new Error('Set SUPABASE_URL and 
 const mime = new Map([
   ['.html', 'text/html'], ['.css', 'text/css'], ['.js', 'text/javascript'],
   ['.jpg', 'image/jpeg'], ['.jpeg', 'image/jpeg'], ['.png', 'image/png'], ['.webp', 'image/webp'], ['.avif', 'image/avif'],
-  ['.svg', 'image/svg+xml'], ['.mp4', 'video/mp4'], ['.webm', 'video/webm'], ['.woff2', 'font/woff2']
+  ['.svg', 'image/svg+xml'], ['.mp4', 'video/mp4'], ['.webm', 'video/webm'], ['.woff2', 'font/woff2'],
+  ['.mp3', 'audio/mpeg'], ['.m4a', 'audio/mp4'], ['.ogg', 'audio/ogg'], ['.wav', 'audio/wav']
 ]);
 
 async function filesBelow(root, relative = '') {

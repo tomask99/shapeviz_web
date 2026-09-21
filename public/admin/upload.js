@@ -1,5 +1,5 @@
-const mimeExtensions={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/avif':'avif','image/gif':'gif','image/svg+xml':'svg','video/mp4':'mp4','video/webm':'webm','font/woff2':'woff2','font/woff':'woff'};
-const extensionMime={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',avif:'image/avif',gif:'image/gif',svg:'image/svg+xml',mp4:'video/mp4',webm:'video/webm',woff2:'font/woff2',woff:'font/woff',css:'text/css',js:'text/javascript'};
+const mimeExtensions={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/avif':'avif','image/gif':'gif','image/svg+xml':'svg','video/mp4':'mp4','video/webm':'webm','audio/mpeg':'mp3','audio/mp3':'mp3','audio/mp4':'m4a','audio/ogg':'ogg','audio/wav':'wav','audio/x-wav':'wav','audio/webm':'webm','font/woff2':'woff2','font/woff':'woff'};
+const extensionMime={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',avif:'image/avif',gif:'image/gif',svg:'image/svg+xml',mp4:'video/mp4',webm:'video/webm',mp3:'audio/mpeg',m4a:'audio/mp4',ogg:'audio/ogg',wav:'audio/wav',woff2:'font/woff2',woff:'font/woff',css:'text/css',js:'text/javascript'};
 
 export async function uploadPresentation(file, companions, api, progress) {
   if(file.size>200*1024*1024) throw new Error('The HTML file must be smaller than 200 MB.');
@@ -16,6 +16,16 @@ export async function uploadPresentation(file, companions, api, progress) {
   progress('Reading HTML and extracting embedded media…');
   // Rewrite data URIs everywhere, including CSS and JavaScript media constants.
   const embedded=[...new Set(html.match(/data:[a-zA-Z0-9/+.-]+;base64,[a-zA-Z0-9+/=]+/g)||[])];
+  // Validate every embedded asset before the first network write.
+  for(const uri of embedded) {
+    const type=uri.slice(5,uri.indexOf(';'));
+    if(!mimeExtensions[type])throw new Error(`Unsupported embedded media: ${type}`);
+    const encoded=uri.slice(uri.indexOf(',')+1);
+    if(encoded.length%4===1)throw new Error(`Invalid embedded media: ${type}`);
+    const bytes=Math.floor(encoded.length*3/4)-(encoded.endsWith('==')?2:encoded.endsWith('=')?1:0);
+    if(bytes>50*1024*1024)throw new Error(`Embedded ${type} exceeds the 50 MB media limit.`);
+  }
+  try {
   for(let index=0;index<embedded.length;index++) {
     const uri=embedded[index], type=uri.slice(5,uri.indexOf(';')), extension=mimeExtensions[type];
     if(!extension) throw new Error(`Unsupported embedded media: ${type}`);
@@ -62,5 +72,12 @@ export async function uploadPresentation(file, companions, api, progress) {
   html='<!doctype html>\n'+doc.documentElement.outerHTML;
   const blob=new Blob([html],{type:'text/html'});
   if(blob.size>4_000_000)throw new Error('HTML is still larger than 4 MB after extracting media. Move large inline data into separate assets.');
-  progress('Saving HTML…');return upload(blob,'source.html');
+  progress('Saving HTML…');return await upload(blob,'source.html');
+  } catch(error) {
+    if(uploadId) {
+      try { await api('abort-upload',{uploadId}); }
+      catch { throw new Error(`${error.message} Automatic cleanup failed; some uploaded files may remain.`); }
+    }
+    throw error;
+  }
 }
