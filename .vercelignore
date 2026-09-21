@@ -4,9 +4,6 @@ dist/
 markdown files/
 node_modules/
 playwright-report/
-presentations/prezentacia_milenium.html
-presentations/milenium/assets/
-presentations/milenium/index.html
 .env
 .env.*
 test-results/

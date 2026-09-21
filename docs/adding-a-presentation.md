@@ -45,7 +45,7 @@ npm.cmd run presentation:create:template -- presentations/minotti.json
 ```
 
 This writes only a small database row. The shared
-`shapeviz-introduction-v1` HTML stays versioned in Git, while `/p/minotti`
+The template HTML stays versioned in Git, while the generated presentation
 receives its own escaped text and analytics identity. Keep a new instance as
 `draft` until its copy has been reviewed; draft URLs return 404.
 
@@ -68,16 +68,3 @@ Give each video a stable `data-video-id`. Include:
 
 Video completion means at least 90% playback. The event endpoint also verifies
 that the matching published project has analytics enabled.
-
-## Re-importing Milenium
-
-The original monolithic file is local and Git-ignored because it exceeds
-GitHub's single-file limit. Recreate the externalized working directory with:
-
-```powershell
-npm.cmd run presentation:import:milenium
-```
-
-Then run the dry run, browser tests and publisher. Once the remote upload is
-verified, large generated media no longer needs to remain in the website Git
-history for future versions.

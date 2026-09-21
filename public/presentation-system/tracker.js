@@ -1,10 +1,18 @@
 (() => {
   const script = document.currentScript;
-  if (!script || script.dataset.analytics !== 'true' || !globalThis.crypto?.randomUUID) return;
+  if (!script || script.dataset.analytics !== 'true' || !globalThis.crypto?.getRandomValues) return;
   const deck = script.dataset.deck;
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(deck || '')) return;
-  const sessionId = crypto.randomUUID();
-  const endpoint = '/api/presentation-events';
+  const uuid = () => {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 15) | 64;
+    bytes[8] = (bytes[8] & 63) | 128;
+    const hex = [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  };
+  const sessionId = uuid();
+  const endpoint = new URL('/api/presentation-events', script.src).href;
   const slides = [...document.querySelectorAll('[data-slide], .slide')];
   const videos = [...document.querySelectorAll('video')];
   const completedVideos = new Set();
@@ -16,9 +24,14 @@
   let wasVisible = document.visibilityState === 'visible';
 
   const send = (eventType, detail = {}, beacon = false) => {
-    const body = JSON.stringify({ deck, sessionId, eventId: crypto.randomUUID(), eventType, ...detail });
-    if (beacon && navigator.sendBeacon) return navigator.sendBeacon(endpoint, new Blob([body], { type: 'application/json' }));
-    fetch(endpoint, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
+    const body = JSON.stringify({ deck, sessionId, eventId: uuid(), eventType, ...detail });
+    // A safelisted content type avoids an unload-time CORS preflight from
+    // the presentation's opaque sandbox origin. The server still validates JSON.
+    if (beacon && navigator.sendBeacon) {
+      try { if (navigator.sendBeacon(endpoint, new Blob([body], { type: 'text/plain;charset=UTF-8' }))) return; }
+      catch { /* Fall back if the browser refuses to queue the beacon. */ }
+    }
+    fetch(endpoint, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body, keepalive: true }).catch(() => {});
   };
   const slideIndex = () => {
     const explicit = slides.findIndex(slide => slide.classList.contains('active'));

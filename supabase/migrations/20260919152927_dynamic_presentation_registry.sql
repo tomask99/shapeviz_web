@@ -39,23 +39,6 @@ comment on column public.presentation_projects.content is
 create index presentation_projects_status_idx
   on public.presentation_projects (status, updated_at desc);
 
-update public.presentation_projects set
-  source_type = 'standalone',
-  client = 'Milenium',
-  title = 'Social Media & Visual Direction',
-  presentation_date = 'September 2026',
-  description = 'Visual direction proposal for Milenium.',
-  locale = 'sk',
-  status = 'draft',
-  source_bucket = 'presentation-source',
-  source_path = 'milenium/index.html',
-  media_bucket = 'presentation-media',
-  media_prefix = 'milenium/',
-  cover_path = 'milenium/assets/generated/image-29e6f188b6566c00.png',
-  content = '{}'::jsonb,
-  published_at = null
-where deck_slug = 'milenium';
-
 alter table public.presentation_projects
   alter column client set not null,
   alter column title set not null,

@@ -1,8 +1,9 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { readJson, requestOrigin } from '../http.js';
 import { transformDeck } from './html.js';
 import { getPrivatePresentationSource, uploadStorageObject, slugPattern } from '../presentations/remote.js';
 import { renderPresentationTemplate } from '../presentations/page.js';
+import { removeProjectFiles, storageScopes, referencedMedia } from './storage.js';
 
 const fail = (status, message) => Object.assign(new Error(message), {status});
 const fields = 'deck_slug,client,title,status,source_type,template_key,is_template,template_match,parent_slug,slide_count,analytics_enabled,updated_at';
@@ -47,17 +48,20 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
     return rows[0];
   }
   async function source(p) {return p.source_type === 'template' ? renderPresentationTemplate(p) : getPrivatePresentationSource(p,{env,send});}
-  async function saveDeck(body, html, parent=null, sourcePath=null) {
+  async function saveDeck(body, html, parent=null, scopes=[]) {
     const slug=key(body.slug), client=text(body.client), title=text(body.title);
     if (!client || !title) throw fail(400,'Enter the company and presentation title.');
+    if(body.isTemplate && !text(body.match)) throw fail(400,'Enter the company name to replace in this template.');
     const existing=await call(`/rest/v1/presentation_projects?deck_slug=eq.${slug}&select=deck_slug`);
     if (existing.length) throw fail(409,'This URL is already in use. Choose another name.');
     const prepared=transformDeck(html,{slug});
-    const object=sourcePath || `${slug}/${randomUUID()}/index.html`;
+    const uploadSource=scopes.find(s=>s.bucket==='presentation-source')?.path;
+    const object=`${slug}/${uploadSource ? createHash('sha256').update(uploadSource).digest('hex').slice(0,32) : randomUUID()}/index.html`;
     await uploadStorageObject({bucket:'presentation-source',object,body:prepared.html,contentType:'text/html',env,send});
     const status=body.isTemplate ? 'draft' : body.publish === true ? 'published' : 'draft';
     const record={deck_slug:slug,client,title,presentation_date:new Date().toISOString().slice(0,10),description:title,locale:'en',status,source_type:'standalone',source_bucket:'presentation-source',source_path:object,access_mode:'unlisted',analytics_enabled:true,slide_count:prepared.slides,is_template:body.isTemplate === true,template_match:body.isTemplate ? text(body.match) : null,parent_slug:parent,published_at:status==='published' ? new Date().toISOString() : null,content:{}};
     if(record.is_template && !record.template_match) throw fail(400,'Enter the company name to replace in this template.');
+    record.content._storageScopes=[...scopes,...referencedMedia(prepared.html,root)];
     const rows=await call('/rest/v1/presentation_projects',{method:'POST',body:record,headers:{Prefer:'return=representation'}});
     return {project:rows[0],url:`/p/${slug}`};
   }
@@ -101,7 +105,10 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
       if(action==='finalize') {
         if(!/^uploads\/[a-f0-9-]+\/[a-f0-9-]{36}\/source\.html$/.test(body.object||'')||!body.object.startsWith(`uploads/${user.id}/`)) throw fail(400,'Invalid upload source.');
         const html=await getPrivatePresentationSource({source_bucket:'presentation-source',source_path:body.object},{env,send});
-        reply(201,await saveDeck(body,html));return;
+        const existing=await call(`/rest/v1/presentation_projects?deck_slug=eq.${key(body.slug)}&select=*`);
+        if(existing[0]?.content?._storageScopes?.some(s=>s.bucket==='presentation-source' && s.path===body.object)) {reply(200,{project:existing[0],url:`/p/${body.slug}`});return;}
+        const prefix=body.object.slice(0,body.object.lastIndexOf('/')+1);
+        reply(201,await saveDeck(body,html,null,[{bucket:'presentation-source',path:body.object},{bucket:'presentation-media',prefix}]));return;
       }
       if(action==='variant' || action==='preview') {
         const original=await project(body.template);
@@ -111,16 +118,20 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
         const transformed=transformDeck(await source(original),{from,company,slug:key(body.slug),analytics:false});
         if(!transformed.replacements) throw fail(400,'No matching company text was found. Check the original name.');
         if(action==='preview') reply(200,{...transformed,html:transformed.html.replace(/<base\b[^>]*>/gi,'')});
-        else reply(201,await saveDeck({...body,isTemplate:false},transformed.html,original.deck_slug));
+        else reply(201,await saveDeck({...body,isTemplate:false},transformed.html,original.deck_slug,storageScopes(original).filter(s=>s.bucket==='presentation-media')));
         return;
       }
       if(action==='delete') {
         const p=await project(body.slug);
         if(body.confirmSlug!==p.deck_slug) throw fail(400,'Confirm the presentation URL name before deleting.');
-        // FK cascades remove this deck's sessions/events; variants retain their own HTML.
+        if (p.source_type==='standalone' && !p.content?._storageScopes && !p.media_prefix) throw fail(409,'This older presentation needs storage ownership metadata before it can be deleted.');
+        await call(`/rest/v1/presentation_projects?deck_slug=eq.${p.deck_slug}`,{method:'PATCH',body:{status:'archived'}});
+        let cleanup;
+        try { cleanup=await removeProjectFiles(p,call); }
+        catch { throw fail(502,'File cleanup did not finish. The presentation is archived. Retry Delete to finish removing its files.'); }
+        // Only remove the retryable registry record after Storage succeeds.
         await call(`/rest/v1/presentation_projects?deck_slug=eq.${p.deck_slug}`,{method:'DELETE'});
-        // Media can be shared by independent variants, so retain their assets.
-        reply(200,{ok:true});return;
+        reply(200,{ok:true,...cleanup});return;
       }
       if(action==='update') {
         const p=await project(body.slug), patch={};

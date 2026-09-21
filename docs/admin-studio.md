@@ -33,7 +33,7 @@ media is the recommended format. JavaScript-generated filesystem paths or
 third-party APIs may need adaptation before upload. Logos inside images are
 not automatically edited.
 
-For a template, specify original company text, e.g. `MILENIUM`. Create a
+For a template, specify the original company text. Create a
 variant, enter the new company, title and URL slug, then review the interactive
 preview. Replacement is case-insensitive and preserves uppercase/lowercase
 style. It changes HTML text and text labels; it does not rewrite asset URLs,
@@ -46,8 +46,10 @@ and converting existing decks into templates. Archived and draft links return
 
 Delete removes a presentation's registry entry and its sessions/events after
 confirming the exact URL name. Its link returns 404. Existing variants stay
-independent. Stored source revisions and shared media are retained so deleting
-a template cannot break a variant's assets. The initial demonstration decks
+independent. Delete also removes its uploaded HTML and owned Storage files using
+the Storage API. Shared media remains until the last referencing presentation is
+deleted. Storage failure keeps the registry record so deletion can be retried.
+The initial demonstration decks
 and their statistics have been removed from the live registry.
 
 ## Statistics
@@ -64,6 +66,13 @@ tabs and inactivity after 60 seconds are excluded; visible video playback
 counts as activity. Tracking is best effort and may be blocked by visitors.
 Older events have no per-slide duration and recorded only the first slide
 visit in a session. No historical repeat views or durations are fabricated.
+
+Visits are anonymous and work across devices and networks; no owner login is
+required. The tracker supports browsers without `crypto.randomUUID`, and sends
+validated JSON as `text/plain` to avoid a CORS preflight when a mobile browser
+backgrounds the sandboxed presentation. Rejected beacons fall back to a keepalive
+request. Presentation CSP explicitly allows the delivery origin for compatibility
+with WebKit's sandbox handling. Refresh the dashboard to fetch new statistics.
 
 ## Isolation
 

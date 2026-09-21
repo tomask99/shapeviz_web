@@ -47,11 +47,11 @@ async function serveFile(req, res, filename, pathname, extraHeaders = {}) {
   } catch { res.writeHead(404).end('Not found'); }
 }
 
-export function createApp({ publicDir = path.join(root, 'public'), presentationsDir = path.join(root, 'presentations'), builtPresentations = false, env = process.env, send = fetch } = {}) {
+export function createApp({ publicDir = path.join(root, 'public'), presentationsDir = path.join(root, 'presentations'), builtPresentations = false, templatesRoot, env = process.env, send = fetch } = {}) {
   const contact = createContactHandler({ env, send });
   const admin = createAdminHandler({ env, send });
-  const presentationEvent = createPresentationEventHandler({ env, send, presentationsRoot: path.join(root, 'presentations') });
-  const presentationPage = createPresentationPageHandler({ env, send });
+  const presentationEvent = createPresentationEventHandler({ env, send, presentationsRoot: presentationsDir });
+  const presentationPage = createPresentationPageHandler({ env, send, ...(templatesRoot ? { templatesRoot } : {}) });
   return http.createServer(async (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');

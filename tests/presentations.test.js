@@ -28,28 +28,11 @@ async function withServer(options, run) {
   try { await run(origin); } finally { await new Promise(resolve => server.close(resolve)); }
 }
 
-test('serves Milenium at a canonical isolated route with protected metadata', async () => {
+test('ships without a built-in presentation', async () => {
   await withServer({ env: {} }, async origin => {
     const response = await fetch(`${origin}/p/milenium`);
-    const html = await response.text();
-    assert.equal(response.status, 200);
-    assert.match(html, /Milenium/);
-    assert.doesNotMatch(html, /site-header/);
-    assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive');
-    assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
-    assert.match(response.headers.get('content-security-policy'), /'unsafe-inline'/);
-    assert.equal((await fetch(`${origin}/p/milenium/`, { redirect: 'manual' })).status, 308);
-    assert.equal((await fetch(`${origin}/p/milenium/project.json`)).status, 404);
-    assert.equal((await fetch(`${origin}/p/unknown-client`)).status, 404);
-
-    const project = JSON.parse(await readFile(path.join(repository, 'presentations/milenium/project.json'), 'utf8'));
-    const cover = await fetch(`${origin}/p/milenium/${project.cover}`);
-    assert.equal(cover.status, 200);
-    assert.match(cover.headers.get('content-type'), /^image\//);
-    const videoName = (await import('node:fs/promises')).readdir(path.join(repository, 'presentations/milenium/assets/generated')).then(files => files.find(file => file.endsWith('.mp4')));
-    const clip = await fetch(`${origin}/p/milenium/assets/generated/${await videoName}`, { headers: { Range: 'bytes=0-99' } });
-    assert.equal(clip.status, 206);
-    assert.equal((await clip.arrayBuffer()).byteLength, 100);
+    assert.equal(response.status, 404);
+    assert.deepEqual(await discoverProjects(path.join(repository, 'presentations')), []);
   });
 });
 
@@ -78,12 +61,12 @@ test('registry rejects traversal, protected public media, and missing assets', a
   await assert.rejects(validateProject(base, directory), /does not exist/);
 });
 
-test('analytics is truthful when unconfigured and validates before storage', async () => {
-  await withServer({ env: {} }, async origin => {
-    const response = await fetch(`${origin}/api/presentation-events`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(event) });
+test('analytics reports disabled for the local fixture and validates before storage', async () => {
+  await withServer({ env: {}, presentationsDir: path.join(repository, 'tests/fixtures/presentations') }, async origin => {
+    const response = await fetch(`${origin}/api/presentation-events`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...event, deck: 'test-company' }) });
     assert.equal(response.status, 204);
-    assert.equal(response.headers.get('x-analytics-status'), 'not-configured');
-    const invalid = await fetch(`${origin}/api/presentation-events`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...event, slideIndex: 5000 }) });
+    assert.equal(response.headers.get('x-analytics-status'), 'disabled');
+    const invalid = await fetch(`${origin}/api/presentation-events`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...event, deck: 'test-company', slideIndex: 5000 }) });
     assert.equal(invalid.status, 400);
   });
 });
@@ -110,9 +93,31 @@ test('analytics writes only through the configured server-side RPC', async () =>
   assert.equal(payload.p_user_agent_category, 'desktop');
 });
 
+test('sandboxed mobile beacons accept JSON as text without accepting foreign origins or invalid events', async () => {
+  const writes = [];
+  const env = { SUPABASE_URL: 'https://shapeviz.supabase.co', SUPABASE_SECRET_KEY: 'server-secret' };
+  await withServer({ env, send: async (url, options) => {
+    if (url.includes('/presentation_projects?')) return Response.json([{ status: 'published', analytics_enabled: true }]);
+    writes.push(JSON.parse(options.body));
+    return new Response(null, { status: 204 });
+  } }, async origin => {
+    const post = (body, source = 'null') => fetch(`${origin}/api/presentation-events`, {
+      method: 'POST', headers: { Origin: source, 'Content-Type': 'text/plain;charset=UTF-8', 'User-Agent': 'iPhone Mobile' },
+      body: JSON.stringify(body)
+    });
+    const response = await post(event);
+    assert.equal(response.headers.get('x-analytics-status'), 'recorded');
+    assert.equal(response.headers.get('access-control-allow-origin'), 'null');
+    assert.equal((await post(event, 'https://foreign.example')).status, 403);
+    assert.equal((await post({ ...event, slideIndex: 5000 })).status, 400);
+    assert.equal(writes.length, 1);
+    assert.equal(writes[0].p_user_agent_category, 'mobile');
+  });
+});
+
 test('renders a remote template instance with escaped client content', async () => {
   const project = {
-    deck_slug: 'minotti', source_type: 'template', template_key: 'shapeviz-introduction-v1',
+    deck_slug: 'minotti', source_type: 'template', template_key: 'test-template',
     client: 'Minotti <script>', title: 'A visual partnership', presentation_date: 'September 2026',
     description: 'Tailored deck', locale: 'en', status: 'published', access_mode: 'unlisted', analytics_enabled: true,
     content: {
@@ -120,7 +125,7 @@ test('renders a remote template instance with escaped client content', async () 
       focus: 'Visual direction and CGI.', cta: 'Let’s talk.'
     }
   };
-  const html = await renderPresentationTemplate(project);
+  const html = await renderPresentationTemplate(project, { templatesRoot: path.join(repository, 'tests/fixtures/presentation-templates') });
   assert.match(html, /Minotti &lt;script&gt;/);
   assert.doesNotMatch(html, /Minotti <script>/);
   assert.match(html, /data-deck="minotti"/);
@@ -129,21 +134,21 @@ test('renders a remote template instance with escaped client content', async () 
 test('serves a Supabase template from a clean remote presentation route', async () => {
   const env = { SUPABASE_URL: 'https://shapeviz.supabase.co', SUPABASE_SECRET_KEY: 'server-secret', PRESENTATIONS_REMOTE: 'true' };
   const project = {
-    deck_slug: 'minotti', source_type: 'template', template_key: 'shapeviz-introduction-v1', client: 'Minotti',
+    deck_slug: 'minotti', source_type: 'template', template_key: 'test-template', client: 'Minotti',
     title: 'A visual partnership', presentation_date: 'September 2026', description: 'Tailored deck', locale: 'en',
     status: 'published', access_mode: 'unlisted', analytics_enabled: true, content: {
       headline: 'A visual partnership.', intro: 'Prepared for Minotti.', opportunity: 'Build desire.',
       focus: 'Visual direction and CGI.', cta: 'Let’s talk.'
     }
   };
-  await withServer({ env, send: async url => {
+  await withServer({ env, templatesRoot: path.join(repository, 'tests/fixtures/presentation-templates'), send: async url => {
     if (url.includes('/presentation_projects?')) return Response.json([project]);
     throw new Error(`Unexpected remote request: ${url}`);
   } }, async origin => {
     const response = await fetch(`${origin}/p/minotti`);
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive');
-    assert.match(await response.text(), /Prepared for Minotti/);
+    assert.match(await response.text(), /A visual partnership/);
   });
 });
 

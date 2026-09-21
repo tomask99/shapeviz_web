@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="{{ project.locale }}">
+<head><meta charset="utf-8"><title>{{ project.client }} presentation</title></head>
+<body>
+  <main data-deck="{{ project.slug }}">
+    <section class="slide active"><h1>{{ content.headline }}</h1></section>
+    <section class="slide"><h2>{{ content.opportunity }}</h2></section>
+  </main>
+  <nav><button id="next" type="button">Next</button><span id="count">01 / 02</span></nav>
+  <script>
+    const slides = [...document.querySelectorAll('.slide')];
+    let current = 0;
+    document.querySelector('#next').addEventListener('click', () => {
+      slides[current].classList.remove('active');
+      current = (current + 1) % slides.length;
+      slides[current].classList.add('active');
+      document.querySelector('#count').textContent = String(current + 1).padStart(2, '0') + ' / 02';
+    });
+    document.addEventListener('keydown', event => { if (event.key === 'ArrowRight') document.querySelector('#next').click(); });
+  </script>
+<script src="/presentation-system/tracker.js" data-deck="{{ project.slug }}" data-analytics="{{ project.analytics }}" defer></script>
+</body>
+</html>

@@ -226,6 +226,3 @@ $$;
 
 revoke all on function public.delete_expired_presentation_events(interval) from public, anon, authenticated;
 grant execute on function public.delete_expired_presentation_events(interval) to service_role;
-
-insert into public.presentation_settings (deck_slug, access_mode, analytics_enabled)
-values ('milenium', 'unlisted', true);

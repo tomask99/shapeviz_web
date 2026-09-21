@@ -8,7 +8,7 @@ export async function uploadPresentation(file, companions, api, progress) {
   async function upload(blob,name) {
     if(blob.size>50*1024*1024) throw new Error(`${name} exceeds the 50 MB media limit. Compress this asset first.`);
     const signed=await api('sign-upload',{filename:name,uploadId});uploadId=signed.uploadId;
-    const response=await fetch(signed.url,{method:'PUT',headers:{'Content-Type':blob.type || 'application/octet-stream'},body:blob});
+    const response=await fetch(signed.url,{method:'PUT',headers:{'Content-Type':blob.type || 'application/octet-stream'},body:blob,signal:AbortSignal.timeout(300000)});
     if(!response.ok) throw new Error(`Could not upload ${name}. Please try again.`);
     progress(`Uploaded ${++uploaded} files…`);
     return signed;

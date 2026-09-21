@@ -42,9 +42,9 @@ Set `PRESENTATIONS_REMOTE=true` during the Vercel build to omit local deck copie
 from `dist`. The local sources remain available until their uploads are verified.
 
 `scripts/create-template-presentation.js` validates a template descriptor
-against the template schema and creates or updates one client instance. The
-first shared template is `shapeviz-introduction-v1`. All inserted strings are
-HTML escaped by the renderer.
+against the template schema and creates or updates one client instance. Shared
+templates are versioned under `presentation-templates/`. All inserted strings
+are HTML escaped by the renderer.
 
 The owner interface at `/adminlogin` supports HTML uploads, template variants,
 visibility changes and analytics. The CLI remains available for assistant-driven

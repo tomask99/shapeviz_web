@@ -58,7 +58,7 @@ export function createPresentationEventHandler({ env = process.env, send = fetch
       if (req.method === 'OPTIONS') { res.writeHead(204).end(); return; }
     }
     if (req.method !== 'POST') { res.writeHead(405, { Allow: 'POST' }).end(); return; }
-    if (!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type'] || '')) { json(res, 415, { ok: false }); return; }
+    if (!/^(?:application\/json|text\/plain)(?:\s*;|$)/i.test(req.headers['content-type'] || '')) { json(res, 415, { ok: false }); return; }
 
     const expectedOrigin = requestOrigin(req, env);
     if (req.headers.origin && req.headers.origin !== 'null' && expectedOrigin && req.headers.origin !== expectedOrigin) { json(res, 403, { ok: false }); return; }

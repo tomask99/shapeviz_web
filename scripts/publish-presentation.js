@@ -5,7 +5,8 @@ import { validateProject } from '../src/presentations/registry.js';
 import { preparePublishedHtml } from '../src/presentations/publish-html.js';
 import { hasSupabase, publicMediaBase, uploadStorageObject, upsertPresentationProject } from '../src/presentations/remote.js';
 
-const directory = path.resolve(process.argv[2] || 'presentations/milenium');
+if (!process.argv[2]) throw new Error('Pass a presentation directory, for example: presentations/company-x');
+const directory = path.resolve(process.argv[2]);
 const dryRun = process.argv.includes('--dry-run');
 const metadata = JSON.parse(await readFile(path.join(directory, 'project.json'), 'utf8'));
 const project = await validateProject(metadata, directory);

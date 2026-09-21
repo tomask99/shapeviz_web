@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getPresentationProject, getPrivatePresentationSource, hasSupabase, slugPattern } from './remote.js';
+import { requestOrigin } from '../http.js';
 
 const moduleRoot = path.dirname(fileURLToPath(import.meta.url));
 const defaultTemplatesRoot = path.resolve(moduleRoot, '../../presentation-templates');
@@ -63,11 +64,17 @@ export function createPresentationPageHandler({ env = process.env, send = fetch,
         ? await renderPresentationTemplate(project, { templatesRoot })
         : await getPrivatePresentationSource(project, { env, send });
       const etag = `"${createHash('sha256').update(html).digest('hex').slice(0, 24)}"`;
+      // Explicit sources also work in WebKit versions that treat 'self' as
+      // the sandbox's opaque origin. Keep the document sandboxed.
+      const pageOrigin = new URL(requestOrigin(req, env)).origin;
+      const pageCsp = csp.replaceAll("'self'", `'self' ${pageOrigin}`)
+        .replace("script-src 'self'", `script-src 'self' ${new URL(env.SUPABASE_URL).origin}`)
+        .replace("style-src 'self'", `style-src 'self' ${new URL(env.SUPABASE_URL).origin}`);
       const headers = {
         'Content-Type': 'text/html; charset=utf-8',
         'Content-Length': Buffer.byteLength(html),
         'Cache-Control': 'private, no-store',
-        'Content-Security-Policy': "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox; " + csp.replace("script-src 'self'", `script-src 'self' ${new URL(env.SUPABASE_URL).origin}`).replace("style-src 'self'", `style-src 'self' ${new URL(env.SUPABASE_URL).origin}`),
+        'Content-Security-Policy': "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox; " + pageCsp,
         'Referrer-Policy': 'no-referrer',
         'X-Content-Type-Options': 'nosniff',
         'X-Frame-Options': 'DENY',
