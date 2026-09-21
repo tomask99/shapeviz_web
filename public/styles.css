@@ -78,6 +78,16 @@ main, .site-footer { position: relative; z-index: 2; }
 .services { margin-top: 48px; max-width: 580px; }
 .services > div { display: flex; gap: 26px; align-items: baseline; padding-block: 17px; border-top: 1px solid var(--line); font-size: 17px; }
 .services > div:last-child { border-bottom: 1px solid var(--line); }
+.digital { padding-bottom: var(--space); }
+.digital-title { font-size: clamp(40px, 8.6vw, 142px); line-height: .92; letter-spacing: -.06em; }
+.digital-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: clamp(32px, 7vw, 120px); margin-top: 48px; }
+.digital-copy p:first-child { font-size: clamp(21px, 2vw, 29px); line-height: 1.4; letter-spacing: -.025em; }
+.digital-copy p + p { max-width: 570px; margin-top: 24px; color: var(--muted); font-size: 16px; line-height: 1.65; }
+.digital-link { display: inline-flex; gap: 24px; align-items: center; min-height: 48px; margin-top: 28px; border-bottom: 1px solid var(--accent); }
+.digital-link span { color: var(--accent); font-size: 24px; }
+.digital-link:hover { color: var(--accent); }
+.digital-services { margin-top: 0; max-width: none; }
+@media (max-width: 900px) { .digital-grid { grid-template-columns: 1fr; } }
 .work { padding-bottom: var(--space); }
 .work-heading, .clients-intro { display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; margin-bottom: 55px; }
 .work-heading p, .clients-intro p { color: var(--muted); font-size: 15px; line-height: 1.6; padding-bottom: 5px; }
