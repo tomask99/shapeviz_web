@@ -55,12 +55,17 @@ and their statistics have been removed from the live registry.
 ## Statistics
 
 Telegram notifications can be enabled with server-only `TELEGRAM_BOT_TOKEN`,
-`TELEGRAM_CHAT_ID` and an HTTPS `SITE_URL`. Send `/start` to the bot first.
+`TELEGRAM_CHAT_ID`. Send `/start` to the bot first.
 Each recorded `session_started` claims its session atomically before sending a
 message containing the presentation name and link. Slide changes and duplicate
 events do not send additional messages. Delivery is best effort; failures are
 logged without secrets and do not interrupt analytics. Resetting statistics
-deletes these session claims as well. No visitor identity is sent to Telegram.
+deletes these session claims as well. Notifications include the presentation name,
+an estimated device/OS from the user agent, and approximate city/country from
+Vercel IP geolocation headers (when available), without a presentation link.
+VPNs, mobile networks and browser user agents can make these estimates inaccurate;
+missing information is labeled unavailable. No IP address, exact coordinates or
+raw user agent is sent to Telegram, and location is not stored in the database.
 
 Choose 7, 30 or 90 days. The dashboard shows sessions, active time, average
 active time and total slide views, plus daily visits. Presentation details

@@ -107,7 +107,7 @@ export function createPresentationEventHandler({ env = process.env, send = fetch
       })
     }).catch(() => null);
     if (!response?.ok) { res.writeHead(204, { 'X-Analytics-Status': 'unavailable' }).end(); return; }
-    await notifyPresentationOpened(event,project,{env,send});
+    await notifyPresentationOpened(event,project,{env,send,headers:req.headers});
     res.writeHead(204, { 'X-Analytics-Status': 'recorded' }).end();
   };
 }
