@@ -127,6 +127,14 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
         else reply(201,await saveDeck({...body,isTemplate:false},transformed.html,original.deck_slug,storageScopes(original).filter(s=>s.bucket==='presentation-media')));
         return;
       }
+      if(action==='reset-statistics') {
+        const p=await project(body.slug);
+        if(body.confirmSlug!==p.deck_slug)throw fail(400,'Confirm the presentation URL name before resetting statistics.');
+        // Events reference sessions with ON DELETE CASCADE: one scoped request
+        // atomically clears visits, slide/video events, and accumulated time.
+        await call(`/rest/v1/presentation_sessions?deck_slug=eq.${p.deck_slug}`,{method:'DELETE'});
+        reply(200,{ok:true});return;
+      }
       if(action==='delete') {
         const p=await project(body.slug);
         if(body.confirmSlug!==p.deck_slug) throw fail(400,'Confirm the presentation URL name before deleting.');
