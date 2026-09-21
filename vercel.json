@@ -5,6 +5,9 @@
   "outputDirectory": "dist",
   "cleanUrls": false,
   "functions": {
+    "api/site-events.js": {
+      "maxDuration": 30
+    },
     "api/admin.js": {
       "includeFiles": "presentation-templates/**",
       "maxDuration": 60

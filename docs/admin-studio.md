@@ -87,6 +87,34 @@ backgrounds the sandboxed presentation. Rejected beacons fall back to a keepaliv
 request. Presentation CSP explicitly allows the delivery origin for compatibility
 with WebKit's sandbox handling. Refresh the dashboard to fetch new statistics.
 
+## Website traffic
+
+The homepage loads `/site-tracker.js` and records anonymous per-tab visits through
+`/api/site-events` into separate `website_sessions`. Refreshes reuse a session;
+30 minutes without activity starts another. Session storage disabled by a browser
+can cause refreshes to count as new visits. These are not unique visitor counts.
+Active seconds are cumulative and idempotent, counting visible time only until
+60 seconds without input. Hidden tabs do not count; network delivery is best effort.
+
+The owner-only `website-stats` action supplies a separate dashboard for 7/30/90
+UTC calendar days, totals, daily visits, devices, referral domains and approximate
+locations. Empty and unavailable states are explicit. Historical traffic is not
+backfilled. Referrals contain only the hostname, never paths or query parameters.
+IP addresses and raw user agents are not stored. Device and city estimates may
+be inaccurate. DNT/GPC browsers and common bot user agents are excluded.
+
+Before starting, the tracker checks `tracking-status` under the existing admin
+cookie path; a verified signed-in owner is excluded without exposing auth cookies
+to public JavaScript. This check happens at page load (reload an already-open page
+after signing in). Auth service failures skip tracking rather than counting owners.
+The public event API is best-effort analytics, not an anti-fraud counter; rate limits
+are per server instance. Database access and RPC execution are service-role only.
+
+Each first database insert triggers one Telegram website notification using the
+existing bot configuration. Concurrent retries and refreshes do not trigger another
+notification. Delivery failure does not break the website and is not retried, avoiding
+duplicate messages on uncertain delivery. No extra Telegram credentials are needed.
+
 ## Isolation
 
 Owner sessions use HttpOnly, SameSite=Strict cookies scoped to `/api/admin`

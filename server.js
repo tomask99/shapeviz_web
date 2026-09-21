@@ -4,6 +4,7 @@ import { stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createContactHandler } from './src/contact.js';
+import { createWebsiteEventHandler } from './src/website/events.js';
 import { createAdminHandler } from './src/admin/handler.js';
 import { createPresentationEventHandler } from './src/presentations/events.js';
 import { createPresentationPageHandler } from './src/presentations/page.js';
@@ -49,6 +50,7 @@ async function serveFile(req, res, filename, pathname, extraHeaders = {}) {
 
 export function createApp({ publicDir = path.join(root, 'public'), presentationsDir = path.join(root, 'presentations'), builtPresentations = false, templatesRoot, env = process.env, send = fetch } = {}) {
   const contact = createContactHandler({ env, send });
+  const websiteEvent = createWebsiteEventHandler({ env, send });
   const admin = createAdminHandler({ env, send });
   const presentationEvent = createPresentationEventHandler({ env, send, presentationsRoot: presentationsDir });
   const presentationPage = createPresentationPageHandler({ env, send, ...(templatesRoot ? { templatesRoot } : {}) });
@@ -61,6 +63,7 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
     try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
     catch { res.writeHead(400).end('Bad request'); return; }
     if (pathname === '/api/contact') { await contact(req, res); return; }
+    if (pathname === '/api/site-events') { await websiteEvent(req, res); return; }
     if (pathname === '/api/admin') { await admin(req, res); return; }
     if (pathname === '/adminlogin' || pathname === '/admin') {
       res.setHeader('X-Robots-Tag', 'noindex, nofollow');

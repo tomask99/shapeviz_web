@@ -4,7 +4,7 @@ function singleLine(value, limit=150) {
   return typeof value==='string' ? value.replace(/[\u0000-\u001f\u007f-\u009f]/g,' ').trim().slice(0,limit) : '';
 }
 
-function deviceLabel(headers) {
+export function deviceLabel(headers) {
   const ua=singleLine(headers['user-agent'],2000);
   if(/ipad/i.test(ua))return 'iPad (tablet)';
   if(/iphone/i.test(ua))return 'iPhone (mobil)';
@@ -18,7 +18,7 @@ function deviceLabel(headers) {
   return 'Neznáme zariadenie';
 }
 
-function locationLabel(headers, env) {
+export function locationLabel(headers, env) {
   // Only use platform geolocation on Vercel, never caller-supplied event data.
   if(env.VERCEL!=='1')return 'Nedostupná';
   let city=singleLine(headers['x-vercel-ip-city']);
@@ -52,4 +52,18 @@ export async function notifyPresentationOpened(event, project, {env, send=fetch,
     // automatically, preventing duplicate notifications after a timeout.
     console.warn('Telegram presentation notification failed');
   }
+}
+
+// The website insert RPC returns true only once, including concurrent retries.
+export async function notifyWebsiteOpened({env, send=fetch, headers={}}) {
+  if(!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID)return;
+  try {
+    const response=await send(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN.trim()}/sendMessage`,{
+      method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(8000),
+      body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID,
+        text:`🌐 Niekto otvoril tvoj web!\n\n✨ SHAPEVIZ\n📱 Zariadenie: ${deviceLabel(headers)}\n📍 Približná poloha: ${locationLabel(headers,env)}`,
+        link_preview_options:{is_disabled:true}})
+    });
+    if(!response.ok || !(await response.json()).ok)throw new Error('delivery failed');
+  } catch { console.warn('Telegram website notification failed'); }
 }

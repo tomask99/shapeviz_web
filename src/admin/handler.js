@@ -76,7 +76,7 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
       if(req.method==='POST' && req.headers.origin !== origin) throw fail(403,'Request origin rejected.');
       const url=new URL(req.url,'http://localhost');
       const action=url.searchParams.get('action') || 'me';
-      const readActions=['me','list','stats'];
+      const readActions=['me','list','stats','website-stats','tracking-status'];
       if(req.method==='GET' && !readActions.includes(action)) throw fail(405,'Use POST for this action.');
       if(req.method==='POST' && !/^application\/json\b/i.test(req.headers['content-type']||'')) throw fail(415,'JSON is required.');
       const body=req.method==='POST' ? await readJson(req,100_000) : {};
@@ -87,7 +87,17 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
         } catch(error) {throw fail(error.status===429 ? 429 : 401,'Sign-in failed. Check your details or setup link.');}
         await owner(auth.user);cookies(res,auth);reply(200,{email:auth.user.email});return;
       }
+      if(action==='tracking-status') {
+        try {await session(req,res);reply(200,{exclude:true});}
+        catch(error) {reply(200,{exclude:![401,403].includes(error.status)});}
+        return;
+      }
       const {user,token}=await session(req,res);
+      if(action==='website-stats') {
+        const days=Number(url.searchParams.get('days')||30);
+        if(![7,30,90].includes(days))throw fail(400,'Invalid date range.');
+        reply(200,await call('/rest/v1/rpc/website_admin_stats',{method:'POST',body:{p_days:days}}));return;
+      }
       if(action==='me') {reply(200,{email:user.email});return;}
       if(action==='logout') {await call('/auth/v1/logout',{method:'POST',token}).catch(()=>{});cookies(res,null);reply(200,{ok:true});return;}
       if(action==='password') {if(typeof body.password!=='string'||body.password.length<12||body.password.length>128) throw fail(400,'Use a password with 12–128 characters.');await call('/auth/v1/user',{method:'PUT',token,body:{password:body.password}});reply(200,{ok:true});return;}

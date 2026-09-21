@@ -1,0 +1,9 @@
+#website-analytics .metrics { grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 24px; }
+#website-analytics .two-columns { margin-top: 32px; gap: 32px; }
+#website-analytics .two-columns > section { min-width: 0; }
+#website-analytics .fine { overflow-wrap: anywhere; }
+#website-analytics > section { margin-top: 24px; }
+@media (max-width: 600px) {
+  #website-analytics .metrics { grid-template-columns: 1fr; }
+  #website-analytics .section-title { align-items: flex-start; flex-direction: column; gap: 12px; }
+}
