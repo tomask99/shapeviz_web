@@ -8,7 +8,7 @@ const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const eventTypes = new Set([
   'session_started', 'slide_viewed', 'slide_reached_max',
-  'video_started', 'video_completed', 'session_heartbeat', 'session_ended'
+  'video_started', 'video_completed', 'session_heartbeat', 'session_ended', 'website_clicked'
 ]);
 
 function json(res, status, body, headers = {}) {

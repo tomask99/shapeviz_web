@@ -13,6 +13,7 @@
   };
   const sessionId = uuid();
   const endpoint = new URL('/api/presentation-events', script.src).href;
+  const websiteOrigins = new Set([new URL(script.src).origin, 'https://shapevizweb.vercel.app']);
   const slides = [...document.querySelectorAll('[data-slide], .slide')];
   const videos = [...document.querySelectorAll('video')];
   const completedVideos = new Set();
@@ -45,6 +46,19 @@
     });
     return best || 1;
   };
+  // Delegation supports existing decks and links added dynamically by future decks.
+  const recordWebsiteClick = event => {
+    if (!event.isTrusted || event.defaultPrevented || (event.type === 'click' ? event.button !== 0 : event.button !== 1)) return;
+    const anchor = event.target.closest?.('a[href]');
+    if (!anchor || anchor.hasAttribute('download')) return;
+    let destination;
+    try { destination = new URL(anchor.href, document.baseURI); } catch { return; }
+    if (!websiteOrigins.has(destination.origin) || /^\/(?:p|api|admin|adminlogin|presentation-system)(?:\/|$)/.test(destination.pathname)) return;
+    send('website_clicked', { slideIndex: slideIndex() }, true);
+  };
+  // Bubble after the link's handlers, so cancelled navigation is not counted.
+  document.addEventListener('click', recordWebsiteClick);
+  document.addEventListener('auxclick', recordWebsiteClick);
   const accumulate = () => {
     const now = performance.now();
     const playing = videos.some(video => !video.paused && !video.ended);
