@@ -54,6 +54,14 @@ and their statistics have been removed from the live registry.
 
 ## Statistics
 
+Telegram notifications can be enabled with server-only `TELEGRAM_BOT_TOKEN`,
+`TELEGRAM_CHAT_ID` and an HTTPS `SITE_URL`. Send `/start` to the bot first.
+Each recorded `session_started` claims its session atomically before sending a
+message containing the presentation name and link. Slide changes and duplicate
+events do not send additional messages. Delivery is best effort; failures are
+logged without secrets and do not interrupt analytics. Resetting statistics
+deletes these session claims as well. No visitor identity is sent to Telegram.
+
 Choose 7, 30 or 90 days. The dashboard shows sessions, active time, average
 active time and total slide views, plus daily visits. Presentation details
 show per-slide repeat views, active seconds, unique slides per session,

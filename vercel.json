@@ -10,6 +10,7 @@
       "maxDuration": 60
     },
     "api/presentation-events.js": {
+      "maxDuration": 30,
       "includeFiles": "presentations/*/project.json"
     },
     "api/presentation-page.js": {
