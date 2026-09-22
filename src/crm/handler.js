@@ -9,6 +9,16 @@ import {handleReplies,replyActions} from './replies.js';
 import {instant} from './followups.js';
 import {opportunityValueInput} from '../../public/admin/crm-value.js';
 import {LOST_REASONS} from '../../public/admin/crm-outcome.js';
+import {actionCenterInput} from './action-center.js';
+import {recentActivityQuery,recentActivityPage} from './recent-activity.js';
+import {handleSuggestions} from './suggestions.js';
+import {handleRecipients,recipientActions} from './recipients.js';
+import {handleSavedViews,savedViewActions} from './saved-views.js';
+import {websiteMetadata} from './website-metadata.js';
+import {handleClients,clientActions} from './clients.js';
+import {handleOperations,operationActions} from './operations.js';
+import {filterConfig,FILTER_CHOICES} from '../../public/admin/crm-filter-config.js';
+import {normalizedDomain,normalizedName} from '../../public/admin/crm-normalize.js';
 
 /** Validate the editable company fields; never accept owner IDs or audit timestamps. */
 export function companyInput(body) {
@@ -22,6 +32,7 @@ export function companyInput(body) {
   return {
     ...opportunity,
     ...outcomeInput(body),
+    ...(Object.hasOwn(body,'fit')?{fit:choice(body.fit,['','LOW','MEDIUM','HIGH'],'fit')||null}:{}),
     ...(Object.hasOwn(body,'lost_reason')?{lost_reason:choice(body.lost_reason,['',...LOST_REASONS],'lost reason')}:{}),
     company_name, country,
     city: string(body.city, 120, 'city'), industry: string(body.industry, 120, 'industry'),
@@ -38,7 +49,16 @@ export async function handleCrm({action, body, url, user, token, call}) {
   // Every CRM request carries the verified user's JWT, including reads.
   if (!token || !uuid(user.id)) throw fail(401, 'Please sign in.');
   const request = (path, options = {}) => call(path, {...options, token});
+  if(['crm-suggestions','crm-suggestion-state'].includes(action))return handleSuggestions({action,body,url,request});
+  if(action==='crm-recent-activity')return recentActivityPage(await request(recentActivityQuery(url.searchParams,user.id)));
   const owner = `owner_id=eq.${encodeURIComponent(user.id)}`;
+  if(operationActions.includes(action))return handleOperations({action,body,url,request,validateCompany:companyInput});
+  if(clientActions.includes(action))return handleClients({action,body,url,user,request,owner});
+  if(action==='crm-website-metadata')return {data:await websiteMetadata(string(body.website,2048,'website'))};
+  if(action==='crm-duplicates')return {items:await request('/rest/v1/rpc/crm_duplicates',{method:'POST',body:{p_domain:normalizedDomain(string(body.website,2048,'website')),p_name:normalizedName(string(body.company_name,160,'name')),p_country:string(body.country,2,'country').toUpperCase()}})};
+  if(savedViewActions.includes(action))return handleSavedViews({action,body,user,request,owner});
+  if(recipientActions.includes(action))return handleRecipients({action,body,url,user,request,owner});
+  if(action==='crm-action-center')return request('/rest/v1/rpc/crm_action_center',{method:'POST',body:actionCenterInput(url.searchParams)});
   if(action==='crm-overview'){
     const today=instant(url.searchParams.get('today')),tomorrow=instant(url.searchParams.get('tomorrow'));
     const hours=(Date.parse(tomorrow)-Date.parse(today))/3600000;
@@ -47,7 +67,7 @@ export async function handleCrm({action, body, url, user, token, call}) {
   }
   if(action==='crm-signals'){
     const id=url.searchParams.get('companyId');if(!uuid(id))throw fail(400,'Invalid company.');
-    const rows=await request(`/rest/v1/crm_company_signals?id=eq.${id}&${owner}&select=*`);if(!rows[0])throw fail(404,'Company not found.');return {signals:rows[0]};
+    const rows=await request(`/rest/v1/crm_company_signals?id=eq.${id}&${owner}&select=*`);if(!rows[0])throw fail(404,'Company not found.');return {signals:rows[0],config:await request('/rest/v1/rpc/crm_engagement_config',{method:'POST',body:{}})};
   }
   if (replyActions.includes(action)) return handleReplies({action,body,url,user,request,owner});
   if (presentationActions.includes(action)) return handlePresentations({action,body,url,user,request,owner,call});
@@ -57,11 +77,7 @@ export async function handleCrm({action, body, url, user, token, call}) {
     const p = url.searchParams;
     const page = Number(p.get('page') || 1);
     if (!Number.isInteger(page) || page < 1 || page > 10000) throw fail(400, 'Invalid page.');
-    const filters = {q: string(p.get('q'), 160, 'search'), industry: string(p.get('industry'), 120, 'industry')};
-    for (const [key, values] of Object.entries({country_category:['SK','CZ','INT'], pipeline_status:STATUSES, priority:PRIORITIES, service:SERVICES, lead_source:SOURCES, archived:['active','archived','all'],sort:['recent','name','updated','priority','last_activity','last_contact','next_followup','engagement'],presentation_status:['NONE','ASSIGNED','SENT','VIEWED'],engagement:['COLD','ACTIVE','HOT'],has_followup:['yes','no'],has_replied:['yes','no'],last_contacted:['never','7','30','older30']})) {
-      const value = p.get(key);
-      if (value) filters[key] = choice(value, values, key);
-    }
+    let filters;try{filters=filterConfig(Object.fromEntries([...p].filter(([key])=>['q','industry',...Object.keys(FILTER_CHOICES)].includes(key))));}catch(e){throw fail(400,e.message);}
     if(action==='crm-pipeline') {
       const mode=choice(p.get('mode')||'active',['active','lost'],'pipeline view');
       const stages=mode==='lost'?['LOST']:STATUSES.filter(status=>status!=='LOST');

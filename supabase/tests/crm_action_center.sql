@@ -1,0 +1,36 @@
+begin;
+select set_config('crm.test_owner',gen_random_uuid()::text,true);
+insert into auth.users(id) values(current_setting('crm.test_owner')::uuid);
+insert into public.presentation_admins(user_id,role) values(current_setting('crm.test_owner')::uuid,'owner');
+select set_config('request.jwt.claims',json_build_object('sub',current_setting('crm.test_owner'),'role','authenticated')::text,true);
+set local role authenticated;
+do $$ declare c uuid; archived uuid; done uuid; r jsonb; first_id text; day_start timestamptz:=date_trunc('day',now());day_end timestamptz:=date_trunc('day',now())+interval '1 day';begin
+ insert into public.crm_companies(owner_id,company_name,pipeline_status) values(auth.uid(),'Action fixture','WON') returning id into c;
+ insert into public.crm_companies(owner_id,company_name) values(auth.uid(),'Archived fixture') returning id into archived;
+ insert into public.crm_followups(owner_id,company_id,title,due_at) values(auth.uid(),c,'Earlier today',now()-interval '1 minute'),(auth.uid(),c,'Exact now',now()),(auth.uid(),c,'Tomorrow boundary',day_end),(auth.uid(),archived,'Hidden archived',now()-interval '1 day');
+ update public.crm_companies set archived_at=now() where id=archived;
+ insert into public.crm_followups(owner_id,company_id,title,due_at) values(auth.uid(),c,'Completed',now()-interval '1 day') returning id into done;
+ update public.crm_followups set completed_at=now() where id=done;
+ insert into public.crm_followups(owner_id,company_id,title,due_at) select auth.uid(),c,'Paged '||i,now()-interval '2 days' from generate_series(1,12) i;
+ r:=public.crm_action_center(day_start,day_end);
+ if (r->'groups'->0->>'total')::int<>13 or (r->'groups'->1->>'total')::int<>1 then raise exception 'Queue boundaries/exclusions incorrect';end if;
+ if jsonb_array_length(r->'groups'->0->'items')<>10 then raise exception 'Unbounded result';end if;
+ if r->'groups'->1->'items'->0->>'title'<>'Exact now' then raise exception 'Exact-now task should be today';end if;
+ first_id:=r->'groups'->0->'items'->0->>'id';
+ if public.crm_action_center(day_start,day_end)->'groups'->0->'items'->0->>'id'<>first_id then raise exception 'Unstable ordering';end if;
+ r:=public.crm_action_center(day_start,day_end,'overdue',2);
+ if jsonb_array_length(r->'groups'->0->'items')<>3 then raise exception 'Pagination incorrect';end if;
+ perform public.crm_action_center(now()-interval '1 hour',now()+interval '22 hours');
+ perform public.crm_action_center(now()-interval '1 hour',now()+interval '24 hours');
+ begin perform public.crm_action_center(day_start-interval '2 days',day_end-interval '2 days');raise exception 'Stale day accepted';exception when invalid_parameter_value then null;end;
+ begin perform public.crm_action_center(day_start,day_end,'completed');raise exception 'Unknown group accepted';exception when invalid_parameter_value then null;end;
+ perform set_config('request.jwt.claims',json_build_object('sub',gen_random_uuid(),'role','authenticated')::text,true);
+ if (public.crm_action_center(day_start,day_end)->'groups'->0->>'total')::int<>0 then raise exception 'Other owner reads tasks';end if;
+end $$;
+reset role;
+set local role anon;
+do $$ begin
+ begin perform public.crm_action_center(now(),now()+interval '1 day');raise exception 'Anonymous execution allowed';exception when insufficient_privilege then null;end;
+end $$;
+rollback;
+select 'Action Center boundaries, pagination, closed-company tasks, archived/completed exclusion and RLS passed' result;

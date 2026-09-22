@@ -7,6 +7,7 @@ import { createApp } from '../server.js';
 import { discoverProjects, validateProject } from '../src/presentations/registry.js';
 import { renderPresentationTemplate } from '../src/presentations/page.js';
 import { preparePublishedHtml } from '../src/presentations/publish-html.js';
+import {signTracking} from '../src/presentations/tracking-proof.js';
 
 test('remote media does not move analytics or navigation to the storage origin', () => {
   const html = preparePublishedHtml('<html><head><base href="/p/old/"></head><body><img src="assets/image.jpg"><script src="/presentation-system/tracker.js" data-deck="old"></script></body></html>', {
@@ -20,6 +21,19 @@ test('remote media does not move analytics or navigation to the storage origin',
 
 const repository = path.resolve(import.meta.dirname, '..');
 const event = { deck: 'milenium', sessionId: '2fd862b8-8249-4e7a-93fb-ec3bf367f101', eventId: '6646aebf-5db5-42ad-88f4-a387162de25f', eventType: 'slide_viewed', slideIndex: 3 };
+
+test('recipient attribution requires signed matching session and ignores raw client recipient IDs',async()=>{
+ const writes=[],env={SUPABASE_URL:'https://test.supabase.co',SUPABASE_SECRET_KEY:'fixture-secret'};
+ await withServer({env,send:async(url,options)=>{
+  if(url.includes('/presentation_projects?'))return Response.json([{status:'published',access_mode:'unlisted',analytics_enabled:true}]);
+  writes.push(JSON.parse(options.body));return new Response(null,{status:204});
+ }},async origin=>{
+  const proof=session=>signTracking({kind:'visit',deck:event.deck,recipient:'a'.repeat(64),session,exp:Date.now()+60000},env.SUPABASE_SECRET_KEY);
+  const post=trackingProof=>fetch(origin+'/api/presentation-events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...event,trackingProof,recipientId:'spoof',companyId:'spoof'})});
+  assert.equal((await post(proof('wrong-session'))).headers.get('x-analytics-status'),'excluded');assert.equal(writes.length,0);
+  assert.equal((await post(proof(event.sessionId))).headers.get('x-analytics-status'),'recorded');assert.equal(writes[0].p_recipient_hash,'a'.repeat(64));assert.equal(writes[0].p_verified,true);assert.equal(writes[0].recipientId,undefined);
+ });
+});
 
 async function withServer(options, run) {
   const server = createApp(options);
@@ -83,7 +97,7 @@ test('analytics writes only through the configured server-side RPC', async () =>
     assert.equal(response.status, 204);
     assert.equal(response.headers.get('x-analytics-status'), 'recorded');
   });
-  assert.equal(request.url, 'https://shapeviz.supabase.co/rest/v1/rpc/record_presentation_event');
+  assert.equal(request.url, 'https://shapeviz.supabase.co/rest/v1/rpc/record_presentation_attributed_event');
   assert.equal(request.options.headers.apikey, env.SUPABASE_SECRET_KEY);
   assert.equal(request.options.headers.Authorization, undefined);
   const payload = JSON.parse(request.options.body);
@@ -100,7 +114,7 @@ test('website click beacon reaches Telegram only after a successful event write 
   await withServer({env,send:async(url,options)=>{
     if(url.includes('/presentation_projects?'))return Response.json([{client:'Milenium',title:'Deck',status:'published',analytics_enabled:true}]);
     calls.push(url);
-    if(url.endsWith('/rpc/record_presentation_event'))return new Response(null,{status:recordOk?204:503});
+    if(url.endsWith('/rpc/record_presentation_attributed_event'))return new Response(null,{status:recordOk?204:503});
     if(url.includes('/presentation_events?'))return Response.json([{event_id:event.eventId}]);
     assert.match(url,/api.telegram.org/);
     assert.match(JSON.parse(options.body).text,/prešiel z prezentácie/);

@@ -32,6 +32,14 @@
   ],
   "rewrites": [
     {
+      "source": "/admin/reports",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/admin/clients",
+      "destination": "/admin/index.html"
+    },
+    {
       "source": "/admin/follow-ups",
       "destination": "/admin/index.html"
     },

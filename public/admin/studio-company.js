@@ -26,9 +26,10 @@ export function createStudioCompany(form,api) {
     finally{if(current===generation)button.disabled=false;}
   };
   return {
-    reset({hidden=false,slug}={}){
+    reset({hidden=false,slug,company}={}){
       ++generation;unlock();pending=null;linked=null;lookup=null;lookupError=null;
       root.hidden=hidden;details.hidden=false;details.open=false;search.value='';select.replaceChildren(new Option('No company selected',''));status.replaceChildren();root.querySelector('button').disabled=false;
+      if(company&&!hidden){select.add(new Option(company.company_name,company.id,true,true));select.value=company.id;details.open=true;status.textContent='The new presentation will be linked to this company.';}
       if(slug&&!hidden){
         const current=generation;details.hidden=true;status.textContent='Loading CRM association…';
         lookup=api('crm-presentation-company',null,{slug}).then(data=>{

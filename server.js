@@ -51,7 +51,7 @@ async function serveFile(req, res, filename, pathname, extraHeaders = {}) {
 export function createApp({ publicDir = path.join(root, 'public'), presentationsDir = path.join(root, 'presentations'), builtPresentations = false, templatesRoot, env = process.env, send = fetch } = {}) {
   const contact = createContactHandler({ env, send });
   const websiteEvent = createWebsiteEventHandler({ env, send });
-  const admin = createAdminHandler({ env, send });
+  const admin = createAdminHandler({ env, send, templatesRoot });
   const presentationEvent = createPresentationEventHandler({ env, send, presentationsRoot: presentationsDir });
   const presentationPage = createPresentationPageHandler({ env, send, ...(templatesRoot ? { templatesRoot } : {}) });
   return http.createServer(async (req, res) => {
@@ -65,7 +65,7 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
     if (pathname === '/api/contact') { await contact(req, res); return; }
     if (pathname === '/api/site-events') { await websiteEvent(req, res); return; }
     if (pathname === '/api/admin') { await admin(req, res); return; }
-    if (pathname === '/adminlogin' || pathname === '/admin' || /^\/admin\/(?:leads(?:\/[^/.]+)?|pipeline|follow-ups)\/?$/.test(pathname)) {
+    if (pathname === '/adminlogin' || pathname === '/admin' || /^\/admin\/(?:leads(?:\/[^/.]+)?|pipeline|follow-ups|clients|reports)\/?$/.test(pathname)) {
       res.setHeader('X-Robots-Tag', 'noindex, nofollow');
       res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-src 'self' blob:; img-src 'self' https://*.supabase.co data: blob:; media-src 'self' https://*.supabase.co blob:; font-src 'self' https://*.supabase.co data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
       await serveFile(req,res,path.join(publicDir,'admin/index.html'),pathname,{'Cache-Control':'no-store'});return;
@@ -80,7 +80,7 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
       res.setHeader('Referrer-Policy', 'no-referrer');
       res.setHeader('Content-Security-Policy', presentationCsp);
       const [, slug, suffix = ''] = deckMatch;
-      if (suffix === '/') { res.writeHead(308, { Location: `/p/${slug}` }).end(); return; }
+      if (suffix === '/') { res.writeHead(308, { Location: `/p/${slug}${new URL(req.url,'http://localhost').search}` }).end(); return; }
       if (env.PRESENTATIONS_REMOTE === 'true') {
         if (suffix) { res.writeHead(404).end('Not found'); return; }
         req.query = { slug };

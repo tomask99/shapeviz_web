@@ -7,7 +7,7 @@ for(const scenario of ['owner','visitor','outage'])test(`presentation gate class
   if(url.endsWith('/auth/v1/user'))return scenario==='outage'?Response.json({message:'Unavailable'},{status:503}):Response.json({id:'owner'});
   if(url.includes('/presentation_admins?'))return Response.json([{role:'owner'}]);
   if(url.includes('/presentation_projects?'))return Response.json([{deck_slug:'gate-test',source_type:'template',template_key:'test-template',client:'Test',title:'Test',presentation_date:'2026',description:'Test',locale:'en',status:'published',access_mode:'unlisted',analytics_enabled:true,content:{headline:'Gate fixture',intro:'Test',opportunity:'Test',focus:'Test',cta:'Test'}}]);
-  if(url.endsWith('/rpc/record_presentation_event')){writes.push(JSON.parse(options.body));return new Response(null,{status:204});}
+  if(url.endsWith('/rpc/record_presentation_attributed_event')){const body=JSON.parse(options.body);writes.push(body);if(body.p_verified)verified++;return new Response(null,{status:204});}
   if(url.endsWith('/rpc/crm_record_verified_visit')){verified++;return new Response(null,{status:204});}
   throw new Error('Unexpected request');
  }});

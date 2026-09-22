@@ -89,7 +89,9 @@ export function createPresentationEventHandler({ env = process.env, send = fetch
     catch { res.writeHead(204, { 'X-Analytics-Status': 'unavailable' }).end(); return; }
     if (!project || project.status !== 'published' || project.access_mode && project.access_mode !== 'unlisted' || project.analytics_enabled !== true) { res.writeHead(204, { 'X-Analytics-Status': 'disabled' }).end(); return; }
 
-    const response = await send(`${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/rpc/record_presentation_event`, {
+    const verified=proof?.kind==='visit'&&proof.deck===event.deck;
+    if(verified&&proof.recipient&&(!/^[0-9a-f]{64}$/.test(proof.recipient)||proof.session!==event.sessionId)){res.writeHead(204,{'X-Analytics-Status':'excluded'}).end();return;}
+    const response = await send(`${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/rpc/record_presentation_attributed_event`, {
       method: 'POST',
       headers: {
         apikey: env.SUPABASE_SECRET_KEY,
@@ -104,14 +106,12 @@ export function createPresentationEventHandler({ env = process.env, send = fetch
         p_video_id: event.videoId,
         p_video_progress: event.videoProgress,
         p_active_seconds: event.activeSeconds,
-        p_user_agent_category: userAgentCategory(req.headers['user-agent'])
+        p_user_agent_category: userAgentCategory(req.headers['user-agent']),
+        p_recipient_hash:verified?proof.recipient||null:null,
+        p_verified:!!verified
       })
     }).catch(() => null);
     if (!response?.ok) { res.writeHead(204, { 'X-Analytics-Status': 'unavailable' }).end(); return; }
-    if(proof?.kind==='visit'&&proof.deck===event.deck){
-      const synced=await send(`${env.SUPABASE_URL.replace(/\/$/,'')}/rest/v1/rpc/crm_record_verified_visit`,{method:'POST',headers:{apikey:env.SUPABASE_SECRET_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_session:event.sessionId,p_deck:event.deck}),signal:AbortSignal.timeout(5000)}).catch(()=>null);
-      if(!synced?.ok)console.warn('CRM visit sync unavailable');
-    }
     await notifyPresentationOpened(event,project,{env,send,headers:req.headers});
     await notifyWebsiteClicked(event,project,{env,send,headers:req.headers});
     res.writeHead(204, { 'X-Analytics-Status': 'recorded' }).end();

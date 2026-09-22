@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash,randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,6 +6,7 @@ import { getPresentationProject, getPrivatePresentationSource, hasSupabase, slug
 import { requestOrigin } from '../http.js';
 import {normalizePresentationCtaArrows} from './cta-arrows.js';
 import {trackingClassification,signTracking} from './tracking-proof.js';
+import {recipientParam,recipientHash,resolveRecipient} from './recipient-token.js';
 
 const moduleRoot = path.dirname(fileURLToPath(import.meta.url));
 const defaultTemplatesRoot = path.resolve(moduleRoot, '../../presentation-templates');
@@ -57,23 +58,28 @@ export function createPresentationPageHandler({ env = process.env, send = fetch,
     if (!hasSupabase(env)) { res.writeHead(503, { 'Cache-Control': 'no-store' }).end('Presentation service is not configured'); return; }
 
     try {
+      let recipient;
+      try{recipient=recipientParam(new URL(req.url,'http://localhost'));}catch{res.writeHead(404,{'Cache-Control':'no-store'}).end('Not found');return;}
       const project = await getPresentationProject(slug, { env, send });
       if (!project || project.status !== 'published' || project.access_mode !== 'unlisted') {
         res.writeHead(404, { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow, noarchive' }).end('Not found');return;
       }
       const classification=trackingClassification(req,env.SUPABASE_SECRET_KEY);
+      const hash=recipient?recipientHash(recipient):null;
+      if(hash&&!await resolveRecipient(slug,hash,{env,send})){res.writeHead(404,{'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}).end('Not found');return;}
       if(!classification&&!new URL(req.url,'http://localhost').searchParams.has('sv_gate')){
         // A fresh same-origin navigation lets Strict admin cookies reach the gate,
         // even when the original presentation link was opened from an external site.
-        const gate=`/api/admin?action=tracking-gate&slug=${encodeURIComponent(slug)}`;
+        const gate=`/api/admin?action=tracking-gate&slug=${encodeURIComponent(slug)}${recipient?'&r='+encodeURIComponent(recipient):''}`;
         res.writeHead(200,{'Cache-Control':'private, no-store','Content-Type':'text/html; charset=utf-8','X-Robots-Tag':'noindex, nofollow','Referrer-Policy':'no-referrer'}).end(`<!doctype html><title>Opening presentation</title><script>location.replace(${JSON.stringify(gate)})</script><noscript><a href="${gate.replaceAll('&','&amp;')}">Open presentation</a></noscript>`);return;
       }
       const source = project.source_type === 'template'
         ? await renderPresentationTemplate(project, { templatesRoot })
         : await getPrivatePresentationSource(project, { env, send });
       // Also repair already uploaded decks without rewriting their stored source.
-      const proof=classification?.exclude===false?signTracking({kind:'visit',deck:slug,exp:Date.now()+3600000},env.SUPABASE_SECRET_KEY):'';
-      const config=`<script>window.__shapevizTracking=${JSON.stringify({exclude:!proof,proof})};</script>`;
+      const session=hash?randomUUID():null;
+      const proof=classification?.exclude===false?signTracking({kind:'visit',deck:slug,exp:Date.now()+3600000,...(hash?{recipient:hash,session}:{})},env.SUPABASE_SECRET_KEY):'';
+      const config=`<script>window.__shapevizTracking=${JSON.stringify({exclude:!proof,proof,...(hash?{session}:{})})};</script>`;
       const normalized = normalizePresentationCtaArrows(source);
       const html = /<head\b[^>]*>/i.test(normalized)
         ? normalized.replace(/<head\b[^>]*>/i,match=>match+config)

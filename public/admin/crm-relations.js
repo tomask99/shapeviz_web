@@ -7,6 +7,7 @@ const events={lead_created:'Lead added',status_changed:'Pipeline status changed'
 const status=value=>String(value||'').toLowerCase().replaceAll('_',' ');
 Object.assign(events,{presentation_assigned:'Presentation assigned',presentation_unassigned:'Presentation unassigned',presentation_sent:'Presentation sent',reply_received:'Client reply received'});
 Object.assign(events,{presentation_viewed:'Presentation viewed · checked visit',website_clicked:'Website clicked · checked visit'});
+events.presentation_returned='Returned to presentation · checked visit';
 const field=(name,label,max=160,type='text')=>`<label>${label}<input name="${name}" type="${type}" maxlength="${max}"></label>`;
 const area=(name,label,max=5000)=>`<label>${label}<textarea name="${name}" rows="5" maxlength="${max}" ${name==='content'?'required':''}></textarea></label>`;
 const activity=item=>`<article class="crm-entry"><p class="fine"><time datetime="${esc(item.created_at)}">${esc(date(item.created_at))}</time></p><h3>${esc(events[item.event_type]||'Activity')}</h3>${item.event_type==='status_changed'?`<p>${esc(status(item.metadata?.from_status))} → ${esc(status(item.metadata?.to_status))}</p>`:''}${item.metadata?.name?`<p>${esc(item.metadata.name)}</p>`:''}${['manual_activity','reply_received'].includes(item.event_type)?`<p class="crm-description">${esc(item.metadata?.content)}</p>`:''}${item.event_type==='reply_received'?`<p class="fine">Received: ${esc(date(item.metadata.received_at))}${item.metadata.contact_name?` · ${esc(item.metadata.contact_name)}`:''} · Manually recorded; pipeline unchanged.</p>`:''}</article>`;
@@ -120,6 +121,8 @@ export function mountRelations({root,company,api,notify}) {
     }
   }
   panel.addEventListener('click',click);summary.addEventListener('click',click);
+  const noteSaved=e=>{if(e.detail.companyId===company.id&&!disposed&&['overview','notes','activity'].includes(tab)){page=1;render();}};
+  document.addEventListener('crm-note-saved',noteSaved);
   select(new URLSearchParams(location.search).get('tab')||'overview',false);
-  return ()=>{disposed=true;seq++;replies.dispose();cleanupPresentations?.();cleanupEngagement?.();dialog.close();dialog.remove();};
+  return ()=>{disposed=true;seq++;document.removeEventListener('crm-note-saved',noteSaved);replies.dispose();cleanupPresentations?.();cleanupEngagement?.();dialog.close();dialog.remove();};
 }

@@ -1,15 +1,21 @@
 import {STATUSES} from './crm-options.js';
 import {localDayBounds,displayDate} from './crm-dates.js';
 import {pipelineValueMarkup,formatPipelineEUR} from './crm-pipeline-value.js';
+import {createActionCenter} from './crm-action-center.js';
+import {createRecentActivity} from './crm-recent-activity.js';
+import {createSuggestions} from './crm-suggestions.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const label=value=>value.toLowerCase().replaceAll('_',' ');
-export function createBusinessOverview({api}){
+export function createBusinessOverview({api,notify}){
   const root=document.createElement('section');root.id='business-overview';root.className='chart-panel';root.hidden=true;
   document.querySelector('.workspace > .toolbar').before(root);
+  const actions=createActionCenter({api,notify,onChanged:()=>{refresh(true);recent.refresh();suggestions.refresh();}});
+  const suggestions=createSuggestions({api,notify,schedule:prefill=>actions.schedule(prefill)});
+  const recent=createRecentActivity({api});
   let seq=0,enabled=false,day='',loading=false;
   const active=()=>enabled&&!root.hidden&&!document.querySelector('#studio').hidden&&!/^\/admin\/(leads|pipeline|follow-ups)/.test(location.pathname);
-  async function refresh(){
-    if(!active()||loading)return;
+  async function refresh(force=false){
+    if(!active()||(loading&&!force))return;
     const ticket=++seq,bounds=localDayBounds();day=bounds.today;loading=true;
     root.innerHTML='<p class="eyebrow">SALES OVERVIEW</p><p role="status">Loading business overview…</p>';
     try{
@@ -26,5 +32,5 @@ export function createBusinessOverview({api}){
   root.onclick=e=>{if(e.target.closest('[data-business-refresh]'))refresh();};
   const rollover=()=>{if(active()&&!document.hidden&&localDayBounds().today!==day)refresh();};
   setInterval(rollover,60000);document.addEventListener('visibilitychange',rollover);
-  return {refresh,show(){enabled=true;root.hidden=false;refresh();},hide(){enabled=false;root.hidden=true;seq++;loading=false;root.replaceChildren();}};
+  return {refresh,show(){enabled=true;root.hidden=false;refresh();actions.show();suggestions.show();recent.show();},hide(){enabled=false;root.hidden=true;seq++;loading=false;root.replaceChildren();actions.hide();suggestions.hide();recent.hide();}};
 }

@@ -38,7 +38,7 @@ test('company contacts, primary choice, notes and manual activity persist across
   await page.getByRole('tab',{name:'Contacts',exact:true}).click();
   await expect(page.getByRole('tabpanel',{name:'Contacts',exact:true}).getByText('No contacts yet.',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Add contact',exact:true}).click();
-  let dialog=page.locator('.crm-record-dialog');
+  let dialog=page.locator('.crm-record-dialog[open]');
   await dialog.getByLabel('Full name').fill('Jane <marketing>');
   await dialog.getByLabel('Email',{exact:true}).fill('jane@example.com');
   await dialog.getByLabel('Primary contact',{exact:true}).check();

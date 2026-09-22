@@ -1,6 +1,7 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { handleCrm } from '../crm/handler.js';
 import {trackingCookie} from '../presentations/tracking-proof.js';
+import {recipientParam} from '../presentations/recipient-token.js';
 import { readJson, requestOrigin } from '../http.js';
 import { supportsClientNameApi, transformDeck } from './html.js';
 import { getPrivatePresentationSource, uploadStorageObject, slugPattern } from '../presentations/remote.js';
@@ -13,7 +14,7 @@ const text = (value, max = 160) => typeof value === 'string' && value.trim().len
 const key = value => { if (!slugPattern.test(value || '') || value.length > 100) throw fail(400,'Use a URL name such as hrno or company-name.'); return value; };
 const clientSlug = value => key(value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''));
 
-export function createAdminHandler({env = process.env, send = fetch} = {}) {
+export function createAdminHandler({env = process.env, send = fetch, templatesRoot} = {}) {
   const root = env.SUPABASE_URL?.replace(/\/$/, '');
   async function call(url, {method='GET',body,token,headers={}} = {}) {
     const response = await send(`${root}${url}`, {method, headers:{apikey:env.SUPABASE_SECRET_KEY,...(token ? {Authorization:`Bearer ${token}`} : {}),...(body ? {'Content-Type':'application/json'} : {}),...headers}, ...(body ? {body:JSON.stringify(body)} : {}), signal:AbortSignal.timeout(25_000)});
@@ -53,8 +54,8 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
     if (!rows?.[0]) throw fail(404,'Presentation not found.');
     return rows[0];
   }
-  async function source(p) {return p.source_type === 'template' ? renderPresentationTemplate(p) : getPrivatePresentationSource(p,{env,send});}
-  async function saveDeck(body, html, parent=null, scopes=[]) {
+  async function source(p) {return p.source_type === 'template' ? renderPresentationTemplate(p,{templatesRoot}) : getPrivatePresentationSource(p,{env,send});}
+  async function saveDeck(body, html, parent=null, scopes=[],privateContent={}) {
     let slug=key(body.slug);
     const client=text(body.client), title=text(body.title);
     if (!client || !title) throw fail(400,'Enter the company and presentation title.');
@@ -71,7 +72,7 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
     await uploadStorageObject({bucket:'presentation-source',object,body:prepared.html,contentType:'text/html',env,send});
     const status=body.isTemplate ? 'draft' : body.publish === true ? 'published' : 'draft';
     const record={deck_slug:slug,client,title,presentation_date:new Date().toISOString().slice(0,10),description:title,locale:'en',status,source_type:'standalone',source_bucket:'presentation-source',source_path:object,access_mode:'unlisted',analytics_enabled:true,slide_count:prepared.slides,is_template:body.isTemplate === true,template_match:null,parent_slug:parent,published_at:status==='published' ? new Date().toISOString() : null,content:{}};
-    record.content._storageScopes=[...scopes,...referencedMedia(prepared.html,root)];
+    record.content={...privateContent,_storageScopes:[...scopes,...referencedMedia(prepared.html,root)]};
     const rows=await call('/rest/v1/presentation_projects',{method:'POST',body:record,headers:{Prefer:'return=representation'}});
     return {project:rows[0],url:`/p/${slug}`};
   }
@@ -87,9 +88,9 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
       const url=new URL(req.url,'http://localhost');
       const action=url.searchParams.get('action') || 'me';
       const readActions=['me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary'];
-      if(req.method==='GET' && ![...readActions,'crm-overview','crm-signals','tracking-gate'].includes(action)) throw fail(405,'Use POST for this action.');
+      if(req.method==='GET' && ![...readActions,'crm-global-search','crm-sales-report','crm-clients','crm-client','crm-projects','crm-saved-views','crm-overview','crm-action-center','crm-recent-activity','crm-suggestions','crm-recipients','crm-recipient-stats','crm-signals','tracking-gate'].includes(action)) throw fail(405,'Use POST for this action.');
       if(req.method==='POST' && !/^application\/json\b/i.test(req.headers['content-type']||'')) throw fail(415,'JSON is required.');
-      const body=req.method==='POST' ? await readJson(req,100_000) : {};
+      const body=req.method==='POST' ? await readJson(req,action.startsWith('crm-import-')?500_000:100_000) : {};
       if(action==='login' || action==='verify') {
         let auth;
         try {
@@ -98,11 +99,13 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
         await owner(auth.user);cookies(res,auth);reply(200,{email:auth.user.email});return;
       }
       if(action==='tracking-gate'){
+        const recipient=recipientParam(url);
         const slug=key(url.searchParams.get('slug'));let exclude=true;
         try{await session(req,res);}catch(error){exclude=![401,403].includes(error.status);}
         const existing=res.getHeader('Set-Cookie')||[];
         res.setHeader('Set-Cookie',[...(Array.isArray(existing)?existing:[existing]),trackingCookie(exclude,env)]);
-        res.writeHead(302,{Location:`/p/${slug}?sv_gate=1`});res.end();return;
+        res.setHeader('Referrer-Policy','no-referrer');
+        res.writeHead(302,{Location:`/p/${slug}?sv_gate=1${recipient?'&r='+encodeURIComponent(recipient):''}`});res.end();return;
       }
       if(action==='tracking-status') {
         try {await session(req,res);reply(200,{exclude:true});}
@@ -120,6 +123,18 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
       if(action==='logout') {await call('/auth/v1/logout',{method:'POST',token}).catch(()=>{});cookies(res,null);reply(200,{ok:true});return;}
       if(action==='password') {if(typeof body.password!=='string'||body.password.length<12||body.password.length>128) throw fail(400,'Use a password with 12–128 characters.');await call('/auth/v1/user',{method:'PUT',token,body:{password:body.password}});reply(200,{ok:true});return;}
       if(action==='list') {const projects=await call(`/rest/v1/presentation_projects?select=${fields}&order=updated_at.desc&limit=1000`);reply(200,{projects});return;}
+      if(action==='clone-presentation') {
+        if(!/^[a-f0-9-]{36}$/i.test(body.companyId||''))throw fail(400,'Invalid company.');
+        const slug=key(body.source),target=key(body.slug),companyId=body.companyId;
+        const companies=await call(`/rest/v1/crm_companies?id=eq.${companyId}&owner_id=eq.${user.id}&archived_at=is.null&select=company_name`,{token});
+        const links=await call(`/rest/v1/crm_presentation_links?company_id=eq.${companyId}&owner_id=eq.${user.id}&deck_slug=eq.${slug}&select=id`,{token});
+        if(!companies[0]||!links[0])throw fail(404,'Company presentation not found.');
+        const original=await project(slug);if(original.is_template||original.status==='archived')throw fail(400,'Choose a current company presentation.');
+        const existing=await call(`/rest/v1/presentation_projects?deck_slug=eq.${target}&select=*`);let result;
+        if(existing[0]){if(existing[0].parent_slug!==slug||existing[0].content?._cloneOwner!==user.id)throw fail(409,'URL already in use.');result={project:existing[0],url:'/p/'+target};}
+        else result=await saveDeck({slug:target,client:companies[0].company_name,title:text(body.title)||original.title+' v2',publish:false},await source(original),slug,storageScopes(original),{_cloneOwner:user.id});
+        await handleCrm({action:'crm-presentation-ensure',body:{companyId,slug:target},url,user,token,call});reply(200,result);return;
+      }
       if(action==='stats') {const slug=url.searchParams.get('slug');const days=Number(url.searchParams.get('days')||30);if(![7,30,90].includes(days)) throw fail(400,'Invalid date range.');reply(200,await call('/rest/v1/rpc/presentation_admin_stats',{method:'POST',body:{p_slug:slug ? key(slug) : null,p_days:days}}));return;}
       if(action==='sign-upload') {
         const id=body.uploadId || randomUUID();if(!/^[a-f0-9-]{36}$/.test(id)) throw fail(400,'Invalid upload.');

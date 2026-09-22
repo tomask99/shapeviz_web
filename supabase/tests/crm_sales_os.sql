@@ -1,0 +1,54 @@
+begin;
+select set_config('crm.test_owner',gen_random_uuid()::text,true);
+select set_config('crm.test_other',gen_random_uuid()::text,true);
+insert into auth.users(id) values(current_setting('crm.test_owner')::uuid),(current_setting('crm.test_other')::uuid);
+insert into public.presentation_admins(user_id,role) values(current_setting('crm.test_owner')::uuid,'owner'),(current_setting('crm.test_other')::uuid,'owner');
+select set_config('request.jwt.claims',json_build_object('sub',current_setting('crm.test_owner'),'role','authenticated')::text,true);
+set local role authenticated;
+do $$declare c public.crm_companies;v uuid;v2 uuid;p public.crm_projects;r jsonb;batch uuid:=gen_random_uuid();before_count int;begin
+ c:=public.crm_create_company_contact('{"company_name":"Sales OS Fixture","website":"https://www.example.test/a","country":"SK","fit":"HIGH"}','{"full_name":"Contact Fixture","primary_contact":true}');
+ perform set_config('crm.test_company',c.id::text,true);
+ if c.fit<>'HIGH' then raise exception 'Fit missing with initial contact';end if;
+ if (public.crm_list_companies('{"fit":"HIGH"}',1)->>'total')::int<>1 then raise exception 'Fit filter';end if;
+ if jsonb_array_length(public.crm_duplicates('example.test','',''))<>1 then raise exception 'Domain duplicate';end if;
+ insert into public.crm_saved_views(owner_id,name,filter_config) values(auth.uid(),'One','{"fit":"HIGH"}') returning id into v;
+ insert into public.crm_saved_views(owner_id,name) values(auth.uid(),'Two') returning id into v2;
+ perform public.crm_default_view(v);perform public.crm_default_view(v2);
+ if (select count(*) from public.crm_saved_views where is_default)<>1 then raise exception 'Default uniqueness';end if;
+ begin insert into public.crm_clients(company_id,owner_id) values(c.id,auth.uid());raise exception 'Converted non-Won';exception when check_violation then null;end;
+ update public.crm_companies set pipeline_status='WON' where id=c.id;
+ insert into public.crm_clients(company_id,owner_id) values(c.id,auth.uid());
+ if (select count(*) from public.crm_contacts where company_id=c.id)<>1 then raise exception 'Conversion lost contacts';end if;
+ insert into public.crm_projects(company_id,owner_id,name,status,project_value,monthly_value) values(c.id,auth.uid(),'Fixture project','ACTIVE',0,1500) returning * into p;
+ update public.crm_projects set status='COMPLETED' where id=p.id and version=p.version;
+ if (select version from public.crm_projects where id=p.id)<>2 then raise exception 'Project concurrency';end if;
+ if jsonb_array_length(public.crm_client_list()->'items')<>1 then raise exception 'Client list';end if;
+ if jsonb_array_length(public.crm_global_search('Fixture'))<3 then raise exception 'Search missing objects';end if;
+ r:=public.crm_sales_report(current_date,current_date);
+ if (r->>'cohort_size')::int<>1 or not exists(select 1 from jsonb_array_elements(r->'milestones') m where m->>'stage'='WON' and (m->>'companies')::int=1) then raise exception 'Historical milestones';end if;
+ select count(*) into before_count from public.crm_companies;
+ begin
+ perform public.crm_import(gen_random_uuid(),repeat('a',64),'[{"company":{"company_name":"Must roll back"}},{"company":{"company_name":""}}]','create');raise exception 'Invalid batch accepted';
+ exception when check_violation then null;end;
+ if (select count(*) from public.crm_companies)<>before_count then raise exception 'Partial import';end if;
+ r:=public.crm_import(batch,repeat('b',64),'[{"company":{"company_name":"Imported Fixture","website":"https://example.test"}}]','skip');
+ if (r->>'skipped')::int<>1 then raise exception 'Duplicate skip';end if;
+ r:=public.crm_import(batch,repeat('b',64),'[{"company":{"company_name":"Imported Fixture","website":"https://example.test"}}]','skip');
+ if (r->>'skipped')::int<>1 then raise exception 'Retry mismatch';end if;
+ r:=public.crm_import(gen_random_uuid(),repeat('c',64),'[{"company":{"company_name":"Imported Fixture","website":"https://example.test","fit":"HIGH"},"contact":{"full_name":"CSV Contact","primary_contact":true}}]','create');
+ if (r->>'imported')::int<>1 then raise exception 'Create anyway';end if;
+ if (select count(*) from public.crm_activities where company_id=c.id and metadata->>'source'='crm_clients')<>1 then raise exception 'Client history';end if;
+end;$$;
+select set_config('request.jwt.claims',json_build_object('sub',current_setting('crm.test_other'),'role','authenticated')::text,true);
+do $$begin
+ if exists(select 1 from public.crm_clients) or exists(select 1 from public.crm_projects) or exists(select 1 from public.crm_saved_views) or exists(select 1 from public.crm_import_batches) then raise exception 'Cross-owner data leak';end if;
+ if exists(select 1 from jsonb_array_elements(public.crm_global_search('Fixture')) x where x->>'kind'<>'Presentation') then raise exception 'Private CRM search leak';end if;
+ begin insert into public.crm_projects(company_id,owner_id,name) values(current_setting('crm.test_company')::uuid,auth.uid(),'Attack');raise exception 'Cross owner project';exception when insufficient_privilege then null;end;
+end;$$;
+reset role;
+set local role anon;
+do $$begin
+ begin perform * from public.crm_clients;raise exception 'Anonymous access';exception when insufficient_privilege then null;end;
+ begin perform public.crm_global_search('Fixture');raise exception 'Anonymous search';exception when insufficient_privilege then null;end;
+end;$$;
+rollback;

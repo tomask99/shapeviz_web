@@ -6,6 +6,9 @@ import {nextActionText} from './crm-dates.js';
 import {opportunityValueInput,opportunityValueText} from './crm-value.js';
 import {LOST_REASONS,WON_FIELDS} from './crm-outcome.js';
 import {signalSummary,mountCompanySignals} from './crm-signals.js';
+import {mountSavedViews} from './crm-saved-views.js';
+import {showClients,mountClient} from './crm-clients.js';
+import {mountCsv,showReports} from './crm-operations.js';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const options = (values, pretty = false) => values.map(v => `<option value="${escape(v)}">${escape(pretty ? label(v) : v)}</option>`).join('');
@@ -30,6 +33,7 @@ export function createCrm({api,notify}) {
     <div class="two-columns">${input('city','City')}<label>Industry<input name="industry" maxlength="120" list="crm-industries"></label></div>
     <fieldset class="crm-services"><legend>Potential services</legend>${SERVICES.map(v=>`<label class="check"><input type="checkbox" name="services" value="${escape(v)}">${escape(v)}</label>`).join('')}</fieldset>
     <div class="two-columns"><label>Priority<select name="priority">${options(PRIORITIES,true)}</select></label><label>Lead source<select name="lead_source">${options(SOURCES)}</select></label></div>
+    <label>Fit · manual<select name="fit"><option value="">Not assessed</option>${options(PRIORITIES,true)}</select></label>
     <label>Pipeline status<select name="pipeline_status">${options(STATUSES,true)}</select></label>
     <details data-won-fields hidden><summary>Won details (optional)</summary><p class="fine">Agreed values in EUR, separate from estimates. Retained when the lead changes stage; clear fields explicitly when needed.</p><label>Won date<input type="date" name="won_date" min="1900-01-01" max="9999-12-31"></label><label>Service sold<select name="won_service"><option value="">Not specified</option>${options(SERVICES)}</select></label><div class="two-columns"><label>Won project value (EUR)<input name="won_project_value" inputmode="decimal" maxlength="12"></label><label>Won monthly value (EUR)<input name="won_monthly_value" inputmode="decimal" maxlength="12"></label></div><label>Won notes<textarea name="won_notes" maxlength="3000" rows="3"></textarea></label></details>
     <div data-lost-fields hidden><label>Lost reason (optional)<select name="lost_reason"><option value="">Not specified</option>${options(LOST_REASONS)}</select></label><p class="fine">Saved independently of the current stage. Reopening a lead keeps this reason; choose Not specified to clear it.</p></div>
@@ -38,6 +42,9 @@ export function createCrm({api,notify}) {
     <p data-error role="alert"></p><div class="actions"><button type="button" class="secondary" data-cancel>Cancel</button><button class="primary" type="submit">Save lead</button></div></form>`;
   document.body.append(dialog);
   const form = dialog.querySelector('form');
+  const fromWebsite=document.createElement('button');fromWebsite.type='button';fromWebsite.className='secondary';fromWebsite.textContent='Prefill from website';form.elements.website.closest('label').after(fromWebsite);
+  fromWebsite.onclick=async()=>{const website=form.elements.website.value||prompt('Company website URL');if(!website||pending)return;pending=true;const controls=[...form.querySelectorAll('input,select,textarea,button')].map(el=>[el,el.disabled]);controls.forEach(([el])=>el.disabled=true);form.querySelector('[data-error]').textContent='Reading public website metadata…';try{const {data}=await api('crm-website-metadata',{website});for(const key of ['website','company_name','short_description','instagram','linkedin'])if(data[key]&&form.elements[key])form.elements[key].value=data[key];form.querySelector('[data-error]').textContent='Review these website-derived fields before saving. Nothing has been saved.';}catch(e){form.querySelector('[data-error]').textContent=e.message+' You can still add the company manually.';}finally{pending=false;controls.forEach(([el,disabled])=>el.disabled=disabled);}};
+  const duplicates=document.createElement('div');duplicates.className='crm-duplicates';form.querySelector('[data-error]').before(duplicates);
   let active = false, requestId = 0, current = null, editing = null, pending = false, timer, cleanupDetail;
   const shell = () => document.querySelectorAll('.workspace > .page-heading,.workspace > .toolbar,.workspace > .metrics,.workspace > .chart-panel,.workspace > .library');
   function activate(value) {
@@ -65,13 +72,16 @@ export function createCrm({api,notify}) {
       <details class="crm-filters"><summary>Filters & sorting</summary><div class="crm-filter-grid">
       ${select('country_category','Country',['SK','CZ','INT'])}${select('pipeline_status','Status',STATUSES,true)}
       ${select('priority','Priority',PRIORITIES,true)}${select('service','Service',SERVICES)}
+      ${select('fit','Fit · manual',PRIORITIES,true)}
       ${select('lead_source','Source',SOURCES)}<label>Industry<input name="industry" list="crm-industries" maxlength="120"></label>
-      ${select('presentation_status','Presentation',['NONE','ASSIGNED','SENT','VIEWED'],true)}${select('engagement','Engagement · 30 days',['COLD','ACTIVE','HOT'])}${select('has_followup','Pending follow-up',['yes','no'],true)}${select('has_replied','Recorded reply',['yes','no'],true)}<label>Last presentation sent<select name="last_contacted"><option value="">Any time</option><option value="never">Never recorded</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="older30">Over 30 days ago</option></select></label>
+      ${select('presentation_status','Presentation',['NONE','ASSIGNED','SENT','VIEWED'],true)}${select('engagement','Engagement · 30 days',['NONE','COLD','ACTIVE','HOT'])}${select('has_followup','Pending follow-up',['yes','no'],true)}${select('has_replied','Recorded reply',['yes','no'],true)}<label>Last presentation sent<select name="last_contacted"><option value="">Any time</option><option value="never">Never recorded</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="older30">Over 30 days ago</option></select></label>
       <label>Show<select name="archived"><option value="active">Active leads</option><option value="archived">Archived leads</option><option value="all">All leads</option></select></label>
       <label>Sort<select name="sort"><option value="recent">Recently added</option><option value="name">Company name</option><option value="updated">Recently updated</option><option value="priority">Priority</option><option value="last_activity">Last activity</option><option value="last_contact">Last presentation sent</option><option value="next_followup">Next follow-up</option><option value="engagement">Most engaged · 30 days</option></select></label>
       </div></details><div class="actions"><button type="submit" class="secondary">Apply filters</button><button type="button" class="quiet" data-clear>Clear filters</button><button type="button" class="quiet" data-reload>Refresh</button></div></form>
       <datalist id="crm-industries">${options(INDUSTRIES)}</datalist><div id="lead-results" aria-live="polite"></div>`;
     const filters = root.querySelector('#lead-filters');
+    mountSavedViews({root,api,navigate,notify});
+    mountCsv({root,api,notify});
     for (const element of filters.elements) if (element.name && p.has(element.name)) element.value=p.get(element.name);
     if ([...p.keys()].some(k=>!['q','page'].includes(k))) filters.querySelector('details').open=true;
     const apply = () => {
@@ -107,13 +117,15 @@ export function createCrm({api,notify}) {
       const {company:c}=await api('crm-detail',null,{id});
       if(!active||seq!==requestId)return; current=c;
       root.innerHTML='<a href="/admin/leads" data-lead class="quiet">← All leads</a>'+
-        heading(c.company_name,'SALES / COMPANY', '<button class="primary" data-edit>Edit company</button>')+
+        heading(c.company_name,'SALES / COMPANY', `<div class="actions"><button class="secondary" data-quick-note="${escape(c.id)}" data-company-name="${escape(c.company_name)}">+ Note</button><button class="primary" data-edit>Edit company</button></div>`)+
         `<div class="actions"><span class="badge">${escape(label(c.pipeline_status))}</span><span class="badge">${escape(c.country||'INT')}</span><span class="fine">Priority: ${escape(label(c.priority))}</span>${c.archived_at?'<span class="badge">Archived</span>':''}</div>
         <div class="crm-detail-grid"><section class="chart-panel"><p class="eyebrow">COMPANY INFORMATION</p><h2>${escape(c.industry||'Industry not set')}</h2><p class="crm-description">${escape(c.short_description||'No description yet.')}</p><dl><dt>Country / city</dt><dd>${escape([c.country,c.city].filter(Boolean).join(' / ')||'Not specified')}</dd><dt>Lead source</dt><dd>${escape(c.lead_source)}</dd><dt>Added</dt><dd>${escape(date(c.created_at))}</dd><dt>Updated</dt><dd>${escape(date(c.updated_at))}</dd></dl><div class="actions">${['website','instagram','linkedin'].filter(k=>/^https?:\/\//i.test(c[k])).map(k=>`<a class="secondary" href="${escape(c[k])}" target="_blank" rel="noopener noreferrer">${label(k)} ↗</a>`).join('')}</div></section>
         <section class="chart-panel"><p class="eyebrow">POTENTIAL SHAPEVIZ SERVICES</p><h2>Ways to collaborate.</h2><div class="crm-tags">${c.services.map(s=>`<span class="badge">${escape(s)}</span>`).join('')||'<p class="fine">No services selected.</p>'}</div><hr><p class="fine">Archiving keeps the company and its history. You can restore it at any time.</p><button class="secondary" data-archive>${c.archived_at?'Restore lead':'Archive lead'}</button></section></div>`;
       const next=document.createElement("section");next.className="chart-panel crm-next-panel";next.innerHTML=`<p class="eyebrow">NEXT ACTION</p><p class="crm-next-action">${escape(nextActionText(c.next_action))}</p><a class="secondary" data-lead href="/admin/follow-ups?companyId=${encodeURIComponent(c.id)}">Manage follow-ups</a>`;root.querySelector(".crm-detail-grid").append(next);
       cleanupDetail=mountRelations({root,company:c,api,notify});
-      const cleanupRelations=cleanupDetail,cleanupSignals=mountCompanySignals({root,company:c,api});cleanupDetail=()=>{cleanupRelations();cleanupSignals();};
+      const createDeck=document.createElement('button');createDeck.className='secondary';createDeck.textContent='Create presentation';createDeck.disabled=!!c.archived_at;createDeck.onclick=()=>document.dispatchEvent(new CustomEvent('crm-create-presentation',{detail:{companyId:c.id}}));root.querySelector('.page-heading .actions').append(createDeck);
+      root.querySelector('.page-heading').insertAdjacentHTML('afterend',`<p class="fine">Fit: ${escape(c.fit||'Not assessed')} · manually assessed, separate from priority and engagement.</p>`);
+      const cleanupRelations=cleanupDetail,cleanupSignals=mountCompanySignals({root,company:c,api}),cleanupClient=mountClient({root,company:c,api,notify});cleanupDetail=()=>{cleanupRelations();cleanupSignals();cleanupClient();};
       const valuePanel=document.createElement('section');valuePanel.className='chart-panel crm-value-panel';
       valuePanel.innerHTML=`<p class="eyebrow">ESTIMATED OPPORTUNITY</p><h2>${escape(opportunityValueText(c))}</h2><p class="fine">Estimate in EUR, not confirmed revenue. Use Edit company to change it.</p>`;
       root.querySelector('.crm-detail-grid').append(valuePanel);
@@ -138,8 +150,9 @@ export function createCrm({api,notify}) {
   }
   function edit(company = null) {
     editing=company;form.reset();form.querySelector('[data-error]').textContent='';
+    duplicates.replaceChildren();fromWebsite.hidden=!!company;
     form.querySelector('h2').textContent=company?'Edit company.':'Add lead.';
-    const defaults={priority:'MEDIUM',lead_source:'Manual research',pipeline_status:'NEW_LEAD',estimated_value:'',value_type:'UNKNOWN',lost_reason:'',...Object.fromEntries(WON_FIELDS.map(k=>[k,''])),...company};
+    const defaults={fit:'',priority:'MEDIUM',lead_source:'Manual research',pipeline_status:'NEW_LEAD',estimated_value:'',value_type:'UNKNOWN',lost_reason:'',...Object.fromEntries(WON_FIELDS.map(k=>[k,''])),...company};
     form.querySelector('[data-initial-contact]').hidden=!!company;
     form.querySelector('[data-initial-contact]').open=false;
     form.querySelector('[data-won-fields]').open=company?.pipeline_status==='WON';
@@ -168,6 +181,7 @@ export function createCrm({api,notify}) {
       Object.assign(values,opportunityValueInput(values));
       if(!editing&&['initial_name','initial_position','initial_email','initial_phone'].some(k=>values[k]?.trim()))values.initial_contact={full_name:values.initial_name,job_title:values.initial_position,email:values.initial_email,phone:values.initial_phone};
       for(const k of ['initial_name','initial_position','initial_email','initial_phone'])delete values[k];
+      if(!editing){const {items=[]}=await api('crm-duplicates',values);duplicates.innerHTML=items.length?'<p>Possible duplicates. Open an existing company or save again and choose Create anyway.</p>'+items.map(c=>`<p><a href="/admin/leads/${encodeURIComponent(c.id)}" target="_blank" rel="noopener">${escape(c.company_name)} · ${escape(c.country)} · ${escape(c.pipeline_status)}</a></p>`).join(''):'';if(items.length&&!confirm(`Possible duplicates: ${items.map(c=>c.company_name+' ('+c.country+')').join(', ')}. Create anyway? Cancel to review existing companies.`))return;}
       const {company}=await api(editing?'crm-update':'crm-create',{...values,...(editing?{id:editing.id,version:editing.version}:{})});
       dialog.close();notify('Lead saved.');navigate('/admin/leads/'+company.id);
     }catch(error){form.querySelector('[data-error]').textContent=error.message;}
@@ -189,6 +203,8 @@ export function createCrm({api,notify}) {
   };
   function show() {
     activate(true);
+    if(/^\/admin\/clients\/?$/.test(location.pathname)){document.querySelector('#nav-leads').classList.remove('active');showClients({root,api});return;}
+    if(/^\/admin\/reports\/?$/.test(location.pathname)){document.querySelector('#nav-leads').classList.remove('active');showReports({root,api});return;}
     if(/^\/admin\/follow-ups\/?$/.test(location.pathname)){
       document.querySelector('#nav-leads').classList.remove('active');
       document.querySelector('#nav-followups').classList.add('active');
@@ -200,7 +216,7 @@ export function createCrm({api,notify}) {
       pipeline.show();return;
     }
     const match=location.pathname.match(/^\/admin\/leads\/([^/]+)\/?$/);
-    if(match)detail(match[1]);else listShell();
+    if(match)detail(match[1]);else{listShell();if(new URLSearchParams(location.search).get('new')==='1')edit();}
   }
   return {show, hide:()=>activate(false), isActive:()=>active, navigate};
 }

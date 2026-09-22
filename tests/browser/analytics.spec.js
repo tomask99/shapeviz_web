@@ -17,7 +17,7 @@ for (const mobile of [false, true]) {
       send: async (url, options) => {
         if (url.endsWith('/rpc/crm_record_verified_visit')) return new Response(null, {status:204});
         if (url.includes('/presentation_projects?')) return Response.json([project]);
-        if (url.endsWith('/rpc/record_presentation_event')) {
+        if (url.endsWith('/rpc/record_presentation_attributed_event')) {
           writes.push(JSON.parse(options.body));
           return new Response(null, { status: 204 });
         }

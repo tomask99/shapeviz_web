@@ -16,6 +16,7 @@ export function createPipeline({root,api,notify}) {
         <a href="/admin/leads/${encodeURIComponent(c.id)}" data-lead><h3>${esc(c.company_name)}</h3></a>
         <p class="fine">${esc(c.country||'INT')} · ${esc(c.industry||'Industry not set')}</p>
         <span class="badge">${esc(label(c.priority))} priority</span>
+        <button class="quiet" data-quick-note="${esc(c.id)}" data-company-name="${esc(c.company_name)}">+ Note</button>
         <p class="fine">${signalSummary(c)}</p>
         <p class="fine crm-next-action">${esc(nextActionText(c.next_action))}</p>
         <label>Move to<select data-move="${esc(c.id)}" aria-label="Status for ${esc(c.company_name)}" ${saving||loading?'disabled':''}>${STATUSES.map(s=>`<option value="${s}" ${s===c.pipeline_status?'selected':''}>${esc(label(s))}</option>`).join('')}</select></label>

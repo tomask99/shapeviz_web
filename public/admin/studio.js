@@ -1,5 +1,7 @@
 import './cursor.js';
 import {createCrm} from './crm.js';
+import {installQuickNotes} from './crm-quick-note.js';
+import {installCommandPalette} from './crm-command.js';
 import {refreshWebsiteStats} from './website-stats.js';
 import {uploadPresentation} from './upload.js';
 import {createStudioCompany} from './studio-company.js';
@@ -54,9 +56,13 @@ async function copyPresentationLink(slug){const url=new URL(`/p/${slug}`,locatio
 async function refresh(){const website=refreshWebsiteStats(api);const list=await api('list');projects=list.projects;renderProjects();try{const stats=await api('stats',null,{days:$('#days').value});statistics=stats;$('#metrics').innerHTML=metricMarkup(stats.summary);drawChart();renderProjects();}catch(error){$('#metrics').textContent='Statistics are temporarily unavailable.';$('#chart-readout').textContent=error.message;}await website;}
 $('#website-days').onchange=()=>refreshWebsiteStats(api);
 const crm=createCrm({api,notify});
-const business=createBusinessOverview({api});
-const isCrmPath=()=>/^\/admin\/(?:leads(?:\/[^/]+)?|pipeline|follow-ups)\/?$/.test(location.pathname);
-async function enter(email){$('#login').hidden=true;$('#studio').hidden=false;$('#account').textContent=email;$('#today').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});if(isCrmPath())crm.show();else{setView(new URLSearchParams(location.search).get('view')==='templates'?'templates':'all',false);await refresh();}}
+installQuickNotes({api,notify});
+installCommandPalette({api,navigate:path=>path.startsWith('/admin?deck=')?location.assign(path):crm.navigate(path),createPresentation:()=>api('list').then(d=>{projects=d.projects;$('#new-dialog').showModal();}).catch(e=>notify(e.message))});
+const business=createBusinessOverview({api,notify});
+const isCrmPath=()=>/^\/admin\/(?:leads(?:\/[^/]+)?|pipeline|follow-ups|clients|reports)\/?$/.test(location.pathname);
+const clientNav=document.createElement('a');clientNav.href='/admin/clients';clientNav.textContent='Clients';$('#nav-followups').after(clientNav);clientNav.onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/clients');};
+const reportsNav=document.createElement('a');reportsNav.href='/admin/reports';reportsNav.textContent='Reports';clientNav.after(reportsNav);reportsNav.onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/reports');};
+async function enter(email){$('#login').hidden=true;$('#studio').hidden=false;$('#account').textContent=email;$('#today').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});if(isCrmPath())crm.show();else{setView(new URLSearchParams(location.search).get('view')==='templates'?'templates':'all',false);await refresh();const deck=new URLSearchParams(location.search).get('deck');if(deck){if(projects.some(p=>p.deck_slug===deck))showDetail(deck);else notify('Presentation is not in the current library. Refresh or search the library.');}}}
 $('#nav-leads').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/leads');};
 $('#nav-followups').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/follow-ups');};
 $('#nav-pipeline').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/pipeline');};
@@ -110,16 +116,18 @@ $('#upload-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>
  },{slug:form.elements.slug.value,isTemplate:data.isTemplate});
  pendingUpload=null;$('#upload-dialog').close();$('#search').value='';setView(data.isTemplate?'templates':'all');notify(data.isTemplate?'Template saved to your library. Use it later from New presentation → From template.':`Presentation saved at ${result.url}`);await refresh();
 });};
-function openVariant(slug='') {
- variantCompany.reset();
+function openVariant(slug='',company=null) {
+ variantCompany.reset({company});
  const form=$('#variant-form'),templates=projects.filter(p=>isTemplate(p)&&p.status!=='archived');form.reset();form.querySelector('[data-form-error]')?.remove();
  form.elements.template.innerHTML='<option value="">Select a saved template…</option>'+templates.map(p=>`<option value="${p.deck_slug}">${escape(p.client)} — ${escape(p.title)}</option>`).join('');
  form.elements.template.value=slug;form.elements.template.disabled=!templates.length;form.elements.client.disabled=!templates.length;
+ if(company)form.elements.client.value=company.company_name;
  $('#no-templates').hidden=!!templates.length;$('#preview-variant').disabled=!templates.length;form.querySelector('[type=submit]').disabled=!templates.length;
  $('#variant-preview').hidden=true;$('#replacement-count').textContent='';$('#variant-dialog').showModal();
  if(slug)form.elements.client.focus();else form.elements.template.focus();
 }
 $('#variant-form').addEventListener('input',()=>{$('#replacement-count').textContent='';});
+document.addEventListener('crm-create-presentation',async e=>{try{const {company}=await api('crm-detail',null,{id:e.detail.companyId});if(company.archived_at)throw new Error('Restore the company first.');if(e.detail.mode==='upload'){openUpload();uploadCompany.reset({company});const f=$('#upload-form');f.elements.client.value=company.company_name;f.elements.slug.value=slugify(company.company_name);return;}projects=(await api('list')).projects;openVariant('',company);}catch(error){notify(error.message);}});
 function openEdit(slug){const p=projects.find(p=>p.deck_slug===slug);editCompany.reset({slug,hidden:isTemplate(p)});if(isTemplate(p)){const form=$('#template-edit-form');form.reset();form.querySelector('[data-form-error]')?.remove();for(const name of ['client','title'])form.elements[name].value=p[name];form.elements.slug.value=slug;$('#template-edit-dialog').showModal();return;}const form=$('#edit-form');form.querySelector('[data-form-error]')?.remove();form.elements.slug.value=slug;form.elements.title.value=p.title;form.elements.status.value=p.status;form.elements.isTemplate.checked=p.is_template;form.elements.match.required=false;form.elements.match.closest('label').hidden=true;$('#edit-dialog').showModal();}
 $('#template-edit-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{await api('update',formData(e.target));$('#template-edit-dialog').close();await refresh();notify('Template settings saved.');});};
 $('#edit-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=formData(e.target);await editCompany.save(()=>api('update',data),{slug:e.target.elements.slug.value,isTemplate:data.isTemplate,archived:e.target.elements.status.value==='archived'});$('#edit-dialog').close();await refresh();notify('Presentation settings saved.');});};
