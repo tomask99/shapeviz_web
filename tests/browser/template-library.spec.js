@@ -86,13 +86,14 @@ test('template library supports renaming and confirmed deletion with Storage cle
  await page.locator('#template-edit-form [type=submit]').click();
  await expect(page.locator('#projects')).toContainText('Monthly 2026');
  await page.getByRole('button',{name:'Delete template Monthly 2026',exact:true}).click();
+ await expect(page.locator('#delete-slug')).toHaveText('delete');
  await expect(page.locator('#delete-description')).toContainText('uploaded files and associated records from Supabase');
  await page.getByRole('button',{name:'Keep template',exact:true}).click();expect(deletions).toBe(0);
  await page.getByRole('button',{name:'Delete template Monthly 2026',exact:true}).click();
  await page.locator('#delete-form input').fill('wrong');
  await page.locator('#delete-submit').click();expect(deletions).toBe(0);
- await expect(page.locator('#delete-form [role=alert]')).toContainText('exact URL name');
- await page.locator('#delete-form input').fill('template-monthly');await page.locator('#delete-submit').click();
+ await expect(page.locator('#delete-form [role=alert]')).toContainText('Type delete');
+ await page.locator('#delete-form input').fill('delete');await page.locator('#delete-submit').click();
  await expect(page.locator('#projects')).toContainText('No templates saved');
  await expect(page.locator('#notice')).toContainText('Template deleted. 4 Storage files removed.');
  await page.locator('[data-view=all]').click();await expect(page.locator('#metrics')).toBeVisible();
