@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-const clients = ['PRADA', 'PUCCI', 'MAZDA', 'MILENIUM', 'MCM', 'BERO', 'BRAVE MMA', 'TATRABANKA', 'SORRYWECAN', 'TOLICCI'];
+const clients = ['PRADA', 'PUCCI', 'MAZDA', 'MILENIUM', 'MCM', 'BERO', 'BRAVE MMA', 'TATRABANKA', 'TOLICCI'];
 
 test('hero, anchors and all client names are available without browser errors', async ({ page }) => {
   const errors = [];
@@ -8,6 +8,7 @@ test('hero, anchors and all client names are available without browser errors', 
   await expect(page).toHaveTitle(/SHAPEVIZ/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName('SHAPEVIZ');
   await expect(page.locator('.client-name')).toHaveText(clients);
+  await expect(page.locator('.client-number')).toHaveText(clients.map((_,index)=>String(index+1).padStart(2,'0')));
   await page.getByRole('link', { name: 'Studio', exact: true }).click();
   await expect(page).toHaveURL(/#about$/);
   await expect(page.locator('#about-title')).toBeInViewport();
@@ -19,7 +20,7 @@ for (const width of [320, 390, 768, 1024, 1440, 1920]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
-    const longest = page.getByText('SORRYWECAN', { exact: true });
+    const longest = page.getByText('TATRABANKA', { exact: true });
     await longest.scrollIntoViewIfNeeded();
     const bounds = await longest.boundingBox();
     expect(bounds.x).toBeGreaterThanOrEqual(0);
@@ -98,7 +99,7 @@ test('reduced motion keeps text visible and does not autoplay video', async ({ p
   await expect(page.locator('#fluid-glow')).toHaveCSS('display', 'none');
   await page.locator('#project-video').scrollIntoViewIfNeeded();
   await expect.poll(() => page.locator('#project-video').evaluate(v => v.paused)).toBe(true);
-  await page.getByText('SORRYWECAN', { exact: true }).scrollIntoViewIfNeeded();
+  await page.getByText('TOLICCI', { exact: true }).scrollIntoViewIfNeeded();
   await expect(page.locator('.client-list li').nth(8)).toHaveCSS('opacity', '1');
   await expect(page.locator('.client-list li').nth(8)).toHaveCSS('filter', 'none');
   const image = page.getByRole('button', { name: 'Enlarge Milenium interior visual' });
