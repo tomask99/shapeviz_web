@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getPresentationProject, getPrivatePresentationSource, hasSupabase, slugPattern } from './remote.js';
 import { requestOrigin } from '../http.js';
+import {normalizePresentationCtaArrows} from './cta-arrows.js';
 
 const moduleRoot = path.dirname(fileURLToPath(import.meta.url));
 const defaultTemplatesRoot = path.resolve(moduleRoot, '../../presentation-templates');
@@ -60,9 +61,11 @@ export function createPresentationPageHandler({ env = process.env, send = fetch,
         res.writeHead(404, { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow, noarchive' }).end('Not found');
         return;
       }
-      const html = project.source_type === 'template'
+      const source = project.source_type === 'template'
         ? await renderPresentationTemplate(project, { templatesRoot })
         : await getPrivatePresentationSource(project, { env, send });
+      // Also repair already uploaded decks without rewriting their stored source.
+      const html = normalizePresentationCtaArrows(source);
       const etag = `"${createHash('sha256').update(html).digest('hex').slice(0, 24)}"`;
       // Explicit sources also work in WebKit versions that treat 'self' as
       // the sandbox's opaque origin. Keep the document sandboxed.

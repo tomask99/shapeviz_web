@@ -1,6 +1,9 @@
 // Keep document navigation and the shared tracker on Shapeviz. Only package
 // assets resolve against Storage; an external <base> would also move /api URLs.
+import {normalizePresentationCtaArrows} from './cta-arrows.js';
+
 export function preparePublishedHtml(html, { slug, mediaBase, analytics }) {
+  html = normalizePresentationCtaArrows(html);
   html = html.replace(/<base\b[^>]*>/gi, '');
   const resolve = value => /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(value) ? value : new URL(value, mediaBase).href;
   html = html.replace(/\b(src|href|poster)=(['"])(.*?)\2/gi, (match, attribute, quote, value) => `${attribute}=${quote}${resolve(value)}${quote}`);

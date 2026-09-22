@@ -1,4 +1,5 @@
 import { parse, serialize } from 'parse5';
+import {normalizePresentationCtaArrows} from '../presentations/cta-arrows.js';
 
 export function clientEmbedCount(html) {
   const document = parse(html);
@@ -41,7 +42,7 @@ export function transformDeck(html, { from, company, slug, analytics = true, use
     }
   }
   walk(document);
-  let output = serialize(document);
+  let output = normalizePresentationCtaArrows(serialize(document));
   if (useClientNameApi) {
     if (!supportsClientNameApi(output)) throw new Error('This template must include data-embed="client-name" and window.setShapevizClientName().');
     const safeCompany = JSON.stringify(String(company ?? '')).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
