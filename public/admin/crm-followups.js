@@ -122,7 +122,7 @@ export function createFollowups({root,api,notify,todayOnly=false,onChanged=()=>{
   root.addEventListener('click',e=>{
     if(!active||pending)return;const b=e.target.closest('button');if(!b)return;
     if(b.hasAttribute('data-schedule-followup'))edit();
-    if(b.hasAttribute('data-followup-refresh')||b.hasAttribute('data-followup-retry')){bounds=localDayBounds();load();}
+    if(b.hasAttribute('data-followup-refresh')||b.hasAttribute('data-followup-retry')){api.invalidate?.();bounds=localDayBounds();load();}
     if(b.dataset.followupEdit)edit(groups.flatMap(g=>g.items).find(f=>f.id===b.dataset.followupEdit));
     if(b.dataset.followupComplete)complete(b.dataset.followupComplete);
     if(b.dataset.followupPage)load(b.dataset.group,Number(b.dataset.followupPage));

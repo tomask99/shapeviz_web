@@ -93,7 +93,7 @@ export function createPipeline({root,api,notify}) {
     form.onchange=e=>{if(e.target.type!=='search')apply();};
     form.elements.q.oninput=()=>{clearTimeout(timer);timer=setTimeout(apply,350);};
     root.querySelector('[data-pipeline-clear]').onclick=()=>{form.reset();apply();};
-    root.querySelector('[data-pipeline-refresh]').onclick=()=>load();
+    root.querySelector('[data-pipeline-refresh]').onclick=()=>{api.invalidate?.();load();};
     load();
   }
   root.addEventListener('change',e=>{if(active&&e.target.dataset.move)move(e.target.dataset.move,e.target.value);});

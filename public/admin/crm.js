@@ -192,7 +192,7 @@ export function createCrm({api,notify}) {
     if(target.hasAttribute('data-lead')&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&e.button===0){e.preventDefault();navigate(target.getAttribute('href'));return;}
     if(target.hasAttribute('data-add'))edit();
     if(target.hasAttribute('data-edit'))edit(current);
-    if(target.hasAttribute('data-reload'))show();
+    if(target.hasAttribute('data-reload')){api.invalidate?.();show();}
     if(target.dataset.page){const p=new URLSearchParams(location.search);p.set('page',target.dataset.page);navigate('/admin/leads?'+p);}
     if(target.hasAttribute('data-archive')&&current){
       if(!current.archived_at&&!confirm('Archive this lead? Its data and history will be kept.'))return;

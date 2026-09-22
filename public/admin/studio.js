@@ -1,5 +1,7 @@
 import './cursor.js';
 import {createCrm} from './crm.js';
+import {createCrmReadCache} from './crm-read-cache.js';
+import {localDayBounds} from './crm-dates.js';
 import {installQuickNotes} from './crm-quick-note.js';
 import {installCommandPalette} from './crm-command.js';
 import {refreshWebsiteStats} from './website-stats.js';
@@ -12,12 +14,13 @@ const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 let projects=[],statistics={},view='all',selected=null,noticeTimer;
 const duration=n=>{n=Number(n)||0;return n>=3600?`${Math.floor(n/3600)}h ${Math.floor(n%3600/60)}m`:n>=60?`${Math.floor(n/60)}m ${n%60}s`:`${n}s`;};
 const notify=message=>{clearTimeout(noticeTimer);$('#notice').textContent=message;$('#notice').classList.add('visible');noticeTimer=setTimeout(()=>$('#notice').classList.remove('visible'),9000);};
-async function api(action,body,params={}) {
+const api=createCrmReadCache(requestApi);
+async function requestApi(action,body,params={}) {
  const query=new URLSearchParams({...params,action});
  const response=await fetch(`/api/admin?${query}`,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(60000)});
  const data=await response.json().catch(()=>({error:'The server did not finish this request. Please try again.'}));if(!response.ok){if(response.status===401 && action!=='login' && action!=='verify')showLogin();throw Object.assign(new Error(data.error||'Request failed.'),{status:response.status,retryAfter:response.headers.get('Retry-After')});}return data;
 }
-function showLogin(setup=false){business.hide();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('#studio').hidden=true;$('#login').hidden=false;$('#signin').hidden=setup;$('#set-password').hidden=!setup;$('#login-title').textContent=setup?'Make it yours.':'Welcome back.';$('#login-hint').textContent=setup?'Set a password with at least 12 characters.':'Sign in to your Shapeviz studio.';}
+function showLogin(setup=false){api.invalidate();business.hide();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('#studio').hidden=true;$('#login').hidden=false;$('#signin').hidden=setup;$('#set-password').hidden=!setup;$('#login-title').textContent=setup?'Make it yours.':'Welcome back.';$('#login-hint').textContent=setup?'Set a password with at least 12 characters.':'Sign in to your Shapeviz studio.';}
 function formData(form){const data=Object.fromEntries(new FormData(form));for(const name of ['publish','isTemplate'])if(form.elements[name])data[name]=form.elements[name].checked;return data;}
 const uploadCompany=createStudioCompany($('#upload-form'),api),variantCompany=createStudioCompany($('#variant-form'),api),editCompany=createStudioCompany($('#edit-form'),api);
 async function busy(form,task){const buttons=[...form.querySelectorAll('button')];let errorBox=form.querySelector('[data-form-error]');if(!errorBox){errorBox=document.createElement('p');errorBox.dataset.formError='';errorBox.setAttribute('role','alert');form.append(errorBox);}errorBox.textContent='';buttons.forEach(b=>b.disabled=true);try{await task();}catch(error){errorBox.textContent=error.message;notify(error.message);}finally{buttons.forEach(b=>b.disabled=false);}}
@@ -66,6 +69,13 @@ async function enter(email){$('#login').hidden=true;$('#studio').hidden=false;$(
 $('#nav-leads').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/leads');};
 $('#nav-followups').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/follow-ups');};
 $('#nav-pipeline').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/pipeline');};
+// Warm only the destination the user is approaching; never preload every board.
+for(const [id,action] of [['nav-leads','crm-list'],['nav-pipeline','crm-pipeline'],['nav-followups','crm-followups']]){
+ const warm=()=>{if($('#studio').hidden||navigator.connection?.saveData)return;api(action,null,action==='crm-followups'?localDayBounds():{}).catch(()=>{});};
+ $('#'+id).addEventListener('pointerenter',warm);$('#'+id).addEventListener('focus',warm);
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)api.invalidate();});
+window.addEventListener('focus',()=>api.invalidate());
 window.addEventListener('popstate',()=>{if($('#studio').hidden)return;if(isCrmPath())crm.show();else setView(new URLSearchParams(location.search).get('view')==='templates'?'templates':'all',false);});
 $('#signin').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=await api('login',formData(e.target));e.target.reset();await enter(data.email);});};
 $('#set-password').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=formData(e.target);if(data.password!==data.confirm)throw new Error('Passwords do not match.');await api('password',{password:data.password});e.target.reset();const user=await api('me');await enter(user.email);notify('Password saved.');});};
