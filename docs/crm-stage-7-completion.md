@@ -17,7 +17,7 @@ Applied migrations: `20260922191132_crm_company_completion`, `20260922191133_crm
 ## Verification
 
 - Node suite: 90 passed, 1 opt-in Storage test skipped.
-- Full existing browser suite: 79 passed, 1 opt-in upload test skipped; 4 new completion/gate checks passed separately.
+- Browser checks: 83 non-live cases verified. Final full rerun had 82 pass, 2 opt-in skips and one artifact-cleanup failure caused by a concurrent runner deleting its trace file; the affected template library suite was rerun alone (3/3 pass). Earlier full suite and all 4 new completion/gate checks passed.
 - Build and presentation validation passed (0 local presentations; real presentations remain remote).
 - SQL completion and signals fixtures passed against live Supabase, rolled back. Includes atomic invalid-contact rollback, retained/clearable WON values, ownership, service-only RPC, auto-stage guard, event deduplication and aggregate filters.
 - Opt-in `tests/browser/crm-live.spec.js`: real temporary Supabase Auth user, real app API, real RLS, company/contact/WON save + reload, aggregate filters/source report, actual browser visit through gate/tracker/API/database and auto VIEWED. Admin produces no sessions. Temporary user/company/contact/deck/history/sessions removed. No Telegram test messages sent by local integration server.
@@ -35,4 +35,8 @@ Applied migrations: `20260922191132_crm_company_completion`, `20260922191133_crm
 
 ## Deployment
 
-Prepared for GitHub push and Git-triggered production deployment. Direct CLI is logged out; connected Vercel app lacks project-team scope. Final production verification is recorded after deployment below.
+Application commit `e62673ae79314ceffab40613b5fb0aedc5274816` pushed to `main`. GitHub Vercel status reports **success / Deployment has completed**: [deployment](https://vercel.com/tomask99-s-projects/shapeviz_web/GkM5S5dLNnj4YuGyrk2Y2At9HtCG).
+
+Production: https://shapevizweb.vercel.app. Public `/admin/leads` and `/admin/follow-ups` serve the login shell; unauthenticated CRM API returns 401. New JS assets return 200. Real production browser integration passed using `LIVE_CRM_TEST=true LIVE_APP_ORIGIN=https://shapevizweb.vercel.app`: login, company + contact + WON save/reload, RLS reads, filters and source reporting. Temporary account and records removed; follow-up SQL confirmed zero test users/decks. Visitor-to-VIEWED integration was verified against the same live Supabase using the local app server (Telegram disabled for that isolated fixture).
+
+Runtime log/drain inspection remains unavailable: CLI is logged out and the connected Vercel app lacks this team scope. Deployment success is evidenced by GitHub status and real production HTTP/browser checks, not a claimed clean runtime-log scan.
