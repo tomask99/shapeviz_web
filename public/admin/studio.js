@@ -51,9 +51,10 @@ async function copyPresentationLink(slug){const url=new URL(`/p/${slug}`,locatio
 async function refresh(){const website=refreshWebsiteStats(api);const list=await api('list');projects=list.projects;renderProjects();try{const stats=await api('stats',null,{days:$('#days').value});statistics=stats;$('#metrics').innerHTML=metricMarkup(stats.summary);drawChart();renderProjects();}catch(error){$('#metrics').textContent='Statistics are temporarily unavailable.';$('#chart-readout').textContent=error.message;}await website;}
 $('#website-days').onchange=()=>refreshWebsiteStats(api);
 const crm=createCrm({api,notify});
-const isCrmPath=()=>/^\/admin\/leads(?:\/[^/]+)?\/?$/.test(location.pathname);
+const isCrmPath=()=>/^\/admin\/(?:leads(?:\/[^/]+)?|pipeline)\/?$/.test(location.pathname);
 async function enter(email){$('#login').hidden=true;$('#studio').hidden=false;$('#account').textContent=email;$('#today').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});if(isCrmPath())crm.show();else{setView(new URLSearchParams(location.search).get('view')==='templates'?'templates':'all',false);await refresh();}}
 $('#nav-leads').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/leads');};
+$('#nav-pipeline').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/pipeline');};
 window.addEventListener('popstate',()=>{if($('#studio').hidden)return;if(isCrmPath())crm.show();else setView(new URLSearchParams(location.search).get('view')==='templates'?'templates':'all',false);});
 $('#signin').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=await api('login',formData(e.target));e.target.reset();await enter(data.email);});};
 $('#set-password').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=formData(e.target);if(data.password!==data.confirm)throw new Error('Passwords do not match.');await api('password',{password:data.password});e.target.reset();const user=await api('me');await enter(user.email);notify('Password saved.');});};

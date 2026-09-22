@@ -85,7 +85,7 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
       if(req.method==='POST' && req.headers.origin !== origin) throw fail(403,'Request origin rejected.');
       const url=new URL(req.url,'http://localhost');
       const action=url.searchParams.get('action') || 'me';
-      const readActions=['me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity'];
+      const readActions=['me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline'];
       if(req.method==='GET' && !readActions.includes(action)) throw fail(405,'Use POST for this action.');
       if(req.method==='POST' && !/^application\/json\b/i.test(req.headers['content-type']||'')) throw fail(415,'JSON is required.');
       const body=req.method==='POST' ? await readJson(req,100_000) : {};

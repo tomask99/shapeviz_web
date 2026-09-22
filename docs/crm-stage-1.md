@@ -1,5 +1,8 @@
 # CRM stage 1 — Leads
 
+Release update: stage 1 was pushed in commit `8b6dec4` on 22 September 2026;
+Vercel reported success. The handoff below records its original pre-deploy state.
+
 Implemented 22 September 2026. Application changes are local, not pushed/deployed.
 The two additive database migrations below HAVE been applied to Supabase.
 

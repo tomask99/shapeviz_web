@@ -3,6 +3,20 @@ aside nav a.active{color:var(--accent);background:#d8873910;border-left:2px soli
 .crm-nav-label{margin:16px 10px 0;font-size:9px}
 @media(max-width:900px){.crm-nav-label{display:none}}
 #crm h1{overflow-wrap:anywhere}
+.pipeline-filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:16px;align-items:end}
+.pipeline-filters .actions{grid-column:1/-1;margin:0!important}
+.pipeline-board{display:flex;align-items:stretch;gap:16px;overflow-x:auto;max-width:100%;padding:4px 4px 24px;scrollbar-color:var(--accent) var(--surface);min-height:280px}
+.pipeline-column{flex:0 0 280px;min-width:0;border:1px solid var(--line);border-radius:22px;background:#0e0a07;padding:18px;transition:border-color .15s}
+.pipeline-column>header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:22px}
+.pipeline-column h2{font-size:15px;margin:0;letter-spacing:0}.pipeline-column header .badge{flex-shrink:0}
+.pipeline-card{padding:18px;border:1px solid var(--line);border-radius:18px;background:var(--surface);margin-bottom:14px;overflow-wrap:anywhere}
+.pipeline-card[draggable=true]{cursor:grab}.pipeline-card.dragging{opacity:.5}
+.pipeline-card h3{font-size:18px;margin-bottom:12px}.pipeline-card a:hover{color:var(--accent)}
+.pipeline-card label{font-size:10px;margin:20px 0 0}.pipeline-card select{font-size:12px;margin-bottom:0;padding:10px}
+.pipeline-column.drop-target{border-color:var(--accent);background:#d8873910}
+.pipeline-empty{padding:20px 0}#pipeline-error{color:#efaa71}
+@media(max-width:900px){.pipeline-filters{grid-template-columns:1fr 1fr}.pipeline-column{flex-basis:260px}}
+@media(max-width:480px){.pipeline-filters{grid-template-columns:1fr}.pipeline-column{flex-basis:min(280px,85vw)}}
 #crm .actions{flex-wrap:wrap;margin:20px 0}
 #crm .crm-filter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 #crm .crm-filters{margin:18px 0}

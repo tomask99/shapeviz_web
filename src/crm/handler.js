@@ -28,7 +28,7 @@ export async function handleCrm({action, body, url, user, token, call}) {
   const request = (path, options = {}) => call(path, {...options, token});
   const owner = `owner_id=eq.${encodeURIComponent(user.id)}`;
   if (relationActions.includes(action)) return handleRelations({action,body,url,user,request,owner});
-  if (action === 'crm-list') {
+  if (action === 'crm-list' || action === 'crm-pipeline') {
     const p = url.searchParams;
     const page = Number(p.get('page') || 1);
     if (!Number.isInteger(page) || page < 1 || page > 10000) throw fail(400, 'Invalid page.');
@@ -36,6 +36,14 @@ export async function handleCrm({action, body, url, user, token, call}) {
     for (const [key, values] of Object.entries({country_category:['SK','CZ','INT'], pipeline_status:STATUSES, priority:PRIORITIES, service:SERVICES, lead_source:SOURCES, archived:['active','archived','all'], sort:['recent','name','updated','priority']})) {
       const value = p.get(key);
       if (value) filters[key] = choice(value, values, key);
+    }
+    if(action==='crm-pipeline') {
+      const mode=choice(p.get('mode')||'active',['active','lost'],'pipeline view');
+      const stages=mode==='lost'?['LOST']:STATUSES.filter(status=>status!=='LOST');
+      const columns=await Promise.all(stages.map(async status=>({
+        status,...await request('/rest/v1/rpc/crm_list_companies',{method:'POST',body:{p_filters:{...filters,archived:'active',pipeline_status:status,sort:'updated'},p_page:1}})
+      })));
+      return {columns};
     }
     return request('/rest/v1/rpc/crm_list_companies', {method:'POST', body:{p_filters:filters, p_page:page}});
   }
@@ -51,11 +59,11 @@ export async function handleCrm({action, body, url, user, token, call}) {
     if (!rows[0]) throw fail(404, 'Company not found.');
     return {company:rows[0]};
   }
-  if (!['crm-update','crm-archive'].includes(action)) throw fail(404, 'Unknown CRM action.');
+  if (!['crm-update','crm-archive','crm-status'].includes(action)) throw fail(404, 'Unknown CRM action.');
   if (!Number.isSafeInteger(body.version) || body.version < 1) throw fail(400, 'Reload the company before saving.');
   if (action === 'crm-archive' && typeof body.archived !== 'boolean') throw fail(400, 'Invalid archive action.');
-  const values = action === 'crm-update' ? companyInput(body) : {archived_at:body.archived ? new Date().toISOString() : null};
-  const rows = await request(`${path}&version=eq.${body.version}`, {method:'PATCH', body:values, headers:{Prefer:'return=representation'}});
+  const values = action === 'crm-update' ? companyInput(body) : action==='crm-status' ? {pipeline_status:choice(body.pipeline_status,STATUSES,'status')} : {archived_at:body.archived ? new Date().toISOString() : null};
+  const rows = await request(`${path}&version=eq.${body.version}${action==='crm-status'?'&archived_at=is.null':''}`, {method:'PATCH', body:values, headers:{Prefer:'return=representation'}});
   if (!rows[0]) throw fail(409, 'This company changed or is no longer available. Reload it before saving again.');
   return {company:rows[0]};
 }

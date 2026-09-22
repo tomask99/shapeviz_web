@@ -1,6 +1,6 @@
 # Shapeviz CRM — postup implementácie
 
-Stav: etapy 0, 1 a 2 dokončené. Leads, kontakty, poznámky a história sú implementované lokálne a CRM migrácie sú aplikované; aplikácia ešte nie je nasadená. Podrobnosti: `docs/crm-stage-1.md` a `docs/crm-stage-2.md`.
+Stav: etapy 0 až 3 dokončené. CRM migrácie sú aplikované. Etapy 0–2 nasadené cez commit `8b6dec4`; vydanie Pipeline je sledované cez GitHub/Vercel status. Podrobnosti: `docs/crm-stage-1.md`, `docs/crm-stage-2.md`, `docs/crm-stage-3.md`.
 Podklad: `briefs/brief.md`. Audit repozitára a produkčnej schémy: 22. september 2026.
 
 ## Existujúca architektúra
@@ -85,6 +85,8 @@ Viac kontaktov, primárny kontakt, pridanie/úprava/odstránenie kontaktu bez zm
 
 ### 3. Pipeline
 
+Dokončené 22. 9. 2026; podrobnosti a overenie v `docs/crm-stage-3.md`.
+
 Kanban nad tými istými firmami, presun drag-and-drop aj prístupný alternatívny ovládač. Persistencia so záznamom zmeny; návrat UI pri chybe. LOST cez filter, archivované mimo aktívneho zoznamu.
 
 ### 4. Follow-ups
@@ -114,4 +116,4 @@ COLD/ACTIVE/HOT s nastaviteľnými pravidlami, samostatné jednorazové a mesač
 
 ## Stav tohto odovzdania
 
-Etapa 2: kontakty vrátane primárneho kontaktu, samostatné poznámky, automatická a manuálna história, súhrn v detaile a vyhľadávanie podľa kontaktov. Nová CRM migrácia je aplikovaná. Prezentácie a ich dáta zostali zachované. Bez pushu a deploymentu aplikácie. Nasleduje etapa 3 — Pipeline/Kanban. Podrobný odovzdávací prehľad: `docs/crm-stage-2.md`.
+Etapa 3: Pipeline/Kanban, presuny kariet aj zmena stavu cez menu, filtre, samostatný Lost pohľad, stránkovanie a ochrana pred prepísaním novších dát. Bez novej migrácie; používa existujúce firmy a históriu. Predchádzajúce etapy už pushnuté a nasadené. Nasleduje etapa 4 — Follow-ups. Podrobný prehľad: `docs/crm-stage-3.md`.

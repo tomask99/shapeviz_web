@@ -1,5 +1,6 @@
 import {STATUSES,SERVICES,SOURCES,INDUSTRIES,PRIORITIES,label} from './crm-options.js';
 import {mountRelations} from './crm-relations.js';
+import {createPipeline} from './crm-pipeline.js';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const options = (values, pretty = false) => values.map(v => `<option value="${escape(v)}">${escape(pretty ? label(v) : v)}</option>`).join('');
@@ -11,6 +12,7 @@ export function createCrm({api,notify}) {
   const root = document.createElement('section');
   root.id = 'crm'; root.hidden = true;
   document.querySelector('.workspace footer').before(root);
+  const pipeline=createPipeline({root,api,notify});
   const dialog = document.createElement('dialog');
   dialog.id = 'lead-dialog'; dialog.setAttribute('aria-labelledby','lead-form-title');
   dialog.innerHTML = `<form id="lead-form"><div class="dialog-head"><div><p class="eyebrow">SALES / COMPANY</p><h2 id="lead-form-title">Add lead.</h2></div><button type="button" data-cancel aria-label="Close">×</button></div>
@@ -28,10 +30,12 @@ export function createCrm({api,notify}) {
   let active = false, requestId = 0, current = null, editing = null, pending = false, timer, cleanupDetail;
   const shell = () => document.querySelectorAll('.workspace > .page-heading,.workspace > .toolbar,.workspace > .metrics,.workspace > .chart-panel,.workspace > .library');
   function activate(value) {
+    pipeline.hide();
     cleanupDetail?.();cleanupDetail=null;
     active = value; root.hidden = !value; requestId++; clearTimeout(timer);
     shell().forEach(e=>e.hidden=value);
     document.querySelector('#nav-leads').classList.toggle('active',value);
+    document.querySelector('#nav-pipeline').classList.remove('active');
     if (value) document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'));
   }
   function navigate(path, replace = false) {
@@ -144,6 +148,11 @@ export function createCrm({api,notify}) {
   };
   function show() {
     activate(true);
+    if(/^\/admin\/pipeline\/?$/.test(location.pathname)){
+      document.querySelector('#nav-leads').classList.remove('active');
+      document.querySelector('#nav-pipeline').classList.add('active');
+      pipeline.show();return;
+    }
     const match=location.pathname.match(/^\/admin\/leads\/([^/]+)\/?$/);
     if(match)detail(match[1]);else listShell();
   }

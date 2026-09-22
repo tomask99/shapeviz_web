@@ -1,5 +1,8 @@
 # CRM stage 2 — Contacts, notes and activity
 
+Release update: stage 2 was pushed in commit `8b6dec4` on 22 September 2026;
+Vercel reported success. The handoff below records its original pre-deploy state.
+
 Implemented 22 September 2026. Application changes remain local, without commit,
 push or Vercel deployment. Database migration HAS been applied to Supabase.
 

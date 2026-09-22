@@ -32,6 +32,10 @@
   ],
   "rewrites": [
     {
+      "source": "/admin/pipeline",
+      "destination": "/admin/index.html"
+    },
+    {
       "source": "/admin/leads",
       "destination": "/admin/index.html"
     },
