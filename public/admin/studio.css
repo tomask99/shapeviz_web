@@ -15,6 +15,8 @@ aside nav button.active{box-shadow:inset 0 0 0 1px #d8873924}
 .project-icon:hover,.project-icon:focus-visible{background:#d8873930;color:#f1ede6}
 .badge{border-radius:999px}.row-actions{flex-wrap:wrap;justify-content:end}
 input:not([type=checkbox]):not([type=radio]),select{border-radius:14px;background:#ffffff03;border-color:#f1ede614}
+/* Native dropdown menus can use a white surface even in the dark admin theme. */
+select option,select optgroup{color:#000;background-color:#fff}
 .url-input>span{border-radius:14px 0 0 14px}.url-input input{border-radius:0 14px 14px 0}
 dialog{border-radius:28px;border-color:#f1ede61a;box-shadow:0 40px 140px #000b;background:linear-gradient(145deg,#17100b,#0b0805)}
 .dialog-head>button{border-radius:50%;width:36px;height:36px;background:#ffffff05}

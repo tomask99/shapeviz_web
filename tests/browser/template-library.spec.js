@@ -52,6 +52,10 @@ test('save multiple templates first, then choose one to create a client presenta
  await page.locator('#create-from-template').click();
  const select=page.locator('#variant-form [name=template]');
  await expect(select.locator('option')).toHaveCount(3);
+ for(const option of await select.locator('option').all()){
+  await expect(option).toHaveCSS('color','rgb(0, 0, 0)');
+  await expect(option).toHaveCSS('background-color','rgb(255, 255, 255)');
+ }
  await select.selectOption('template-monthly-pitch');
  await select.selectOption('template-product-launch');
  await expect(page.locator('#variant-form input:visible')).toHaveCount(1);
