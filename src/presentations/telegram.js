@@ -43,7 +43,7 @@ export async function notifyPresentationOpened(event, project, {env, send=fetch,
     const text=`👀 Niekto otvoril tvoju prezentáciu!\n\n📊 ${title}\n📱 Zariadenie: ${deviceLabel(headers)}\n📍 Približná poloha: ${locationLabel(headers,env)}`;
     const response=await send(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN.trim()}/sendMessage`,{
       method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(8000),
-      body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID,text,link_preview_options:{is_disabled:true}})
+      body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID.trim(),text,link_preview_options:{is_disabled:true}})
     });
     const result=await response.json();
     if(!response.ok || !result.ok)throw new Error('delivery failed');
@@ -54,13 +54,38 @@ export async function notifyPresentationOpened(event, project, {env, send=fetch,
   }
 }
 
+export async function notifyWebsiteClicked(event, project, {env, send=fetch, headers={}}) {
+  if(event.eventType!=='website_clicked' || !env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID)return;
+  try {
+    // Claim the stored event, not the session: opening the deck must not suppress
+    // its CTA notification, and duplicate deliveries of a click must not spam.
+    const query=new URLSearchParams({event_id:`eq.${event.eventId}`,session_id:`eq.${event.sessionId}`,
+      deck_slug:`eq.${event.deck}`,event_type:'eq.website_clicked',telegram_claimed_at:'is.null',select:'event_id'});
+    const claim=await send(`${env.SUPABASE_URL.replace(/\/$/,'')}/rest/v1/presentation_events?${query}`,{
+      method:'PATCH',headers:{apikey:env.SUPABASE_SECRET_KEY,'Content-Type':'application/json',Prefer:'return=representation'},
+      body:JSON.stringify({telegram_claimed_at:new Date().toISOString()}),signal:AbortSignal.timeout(5000)
+    });
+    if(!claim.ok)throw new Error('claim failed');
+    const rows=await claim.json();
+    if(!Array.isArray(rows) || !rows.length)return;
+    const title=[singleLine(project.client,250),singleLine(project.title,250)].filter(Boolean).join(' — ') || event.deck;
+    const slide=Number.isInteger(event.slideIndex) ? `\n📄 Slide: ${event.slideIndex}` : '';
+    const text=`🔗 Niekto prešiel z prezentácie na tvoj web!\n\n📊 ${title}${slide}\n📱 Zariadenie: ${deviceLabel(headers)}\n📍 Približná poloha: ${locationLabel(headers,env)}`;
+    const response=await send(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN.trim()}/sendMessage`,{
+      method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(8000),
+      body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID.trim(),text,link_preview_options:{is_disabled:true}})
+    });
+    if(!response.ok || !(await response.json()).ok)throw new Error('delivery failed');
+  } catch { console.warn('Telegram website click notification failed'); }
+}
+
 // The website insert RPC returns true only once, including concurrent retries.
 export async function notifyWebsiteOpened({env, send=fetch, headers={}}) {
   if(!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID)return;
   try {
     const response=await send(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN.trim()}/sendMessage`,{
       method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(8000),
-      body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID,
+      body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID.trim(),
         text:`🌐 Niekto otvoril tvoj web!\n\n✨ SHAPEVIZ\n📱 Zariadenie: ${deviceLabel(headers)}\n📍 Približná poloha: ${locationLabel(headers,env)}`,
         link_preview_options:{is_disabled:true}})
     });

@@ -1,9 +1,57 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {notifyPresentationOpened} from '../src/presentations/telegram.js';
+import {notifyPresentationOpened,notifyWebsiteClicked} from '../src/presentations/telegram.js';
 const env={SUPABASE_URL:'https://test.supabase.co',SUPABASE_SECRET_KEY:'secret',TELEGRAM_BOT_TOKEN:'test-token',TELEGRAM_CHAT_ID:'123',SITE_URL:'https://shapevizweb.vercel.app'};
 const event={eventType:'session_started',sessionId:'session',deck:'milenium'};
 const project={client:'Milenium',title:'Art direction'};
+
+test('website clicks notify independently of opens and deduplicate concurrent event deliveries',async()=>{
+ const claims=new Set(),messages=[];
+ const click={...event,eventType:'website_clicked',eventId:'click-1',slideIndex:8};
+ const send=async(url,options)=>{
+  if(url.includes('/presentation_events?')){
+   const query=new URL(url).searchParams,key=query.get('event_id');
+   assert.equal(query.get('session_id'),'eq.session');
+   assert.equal(query.get('deck_slug'),'eq.milenium');
+   assert.equal(query.get('event_type'),'eq.website_clicked');
+   assert.equal(query.get('telegram_claimed_at'),'is.null');
+   assert.equal(options.method,'PATCH');
+   const rows=claims.has(key)?[]:[{event_id:key}];claims.add(key);return Response.json(rows);
+  }
+  if(url.includes('/presentation_sessions?'))return Response.json([{id:'session'}]);
+  messages.push(JSON.parse(options.body));return Response.json({ok:true});
+ };
+ const options={env:{...env,TELEGRAM_CHAT_ID:' 123\n'},send};
+ await notifyPresentationOpened(event,project,options);
+ await Promise.all([notifyWebsiteClicked(click,project,options),notifyWebsiteClicked(click,project,options)]);
+ assert.equal(messages.length,2);
+ assert.match(messages[1].text,/prešiel z prezentácie na tvoj web/);
+ assert.match(messages[1].text,/Milenium — Art direction/);
+ assert.match(messages[1].text,/Slide: 8/);
+ assert.equal(messages[1].chat_id,'123');
+ await notifyWebsiteClicked({...click,eventId:'click-2'},project,options);
+ assert.equal(messages.length,3);
+});
+
+test('click notifications skip other events, missing configuration and nonexistent stored events',async()=>{
+ const send=()=>{throw new Error('Unexpected request');};
+ await notifyWebsiteClicked(event,project,{env,send});
+ await notifyWebsiteClicked({...event,eventType:'website_clicked'},project,{env:{...env,TELEGRAM_BOT_TOKEN:''},send});
+ await notifyWebsiteClicked({...event,eventType:'website_clicked',eventId:'missing'},project,{env,send:async url=>{
+  assert.match(url,/\/presentation_events\?/);return Response.json([]);
+ }});
+});
+
+test('click notification failures do not escape or leak token-bearing errors',async()=>{
+ const warnings=[],original=console.warn;console.warn=value=>warnings.push(value);
+ try{
+  await notifyWebsiteClicked({...event,eventType:'website_clicked',eventId:'click'},project,{env,send:async url=>{
+   if(url.includes('/presentation_events?'))return Response.json([{event_id:'click'}]);
+   throw new Error('https://api.telegram.org/bottest-token/sendMessage');
+  }});
+ }finally{console.warn=original;}
+ assert.deepEqual(warnings,['Telegram website click notification failed']);
+});
 test('concurrent duplicate starts send one notification with the correct deck and no link',async()=>{
  let claimed=false;const messages=[];
  const send=async(url,options)=>{

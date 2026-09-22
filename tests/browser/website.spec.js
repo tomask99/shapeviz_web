@@ -1,5 +1,30 @@
 import {test,expect} from '@playwright/test';
 
+test('website tracking recovers after status failure and supports browsers without AbortSignal.timeout',async({page})=>{
+ const events=[];let checks=0;
+ await page.addInitScript(()=>Object.defineProperty(AbortSignal,'timeout',{value:undefined,configurable:true}));
+ await page.route('**/api/admin?action=tracking-status',r=>++checks===1?r.fulfill({status:503}):r.fulfill({json:{exclude:false}}));
+ await page.route('**/api/site-events',r=>{events.push(r.request().postDataJSON());return r.fulfill({status:204});});
+ await page.clock.install();
+ await page.goto('/');
+ await expect.poll(()=>checks).toBe(1);
+ expect(events).toEqual([]);
+ await page.clock.runFor(6000);
+ await expect.poll(()=>events.length).toBe(1);
+});
+
+test('owner exclusion is preserved after a temporary status outage',async({page})=>{
+ const events=[];let checks=0;
+ await page.route('**/api/admin?action=tracking-status',r=>++checks===1?r.fulfill({status:503}):r.fulfill({json:{exclude:true}}));
+ await page.route('**/api/site-events',r=>{events.push(r.request().postDataJSON());return r.fulfill({status:204});});
+ await page.clock.install();await page.goto('/');
+ await expect.poll(()=>checks).toBe(1);
+ await page.clock.runFor(6000);
+ await expect.poll(()=>checks).toBe(2);
+ await page.clock.runFor(16000);
+ expect(events).toEqual([]);
+});
+
 test('website tracker reuses visits on refresh and expires after idle, without tracking hidden time',async({page})=>{
  const events=[];
  await page.route('**/api/admin?action=tracking-status',r=>r.fulfill({json:{exclude:false}}));

@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { getPresentationProject, hasSupabase } from './remote.js';
 import { readJson, requestOrigin } from '../http.js';
-import { notifyPresentationOpened } from './telegram.js';
+import { notifyPresentationOpened, notifyWebsiteClicked } from './telegram.js';
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -108,6 +108,7 @@ export function createPresentationEventHandler({ env = process.env, send = fetch
     }).catch(() => null);
     if (!response?.ok) { res.writeHead(204, { 'X-Analytics-Status': 'unavailable' }).end(); return; }
     await notifyPresentationOpened(event,project,{env,send,headers:req.headers});
+    await notifyWebsiteClicked(event,project,{env,send,headers:req.headers});
     res.writeHead(204, { 'X-Analytics-Status': 'recorded' }).end();
   };
 }

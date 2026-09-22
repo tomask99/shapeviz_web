@@ -93,6 +93,28 @@ test('analytics writes only through the configured server-side RPC', async () =>
   assert.equal(payload.p_user_agent_category, 'desktop');
 });
 
+test('website click beacon reaches Telegram only after a successful event write and claim', async () => {
+  const calls=[];
+  let recordOk=true;
+  const env={SUPABASE_URL:'https://shapeviz.supabase.co',SUPABASE_SECRET_KEY:'secret',TELEGRAM_BOT_TOKEN:'token',TELEGRAM_CHAT_ID:'123'};
+  await withServer({env,send:async(url,options)=>{
+    if(url.includes('/presentation_projects?'))return Response.json([{client:'Milenium',title:'Deck',status:'published',analytics_enabled:true}]);
+    calls.push(url);
+    if(url.endsWith('/rpc/record_presentation_event'))return new Response(null,{status:recordOk?204:503});
+    if(url.includes('/presentation_events?'))return Response.json([{event_id:event.eventId}]);
+    assert.match(url,/api.telegram.org/);
+    assert.match(JSON.parse(options.body).text,/prešiel z prezentácie/);
+    return Response.json({ok:true});
+  }},async origin=>{
+    const post=()=>fetch(`${origin}/api/presentation-events`,{method:'POST',headers:{Origin:'null','Content-Type':'text/plain'},body:JSON.stringify({...event,eventType:'website_clicked'})});
+    assert.equal((await post()).headers.get('x-analytics-status'),'recorded');
+    assert.equal(calls.length,3);
+    recordOk=false;calls.length=0;
+    assert.equal((await post()).headers.get('x-analytics-status'),'unavailable');
+    assert.equal(calls.length,1);
+  });
+});
+
 test('sandboxed mobile beacons accept JSON as text without accepting foreign origins or invalid events', async () => {
   const writes = [];
   const env = { SUPABASE_URL: 'https://shapeviz.supabase.co', SUPABASE_SECRET_KEY: 'server-secret' };
