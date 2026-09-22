@@ -33,12 +33,30 @@ media is the recommended format. JavaScript-generated filesystem paths or
 third-party APIs may need adaptation before upload. Logos inside images are
 not automatically edited.
 
-For a template, specify the original company text. Create a
-variant, enter the new company, title and URL slug, then review the interactive
-preview. Replacement is case-insensitive and preserves uppercase/lowercase
-style. It changes HTML text and text labels; it does not rewrite asset URLs,
-CSS selectors or JavaScript code. Each variant is independent, with its own
-HTML, slug and analytics. Template edits do not change existing variants.
+Upload finished presentations using **New presentation → Upload finished
+presentation** (or **Upload HTML** in the sidebar). This retains the existing
+upload and publishing workflow.
+
+Save reusable HTML templates separately under **Templates → Upload template**.
+Give each template a name so you can recognize it later. Uploading a template
+only adds it to the library; it does not create a client presentation. The
+library can hold multiple templates, separately from the presentation overview.
+
+Reusable templates mark every client-name element with
+`data-embed="client-name"` and expose `window.setShapevizClientName(name)`.
+Choose **New presentation → From template**, select a saved template, and enter
+the company name. **Use template** in the library preselects that template.
+The title is inherited from the template, a URL slug is generated from the
+client name, and the template API updates all marked places (including the
+title slide). No global find-and-replace is performed, so unrelated copy stays
+unchanged. Each generated presentation is an independent published HTML file
+with its own URL and analytics. Template edits do not change existing copies.
+If the company URL already exists, the new client copy receives a short unique
+suffix; existing presentations are kept.
+
+Templates remain drafts and therefore have no public `/p/:slug` route of their
+own. Their arrow button opens an authenticated Studio preview instead; generated
+client presentations are published at their own `/p/:client-slug` URL.
 
 Presentation settings support title changes, published/draft/archived states
 and converting existing decks into templates. Archived and draft links return

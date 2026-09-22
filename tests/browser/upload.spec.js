@@ -12,7 +12,7 @@ test('finalization errors remain visible and retry reuses uploaded files',async(
   await route.fulfill({json:data});
  });
  await page.route('**/mock-upload',route=>route.fulfill({json:{}}));
- await page.goto('/adminlogin');await page.locator('#upload-top').click();
+ await page.goto('/adminlogin');await page.locator('#upload-top').click();await page.locator('#create-from-upload').click();
  await page.locator('#html-file').setInputFiles({name:'test.html',mimeType:'text/html',buffer:Buffer.from('<h1>Test</h1>')});
  await page.locator('#upload-form [name=client]').fill('Test');await page.locator('#upload-form [name=title]').fill('Test');
  await page.locator('#upload-form button[type=submit]').click();

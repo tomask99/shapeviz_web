@@ -1,6 +1,6 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { readJson, requestOrigin } from '../http.js';
-import { transformDeck } from './html.js';
+import { supportsClientNameApi, transformDeck } from './html.js';
 import { getPrivatePresentationSource, uploadStorageObject, slugPattern } from '../presentations/remote.js';
 import { renderPresentationTemplate } from '../presentations/page.js';
 import { removeProjectFiles, storageScopes, referencedMedia } from './storage.js';
@@ -9,6 +9,7 @@ const fail = (status, message) => Object.assign(new Error(message), {status});
 const fields = 'deck_slug,client,title,status,source_type,template_key,is_template,template_match,parent_slug,slide_count,analytics_enabled,updated_at';
 const text = (value, max = 160) => typeof value === 'string' && value.trim().length && value.length <= max ? value.trim() : null;
 const key = value => { if (!slugPattern.test(value || '') || value.length > 100) throw fail(400,'Use a URL name such as hrno or company-name.'); return value; };
+const clientSlug = value => key(value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''));
 
 export function createAdminHandler({env = process.env, send = fetch} = {}) {
   const root = env.SUPABASE_URL?.replace(/\/$/, '');
@@ -52,18 +53,22 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
   }
   async function source(p) {return p.source_type === 'template' ? renderPresentationTemplate(p) : getPrivatePresentationSource(p,{env,send});}
   async function saveDeck(body, html, parent=null, scopes=[]) {
-    const slug=key(body.slug), client=text(body.client), title=text(body.title);
+    let slug=key(body.slug);
+    const client=text(body.client), title=text(body.title);
     if (!client || !title) throw fail(400,'Enter the company and presentation title.');
-    if(body.isTemplate && !text(body.match)) throw fail(400,'Enter the company name to replace in this template.');
+    if(body.isTemplate && !supportsClientNameApi(html)) throw fail(400,'A template must include data-embed="client-name" and window.setShapevizClientName().');
     const existing=await call(`/rest/v1/presentation_projects?deck_slug=eq.${slug}&select=deck_slug`);
-    if (existing.length) throw fail(409,'This URL is already in use. Choose another name.');
+    if (existing.length) {
+      if(!parent || !body.autoSlug) throw fail(409,'This URL is already in use. Choose another name.');
+      // Client copies can coexist with finished decks and other template copies.
+      slug=`${slug.slice(0,90).replace(/-$/,'')}-${randomUUID().slice(0,8)}`;
+    }
     const prepared=transformDeck(html,{slug});
     const uploadSource=scopes.find(s=>s.bucket==='presentation-source')?.path;
     const object=`${slug}/${uploadSource ? createHash('sha256').update(uploadSource).digest('hex').slice(0,32) : randomUUID()}/index.html`;
     await uploadStorageObject({bucket:'presentation-source',object,body:prepared.html,contentType:'text/html',env,send});
     const status=body.isTemplate ? 'draft' : body.publish === true ? 'published' : 'draft';
-    const record={deck_slug:slug,client,title,presentation_date:new Date().toISOString().slice(0,10),description:title,locale:'en',status,source_type:'standalone',source_bucket:'presentation-source',source_path:object,access_mode:'unlisted',analytics_enabled:true,slide_count:prepared.slides,is_template:body.isTemplate === true,template_match:body.isTemplate ? text(body.match) : null,parent_slug:parent,published_at:status==='published' ? new Date().toISOString() : null,content:{}};
-    if(record.is_template && !record.template_match) throw fail(400,'Enter the company name to replace in this template.');
+    const record={deck_slug:slug,client,title,presentation_date:new Date().toISOString().slice(0,10),description:title,locale:'en',status,source_type:'standalone',source_bucket:'presentation-source',source_path:object,access_mode:'unlisted',analytics_enabled:true,slide_count:prepared.slides,is_template:body.isTemplate === true,template_match:null,parent_slug:parent,published_at:status==='published' ? new Date().toISOString() : null,content:{}};
     record.content._storageScopes=[...scopes,...referencedMedia(prepared.html,root)];
     const rows=await call('/rest/v1/presentation_projects',{method:'POST',body:record,headers:{Prefer:'return=representation'}});
     return {project:rows[0],url:`/p/${slug}`};
@@ -133,12 +138,17 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
       if(action==='variant' || action==='preview') {
         const original=await project(body.template);
         if(!original.is_template && original.source_type!=='template') throw fail(400,'Select a template first.');
-        const company=text(body.client), from=text(body.match || original.template_match || original.client);
-        if(!company||!from) throw fail(400,'Enter the original and new company names.');
-        const transformed=transformDeck(await source(original),{from,company,slug:key(body.slug),analytics:false});
-        if(!transformed.replacements) throw fail(400,'No matching company text was found. Check the original name.');
+        const company=text(body.client);
+        if(!company) throw fail(400,'Enter the client name.');
+        const slug=body.slug ? key(body.slug) : clientSlug(company);
+        const originalHtml=await source(original);
+        const modern=supportsClientNameApi(originalHtml);
+        const from=text(body.match || original.template_match || original.client);
+        if(!modern && !from) throw fail(400,'This older template is missing its original company name.');
+        const transformed=transformDeck(originalHtml,modern ? {company,slug,analytics:false,useClientNameApi:true} : {from,company,slug,analytics:false});
+        if(!transformed.replacements) throw fail(400,modern ? 'No client-name embed fields were found.' : 'No matching company text was found. Check the original name.');
         if(action==='preview') reply(200,{...transformed,html:transformed.html.replace(/<base\b[^>]*>/gi,'')});
-        else reply(201,await saveDeck({...body,isTemplate:false},transformed.html,original.deck_slug,storageScopes(original).filter(s=>s.bucket==='presentation-media')));
+        else reply(201,await saveDeck({...body,slug,autoSlug:!body.slug,title:text(body.title)||original.title,publish:body.publish!==false,isTemplate:false},transformed.html,original.deck_slug,storageScopes(original).filter(s=>s.bucket==='presentation-media')));
         return;
       }
       if(action==='reset-statistics') {
@@ -165,7 +175,10 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
         const p=await project(body.slug), patch={};
         if(body.status!==undefined) {if(!['published','draft','archived'].includes(body.status)) throw fail(400,'Invalid status.');patch.status=body.status;}
         if(body.title!==undefined) {patch.title=text(body.title);if(!patch.title)throw fail(400,'Enter a title.');}
-        if(body.isTemplate!==undefined) {patch.is_template=body.isTemplate===true;patch.template_match=patch.is_template ? text(body.match) : null;if(patch.is_template&&!patch.template_match)throw fail(400,'Enter a company name to replace.');}
+        if(body.isTemplate!==undefined) {
+          patch.is_template=body.isTemplate===true;patch.template_match=null;
+          if(patch.is_template && !supportsClientNameApi(await source(p))) throw fail(400,'A template must include data-embed="client-name" and window.setShapevizClientName().');
+        }
         await call(`/rest/v1/presentation_projects?deck_slug=eq.${p.deck_slug}`,{method:'PATCH',body:patch});reply(200,{ok:true});return;
       }
       throw fail(404,'Unknown action.');

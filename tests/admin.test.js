@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {createAdminHandler} from '../src/admin/handler.js';
-import {transformDeck} from '../src/admin/html.js';
+import {supportsClientNameApi,transformDeck} from '../src/admin/html.js';
 import {parse} from 'parse5';
 
 test('auth throttling keeps the session and forwards Retry-After without refreshing',async()=>{
@@ -46,6 +46,15 @@ test('template match characters are treated literally',()=>{
  const result=transformDeck('<p>A+B [studio]</p>',{from:'A+B [studio]',company:'Hrno'});
  assert.equal(result.replacements,1);
 });
+test('client-name templates use their API without global text replacement',()=>{
+ const html='<!doctype html><html><head><title>Template</title></head><body><h1 data-embed="client-name">&lt;embed text&gt;</h1><p>vzor látky</p><script>window.setShapevizClientName=name=>document.querySelectorAll(\'[data-embed="client-name"]\').forEach(node=>node.textContent=name)</script></body></html>';
+ assert.equal(supportsClientNameApi(html),true);
+ const result=transformDeck(html,{company:'Milenium </script><img src=x>',slug:'milenium',useClientNameApi:true});
+ assert.equal(result.replacements,1);
+ assert.ok(result.html.includes('window.setShapevizClientName("Milenium \\u003c/script\\u003e\\u003cimg src=x\\u003e")'));
+ assert.match(result.html,/vzor látky/);
+ assert.doesNotMatch(result.html,/<img src=x>/);
+});
 test('admin requires verified user, owner role and same-origin writes',async()=>{
  const env={SUPABASE_URL:'https://example.supabase.co',SUPABASE_SECRET_KEY:'test'};
  let isOwner=false;
@@ -57,6 +66,35 @@ test('admin requires verified user, owner role and same-origin writes',async()=>
   isOwner=true;const result=await fetch(origin+'/?action=me',{headers:{Cookie:'sv_access=test'}});assert.equal(result.status,200);assert.deepEqual(await result.json(),{email:'owner@example.com'});
   for(const badOrigin of ['null','https://attacker.example'])assert.equal((await fetch(origin+'/?action=update',{method:'POST',headers:{Origin:badOrigin,'Content-Type':'application/json',Cookie:'sv_access=test'},body:'{}'})).status,403);
   assert.equal((await fetch(origin+'/?action=logout',{headers:{Cookie:'sv_access=test'}})).status,405);
+ }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
+});
+
+test('template creation needs only a client name and derives a published client URL',async()=>{
+ const env={SUPABASE_URL:'https://example.supabase.co',SUPABASE_SECRET_KEY:'test'};
+ const templateHtml='<!doctype html><html><head><title>Pitch</title></head><body><h1 data-embed="client-name">&lt;embed text&gt;</h1><p>vzor látky</p><script>window.setShapevizClientName=name=>document.querySelectorAll(\'[data-embed="client-name"]\').forEach(node=>node.textContent=name)</script></body></html>';
+ let savedRecord,savedHtml;
+ const template={deck_slug:'template',client:'Template',title:'Art direction',is_template:true,source_type:'standalone',source_bucket:'presentation-source',source_path:'template/index.html',content:{_storageScopes:[]}};
+ const send=async(url,options={})=>{
+  if(url.endsWith('/auth/v1/user'))return Response.json({id:'owner'});
+  if(url.includes('presentation_admins?'))return Response.json([{role:'owner'}]);
+  if(url.includes('deck_slug=eq.template'))return Response.json([template]);
+  if(url.includes('/storage/v1/object/authenticated/'))return new Response(templateHtml);
+  if(url.includes('deck_slug=eq.milenium'))return Response.json(savedRecord?[savedRecord]:[]);
+  if(url.includes('/storage/v1/object/presentation-source/')){savedHtml=options.body;return new Response(null,{status:200});}
+  if(url.endsWith('/rest/v1/presentation_projects')){savedRecord=JSON.parse(options.body);return Response.json([savedRecord]);}
+  throw new Error(`Unexpected request: ${url}`);
+ };
+ const server=createServer(createAdminHandler({env,send}));await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;
+ try{
+  const response=await fetch(origin+'/?action=variant',{method:'POST',headers:{Origin:origin,Cookie:'sv_access=test','Content-Type':'application/json'},body:JSON.stringify({template:'template',client:'Mílenium'})});
+  assert.equal(response.status,201);assert.equal((await response.json()).url,'/p/milenium');
+  assert.equal(savedRecord.title,'Art direction');assert.equal(savedRecord.status,'published');assert.equal(savedRecord.parent_slug,'template');
+  assert.match(savedHtml,/window\.setShapevizClientName\("Mílenium"\)/);assert.match(savedHtml,/vzor látky/);
+  const second=await fetch(origin+'/?action=variant',{method:'POST',headers:{Origin:origin,Cookie:'sv_access=test','Content-Type':'application/json'},body:JSON.stringify({template:'template',client:'Mílenium'})});
+  assert.equal(second.status,201);assert.match((await second.json()).url,/^\/p\/milenium-[a-f0-9]{8}$/);
+  assert.ok(savedHtml.includes(`data-deck="${savedRecord.deck_slug}"`));
+  assert.ok(savedHtml.includes(`<base href="/p/${savedRecord.deck_slug}/">`));
+  assert.equal(savedRecord.client,'Mílenium');assert.equal(savedRecord.parent_slug,'template');
  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
 });
 
