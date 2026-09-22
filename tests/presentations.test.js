@@ -167,7 +167,9 @@ test('serves a Supabase template from a clean remote presentation route', async 
     if (url.includes('/presentation_projects?')) return Response.json([project]);
     throw new Error(`Unexpected remote request: ${url}`);
   } }, async origin => {
-    const response = await fetch(`${origin}/p/minotti`);
+    const gate = await fetch(`${origin}/p/minotti`);
+    assert.match(await gate.text(), /tracking-gate/);
+    const response = await fetch(`${origin}/p/minotti?sv_gate=1`);
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive');
     assert.match(await response.text(), /A visual partnership/);
@@ -185,7 +187,7 @@ test('serves standalone HTML from private Storage and hides unpublished slugs', 
     if (url.includes('/storage/v1/object/authenticated/')) return new Response('<!doctype html><title>Remote deck</title>', { headers: { 'Content-Type': 'text/html' } });
     throw new Error(`Unexpected remote request: ${url}`);
   } }, async origin => {
-    const response = await fetch(`${origin}/p/remote-deck`);
+    const response = await fetch(`${origin}/p/remote-deck?sv_gate=1`);
     assert.equal(response.status, 200);
     assert.match(await response.text(), /Remote deck/);
     assert.equal((await fetch(`${origin}/p/unknown-remote`)).status, 404);

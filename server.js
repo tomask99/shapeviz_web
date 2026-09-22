@@ -65,7 +65,7 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
     if (pathname === '/api/contact') { await contact(req, res); return; }
     if (pathname === '/api/site-events') { await websiteEvent(req, res); return; }
     if (pathname === '/api/admin') { await admin(req, res); return; }
-    if (pathname === '/adminlogin' || pathname === '/admin' || /^\/admin\/(?:leads(?:\/[^/.]+)?|pipeline)\/?$/.test(pathname)) {
+    if (pathname === '/adminlogin' || pathname === '/admin' || /^\/admin\/(?:leads(?:\/[^/.]+)?|pipeline|follow-ups)\/?$/.test(pathname)) {
       res.setHeader('X-Robots-Tag', 'noindex, nofollow');
       res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-src 'self' blob:; img-src 'self' https://*.supabase.co data: blob:; media-src 'self' https://*.supabase.co blob:; font-src 'self' https://*.supabase.co data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
       await serveFile(req,res,path.join(publicDir,'admin/index.html'),pathname,{'Cache-Control':'no-store'});return;

@@ -1,5 +1,6 @@
 (() => {
   const script = document.currentScript;
+  if(window.__shapevizTracking?.exclude)return;
   if (!script || script.dataset.analytics !== 'true' || !globalThis.crypto?.getRandomValues) return;
   const deck = script.dataset.deck;
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(deck || '')) return;
@@ -25,7 +26,7 @@
   let wasVisible = document.visibilityState === 'visible';
 
   const send = (eventType, detail = {}, beacon = false) => {
-    const body = JSON.stringify({ deck, sessionId, eventId: uuid(), eventType, ...detail });
+    const body = JSON.stringify({ deck, sessionId, eventId: uuid(), eventType, trackingProof:window.__shapevizTracking?.proof, ...detail });
     // A safelisted content type avoids an unload-time CORS preflight from
     // the presentation's opaque sandbox origin. The server still validates JSON.
     if (beacon && navigator.sendBeacon) {

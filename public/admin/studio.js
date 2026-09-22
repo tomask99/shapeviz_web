@@ -2,6 +2,8 @@ import './cursor.js';
 import {createCrm} from './crm.js';
 import {refreshWebsiteStats} from './website-stats.js';
 import {uploadPresentation} from './upload.js';
+import {createStudioCompany} from './studio-company.js';
+import {createBusinessOverview} from './crm-overview.js';
 const arrowIcon='<svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" focusable="false" style="vertical-align:-.125em"><path d="M5 19 19 5M5 5h14v14"/></svg>';
 const $=s=>document.querySelector(s);
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -13,8 +15,9 @@ async function api(action,body,params={}) {
  const response=await fetch(`/api/admin?${query}`,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(60000)});
  const data=await response.json().catch(()=>({error:'The server did not finish this request. Please try again.'}));if(!response.ok){if(response.status===401 && action!=='login' && action!=='verify')showLogin();throw Object.assign(new Error(data.error||'Request failed.'),{status:response.status,retryAfter:response.headers.get('Retry-After')});}return data;
 }
-function showLogin(setup=false){document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('#studio').hidden=true;$('#login').hidden=false;$('#signin').hidden=setup;$('#set-password').hidden=!setup;$('#login-title').textContent=setup?'Make it yours.':'Welcome back.';$('#login-hint').textContent=setup?'Set a password with at least 12 characters.':'Sign in to your Shapeviz studio.';}
+function showLogin(setup=false){business.hide();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('#studio').hidden=true;$('#login').hidden=false;$('#signin').hidden=setup;$('#set-password').hidden=!setup;$('#login-title').textContent=setup?'Make it yours.':'Welcome back.';$('#login-hint').textContent=setup?'Set a password with at least 12 characters.':'Sign in to your Shapeviz studio.';}
 function formData(form){const data=Object.fromEntries(new FormData(form));for(const name of ['publish','isTemplate'])if(form.elements[name])data[name]=form.elements[name].checked;return data;}
+const uploadCompany=createStudioCompany($('#upload-form'),api),variantCompany=createStudioCompany($('#variant-form'),api),editCompany=createStudioCompany($('#edit-form'),api);
 async function busy(form,task){const buttons=[...form.querySelectorAll('button')];let errorBox=form.querySelector('[data-form-error]');if(!errorBox){errorBox=document.createElement('p');errorBox.dataset.formError='';errorBox.setAttribute('role','alert');form.append(errorBox);}errorBox.textContent='';buttons.forEach(b=>b.disabled=true);try{await task();}catch(error){errorBox.textContent=error.message;notify(error.message);}finally{buttons.forEach(b=>b.disabled=false);}}
 function metricMarkup(summary={}){return [['Visits',summary.visits||0],['Active time',duration(summary.seconds)],['Average / visit',duration(summary.average_seconds)],['Slide views',summary.slide_views||0],['Website clicks',summary.website_clicks||0],['Visits with a click',summary.website_click_sessions||0],['Click-through rate',`${summary.visits ? Math.round((summary.website_click_sessions||0)/summary.visits*100) : 0}%`]].map(([label,value])=>`<div class="metric"><span>${label}</span><strong>${value}</strong></div>`).join('');}
 function drawChart() {
@@ -51,9 +54,11 @@ async function copyPresentationLink(slug){const url=new URL(`/p/${slug}`,locatio
 async function refresh(){const website=refreshWebsiteStats(api);const list=await api('list');projects=list.projects;renderProjects();try{const stats=await api('stats',null,{days:$('#days').value});statistics=stats;$('#metrics').innerHTML=metricMarkup(stats.summary);drawChart();renderProjects();}catch(error){$('#metrics').textContent='Statistics are temporarily unavailable.';$('#chart-readout').textContent=error.message;}await website;}
 $('#website-days').onchange=()=>refreshWebsiteStats(api);
 const crm=createCrm({api,notify});
-const isCrmPath=()=>/^\/admin\/(?:leads(?:\/[^/]+)?|pipeline)\/?$/.test(location.pathname);
+const business=createBusinessOverview({api});
+const isCrmPath=()=>/^\/admin\/(?:leads(?:\/[^/]+)?|pipeline|follow-ups)\/?$/.test(location.pathname);
 async function enter(email){$('#login').hidden=true;$('#studio').hidden=false;$('#account').textContent=email;$('#today').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});if(isCrmPath())crm.show();else{setView(new URLSearchParams(location.search).get('view')==='templates'?'templates':'all',false);await refresh();}}
 $('#nav-leads').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/leads');};
+$('#nav-followups').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/follow-ups');};
 $('#nav-pipeline').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/pipeline');};
 window.addEventListener('popstate',()=>{if($('#studio').hidden)return;if(isCrmPath())crm.show();else setView(new URLSearchParams(location.search).get('view')==='templates'?'templates':'all',false);});
 $('#signin').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=await api('login',formData(e.target));e.target.reset();await enter(data.email);});};
@@ -62,6 +67,7 @@ $('#logout').onclick=async()=>{try{await api('logout',{});showLogin();}catch(e){
 $('#change-password').onclick=()=>showLogin(true);
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{const dialog=b.closest('dialog');if(dialog.id==='preview-dialog')$('#variant-preview').srcdoc='';dialog.close();});
 function openUpload(kind='presentation') {
+ uploadCompany.reset({hidden:kind==='template'});
  const form=$('#upload-form'),template=kind==='template';form.reset();pendingUpload=null;
  form.querySelector('[data-form-error]')?.remove();form.elements.kind.value=kind;
  $('#upload-title').textContent=template?'Upload a template.':'Upload a presentation.';
@@ -75,6 +81,7 @@ function setView(next,push=true) {
  if(push){const path=next==='templates'?'/admin?view=templates':'/admin';if(location.pathname+location.search!==path)history.pushState(null,'',path);}
  if(wasCrm)refresh().catch(error=>notify(error.message));
  view=next;document.querySelectorAll('[data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view===view));
+ if(view==='templates')business.hide();else business.show();
  $('#page-title').innerHTML=view==='templates'?'Templates<span>.</span>':'Overview<span>.</span>';
  $('#page-kicker').textContent=view==='templates'?'CREATE ONCE. MAKE IT PERSONAL.':'YOUR WORK, IN MOTION.';
  $('#library-title').textContent=view==='templates'?'Reusable templates':'Your presentations';
@@ -95,8 +102,16 @@ $('#upload-form').elements.client.addEventListener('input',e=>{const form=$('#up
 let pendingUpload=null;
 $('#html-file').addEventListener('change',()=>pendingUpload=null);
 $('#asset-files').addEventListener('change',()=>pendingUpload=null);
-$('#upload-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const form=e.target,data=formData(form);data.isTemplate=data.kind==='template';if(data.isTemplate)data.publish=false;if(!pendingUpload)pendingUpload=await uploadPresentation($('#html-file').files[0],[...$('#asset-files').files],api,message=>$('#upload-progress').textContent=message);$('#upload-progress').textContent='Files uploaded. Saving…';await api('finalize',{...data,object:pendingUpload.object});pendingUpload=null;$('#upload-dialog').close();$('#search').value='';setView(data.isTemplate?'templates':'all');notify(data.isTemplate?'Template saved to your library. Use it later from New presentation → From template.':`Presentation saved at /p/${data.slug}`);await refresh();});};
+$('#upload-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{
+ const form=e.target,data=formData(form);data.isTemplate=form.elements.kind.value==='template';if(data.isTemplate)data.publish=false;
+ const result=await uploadCompany.save(async()=>{
+  if(!pendingUpload)pendingUpload=await uploadPresentation($('#html-file').files[0],[...$('#asset-files').files],api,message=>$('#upload-progress').textContent=message);
+  $('#upload-progress').textContent='Files uploaded. Saving…';return api('finalize',{...data,object:pendingUpload.object});
+ },{slug:form.elements.slug.value,isTemplate:data.isTemplate});
+ pendingUpload=null;$('#upload-dialog').close();$('#search').value='';setView(data.isTemplate?'templates':'all');notify(data.isTemplate?'Template saved to your library. Use it later from New presentation → From template.':`Presentation saved at ${result.url}`);await refresh();
+});};
 function openVariant(slug='') {
+ variantCompany.reset();
  const form=$('#variant-form'),templates=projects.filter(p=>isTemplate(p)&&p.status!=='archived');form.reset();form.querySelector('[data-form-error]')?.remove();
  form.elements.template.innerHTML='<option value="">Select a saved template…</option>'+templates.map(p=>`<option value="${p.deck_slug}">${escape(p.client)} — ${escape(p.title)}</option>`).join('');
  form.elements.template.value=slug;form.elements.template.disabled=!templates.length;form.elements.client.disabled=!templates.length;
@@ -105,11 +120,11 @@ function openVariant(slug='') {
  if(slug)form.elements.client.focus();else form.elements.template.focus();
 }
 $('#variant-form').addEventListener('input',()=>{$('#replacement-count').textContent='';});
-function openEdit(slug){const p=projects.find(p=>p.deck_slug===slug);if(isTemplate(p)){const form=$('#template-edit-form');form.reset();form.querySelector('[data-form-error]')?.remove();for(const name of ['client','title'])form.elements[name].value=p[name];form.elements.slug.value=slug;$('#template-edit-dialog').showModal();return;}const form=$('#edit-form');form.elements.slug.value=slug;form.elements.title.value=p.title;form.elements.status.value=p.status;form.elements.isTemplate.checked=p.is_template;form.elements.match.required=false;form.elements.match.closest('label').hidden=true;$('#edit-dialog').showModal();}
+function openEdit(slug){const p=projects.find(p=>p.deck_slug===slug);editCompany.reset({slug,hidden:isTemplate(p)});if(isTemplate(p)){const form=$('#template-edit-form');form.reset();form.querySelector('[data-form-error]')?.remove();for(const name of ['client','title'])form.elements[name].value=p[name];form.elements.slug.value=slug;$('#template-edit-dialog').showModal();return;}const form=$('#edit-form');form.querySelector('[data-form-error]')?.remove();form.elements.slug.value=slug;form.elements.title.value=p.title;form.elements.status.value=p.status;form.elements.isTemplate.checked=p.is_template;form.elements.match.required=false;form.elements.match.closest('label').hidden=true;$('#edit-dialog').showModal();}
 $('#template-edit-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{await api('update',formData(e.target));$('#template-edit-dialog').close();await refresh();notify('Template settings saved.');});};
-$('#edit-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{await api('update',formData(e.target));$('#edit-dialog').close();await refresh();notify('Presentation settings saved.');});};
+$('#edit-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=formData(e.target);await editCompany.save(()=>api('update',data),{slug:e.target.elements.slug.value,isTemplate:data.isTemplate,archived:e.target.elements.status.value==='archived'});$('#edit-dialog').close();await refresh();notify('Presentation settings saved.');});};
 $('#preview-variant').onclick=()=>{const form=$('#variant-form');if(!form.reportValidity())return;busy(form,async()=>{const result=await api('preview',formData(form));const iframe=$('#variant-preview');iframe.hidden=false;iframe.srcdoc=result.html;$('#preview-dialog').showModal();$('#replacement-count').textContent=`${result.replacements} client fields · ${result.slides} slides. Review the presentation before saving.`;});};
-$('#variant-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const result=await api('variant',formData(e.target));$('#variant-dialog').close();$('#search').value='';setView('all');await refresh();notify(`Your company presentation is ready: ${location.origin}${result.url}`);});};
+$('#variant-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=formData(e.target);const result=await variantCompany.save(()=>api('variant',data));$('#variant-dialog').close();$('#search').value='';setView('all');await refresh();notify(`Your company presentation is ready: ${location.origin}${result.url}`);});};
 async function showDetail(slug){selected=slug;const p=projects.find(p=>p.deck_slug===slug);$('#detail-title').textContent=p.client;$('#detail-metrics').innerHTML='<p class="empty">Loading statistics…</p>';$('#slide-chart').innerHTML='';$('#sessions').innerHTML='';$('#detail-actions').innerHTML=`<span class="badge ${p.status}">${p.status}</span><span class="fine">/p/${slug} · ${p.slide_count} slides</span>${p.status==='published'?`<button class="secondary" id="copy-link">Copy link ${arrowIcon}</button>`:''}`;$('#detail-dialog').showModal();if($('#copy-link'))$('#copy-link').onclick=()=>copyPresentationLink(slug);try{const stats=await api('stats',null,{slug,days:$('#days').value});if(selected!==slug)return;$('#detail-metrics').innerHTML=metricMarkup(stats.summary);const max=Math.max(1,...stats.slides.map(s=>Number(s.views)));$('#slide-chart').innerHTML=Array.from({length:Math.min(p.slide_count,1000)},(_,i)=>{const row=stats.slides.find(s=>s.slide_index===i+1)||{};return `<div class="slide-row"><span>Slide ${i+1}</span><div class="slide-track"><div class="slide-fill" style="width:${(row.views||0)/max*100}%"></div></div><small>${row.views||0} views · ${duration(row.seconds)}</small></div>`;}).join('');$('#sessions').innerHTML=stats.sessions.length?`<div class="session-cards">${stats.sessions.map(s=>`<article class="session-card"><div><strong>${escape(new Date(s.started_at).toLocaleString())}</strong><span class="badge">${escape(s.user_agent_category)}</span></div><dl><div><dt>Active time</dt><dd>${duration(s.active_seconds)}</dd></div><div><dt>Slides viewed</dt><dd>${s.slides_viewed} / ${p.slide_count}</dd></div><div><dt>Website clicks</dt><dd>${Number(s.website_clicks)||0}</dd></div><div><dt>Furthest slide</dt><dd>${s.max_slide}</dd></div></dl></article>`).join('')}</div>`:'<p class="empty">No visits in this period yet. Share the presentation link to start collecting insights.</p>';}catch(e){notify(e.message);$('#detail-metrics').innerHTML='<p class="empty">Could not load statistics. Close and try again.</p>';}}
 async function resetStatistics(button) {
  const slug=button.dataset.resetStats;

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { getPresentationProject, hasSupabase } from './remote.js';
 import { readJson, requestOrigin } from '../http.js';
 import { notifyPresentationOpened, notifyWebsiteClicked } from './telegram.js';
+import {verifyTracking} from './tracking-proof.js';
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -70,8 +71,8 @@ export function createPresentationEventHandler({ env = process.env, send = fetch
     if (recent.length >= 240) { json(res, 429, { ok: false }, { 'Retry-After': '60' }); return; }
     recent.push(now); attempts.set(peer, recent);
 
-    let event;
-    try { event = cleanEvent(await readJson(req)); }
+    let event,proof;
+    try {const body=await readJson(req);event=cleanEvent(body);proof=verifyTracking(body.trackingProof,env.SUPABASE_SECRET_KEY);}
     catch (error) { json(res, error.status || 400, { ok: false }); return; }
 
     if (!hasSupabase(env)) {
@@ -107,6 +108,10 @@ export function createPresentationEventHandler({ env = process.env, send = fetch
       })
     }).catch(() => null);
     if (!response?.ok) { res.writeHead(204, { 'X-Analytics-Status': 'unavailable' }).end(); return; }
+    if(proof?.kind==='visit'&&proof.deck===event.deck){
+      const synced=await send(`${env.SUPABASE_URL.replace(/\/$/,'')}/rest/v1/rpc/crm_record_verified_visit`,{method:'POST',headers:{apikey:env.SUPABASE_SECRET_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_session:event.sessionId,p_deck:event.deck}),signal:AbortSignal.timeout(5000)}).catch(()=>null);
+      if(!synced?.ok)console.warn('CRM visit sync unavailable');
+    }
     await notifyPresentationOpened(event,project,{env,send,headers:req.headers});
     await notifyWebsiteClicked(event,project,{env,send,headers:req.headers});
     res.writeHead(204, { 'X-Analytics-Status': 'recorded' }).end();

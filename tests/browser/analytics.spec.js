@@ -15,6 +15,7 @@ for (const mobile of [false, true]) {
       templatesRoot:path.resolve(import.meta.dirname,'../fixtures/presentation-templates'),
       env: { PRESENTATIONS_REMOTE: 'true', SUPABASE_URL: 'https://test.supabase.co', SUPABASE_SECRET_KEY: 'test' },
       send: async (url, options) => {
+        if (url.endsWith('/rpc/crm_record_verified_visit')) return new Response(null, {status:204});
         if (url.includes('/presentation_projects?')) return Response.json([project]);
         if (url.endsWith('/rpc/record_presentation_event')) {
           writes.push(JSON.parse(options.body));
@@ -37,7 +38,11 @@ for (const mobile of [false, true]) {
       const page = await context.newPage();
       const failures = [];
       page.on('pageerror', error => failures.push(error.message));
-      const response = await page.goto(`${origin}/p/analytics-test`);
+      const finalResponse = page.waitForResponse(r=>r.url().includes('/p/analytics-test?sv_gate=1'));
+      await page.goto(`${origin}/p/analytics-test`);
+      const response = await finalResponse;
+      await page.waitForURL('**/p/analytics-test?sv_gate=1');
+      await page.waitForLoadState();
       expect(response.headers()['content-security-policy']).toContain(`connect-src 'self' ${origin}`);
       expect(await page.evaluate(() => window.origin)).toBe('null');
       await expect.poll(() => writes.some(e => e.p_event_type === 'session_started')).toBe(true);

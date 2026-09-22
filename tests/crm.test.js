@@ -55,5 +55,18 @@ test('CRM API keeps authentication, owner authorization, same-origin and method 
     role='owner';assert.equal((await request('crm-create',{method:'POST',headers,body:JSON.stringify(company)})).status,200);
     assert.equal(calls.length,1);assert.equal(calls[0].opts.headers.Authorization,'Bearer jwt');
     assert.equal(JSON.parse(calls[0].opts.body).owner_id,owner);
+    assert.equal((await request('crm-followups')).status,401);
+    assert.equal((await request('crm-overview')).status,401);
+    assert.equal((await request('crm-overview&today=2026-01-01T00:00:00.000Z&tomorrow=2026-01-02T00:00:00.000Z',{headers})).status,200);
+    assert.equal((await request('crm-reply-summary&companyId='+id)).status,401);
+    assert.equal((await request('crm-reply-summary&companyId='+id,{headers})).status,200);
+    assert.equal((await request('crm-reply-add',{headers})).status,405);
+    assert.equal((await request('crm-reply-add',{method:'POST',headers:{...headers,Origin:'https://evil.example'},body:'{}'})).status,403);
+    assert.equal((await request('crm-presentation-company&slug=pitch')).status,401);
+    assert.equal((await request('crm-presentation-company&slug=pitch',{headers})).status,200);
+    assert.equal((await request('crm-presentation-ensure',{headers})).status,405);
+    assert.equal((await request('crm-presentation-ensure',{method:'POST',headers:{...headers,Origin:'https://evil.example'},body:'{}'})).status,403);
+    assert.equal((await request('crm-followup-complete',{headers})).status,405);
+    assert.equal((await request('crm-followup-save',{method:'POST',headers:{...headers,Origin:'https://evil.example'},body:'{}'})).status,403);
   }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
 });

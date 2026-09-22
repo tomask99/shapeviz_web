@@ -35,6 +35,7 @@ button.bar-column{appearance:none;border:0;padding:0;background:none;color:inher
 .session-card>div{display:flex;align-items:center;justify-content:space-between;gap:15px;font-size:13px}
 .session-card dl{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin:20px 0 0}.session-card dt{font-size:10px;color:var(--muted);margin-bottom:8px}.session-card dd{font-size:22px;letter-spacing:-.03em;margin:0}
 .delete-action{color:#bba28d}.delete-action:hover{color:#f0b585;background:#d8873912}
+.studio-company{border:1px solid #ffffff16;border-radius:16px;padding:18px;margin:18px 0;min-width:0}.studio-company summary{cursor:pointer}.studio-company label{margin-top:14px}.studio-company [role=status]{overflow-wrap:anywhere}.studio-company a{color:#dca45f}.studio-company select option{color:#17120e;background:#fff}
 .studio-glow{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:2}
 .studio-glow span{position:absolute;left:0;top:0;border-radius:50%;mix-blend-mode:screen;opacity:0;will-change:transform,opacity}
 .studio-glow .glow-head{width:2450px;height:2450px;margin:-1225px;filter:blur(70px) saturate(1.06);background:radial-gradient(circle at 50% 50%,rgba(225,145,72,.26) 0%,rgba(188,105,45,.19) 18%,rgba(128,66,25,.12) 34%,rgba(76,38,14,.055) 52%,rgba(22,11,5,0) 72%)}

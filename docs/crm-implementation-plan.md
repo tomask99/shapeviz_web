@@ -1,6 +1,6 @@
 # Shapeviz CRM — postup implementácie
 
-Stav: etapy 0 až 3 dokončené. CRM migrácie sú aplikované. Etapy 0–2 nasadené cez commit `8b6dec4`; vydanie Pipeline je sledované cez GitHub/Vercel status. Podrobnosti: `docs/crm-stage-1.md`, `docs/crm-stage-2.md`, `docs/crm-stage-3.md`.
+Stav: funkčné etapy 0 až 7 implementované a CRM migrácie aplikované. Záverečný rozsah, živé integračné overenie a stav nasadenia: `docs/crm-stage-7-completion.md`. Staršie stage dokumenty zachytávajú stav pri jednotlivých odovzdaniach.
 Podklad: `briefs/brief.md`. Audit repozitára a produkčnej schémy: 22. september 2026.
 
 ## Existujúca architektúra
@@ -91,19 +91,37 @@ Kanban nad tými istými firmami, presun drag-and-drop aj prístupný alternatí
 
 ### 4. Follow-ups
 
+Dokončené 22. 9. 2026; podrobnosti, aplikovaná migrácia a limity overenia v `docs/crm-stage-4.md`.
+
 Plánovanie, dokončenie a preplánovanie; overdue/today/upcoming/completed podľa lokálnej zóny. Najbližšia nedokončená úloha ako Next action na firme a v pipeline. Kontroly polnoci a letného času.
 
 ### 5. Prepojenie prezentácií a engagement
+
+5a dokončená 22. 9. 2026: priradenie/odpojenie existujúceho decku z detailu firmy, prvé ručne zaznamenané odoslanie, on-demand analytika 7/30/90 dní a história. Väzba je v súkromnej `crm_presentation_links`, nie vo verejnom registri. Detaily: `docs/crm-stage-5a.md`.
+
+5b1 dokončená lokálne 22. 9. 2026: voliteľný výber firmy pri vytváraní zo šablóny, uploade hotového HTML a editácii nepriradenej prezentácie; bezpečné opakovanie priradenia po uložení decku. Existujúca väzba sa spravuje v detaile firmy. Bez novej migrácie. Detaily a limity: `docs/crm-stage-5b1.md`.
+
+5b2 dokončená 22. 9. 2026: manuálne zaznamenanie prijatej odpovede s časom a kontaktom, odolnosť proti duplicitám pri opakovaní, história a posledná odpoveď v prehľade firmy. Bez automatickej zmeny pipeline. Migrácie `20260922181101` a `20260922181325` aplikované. Detaily: `docs/crm-stage-5b2.md`.
+
+5b3 dokončená lokálne 22. 9. 2026: engagement v Overview firmy pre jednu zvolenú priradenú prezentáciu a obdobie 7/30/90 dní, bez agregácie celej firmy alebo nových analytických dát. Detaily: `docs/crm-stage-5b3.md`.
+
+Automatický VIEWED a agregácia firmy doplnené v záverečnom rozšírení: serverová kontrola admina pred trackingom, podpísané návštevy, bezpečný posun len z READY/CONTACTED a 30-dňové COLD/ACTIVE/HOT. Detaily a obmedzenia v `docs/crm-stage-7-completion.md`.
 
 Priradenie existujúcej/novo vytvorenej prezentácie k firme, ručné označenie odoslania a odpovede, prehľad existujúcej analytiky v detaile. Overenie oprávnení pri väzbách, žiadne zmeny verejných URL. Až potom bezpečný jednorazový automatický posun na VIEWED.
 
 ### 6. Overview CRM
 
-Pridať pravdivé súhrny leadov, stavy a follow-ups; zachovať existujúce grafy a Presentation performance. Agregácie bez N+1, bez vymyslených konverzií.
+Dokončené 22. 9. 2026: súhrny nearchivovaných leadov, aktuálne pipeline stavy, firmy so zaznamenanou odpoveďou a follow-ups podľa lokálneho dňa. Päť najbližších úloh a odkazy na filtrované leady; zachované existujúce grafy a Presentation performance. Jeden súhrnný RPC bez N+1, bez historických konverzií. Migrácia `20260922182648` aplikovaná; aplikácia lokálna. Podrobnosti: `docs/crm-stage-6.md`.
 
 ### 7. Rozšírenia až po stabilnom MVP
 
-COLD/ACTIVE/HOT s nastaviteľnými pravidlami, samostatné jednorazové a mesačné hodnoty, WON/LOST metadáta, pokročilé filtre, reporting a ďalšia automatizácia. Gmail integrácia ani hromadné oslovovanie nie sú súčasťou MVP.
+7a dokončená 22. 9. 2026: voliteľná odhadovaná hodnota firmy v EUR, jednorazová/mesačná/neurčená frekvencia, zadanie a zobrazenie v detaile. Migrácia `20260922183619` aplikovaná; aplikácia lokálna. Bez súčtov na dashboarde alebo WON/LOST metadát. Detaily: `docs/crm-stage-7a.md`.
+
+7b dokončená 22. 9. 2026: oddelené EUR súhrny jednorazových a mesačných odhadov pre nearchivované REPLIED/MEETING/PROPOSAL firmy. Chýbajúce hodnoty a neurčená frekvencia sa nesčítavajú; UI uvádza ich počty. Migrácia `20260922184332` aplikovaná; aplikácia lokálna. Detaily: `docs/crm-stage-7b.md`.
+
+7c1 dokončená 22. 9. 2026: voliteľný dôvod straty leadu, úprava/vymazanie a zachovanie pri opätovnom otvorení. Migrácia `20260922184933` aplikovaná; aplikácia lokálna. Detaily: `docs/crm-stage-7c1.md`.
+
+Záverečné rozšírenie dopĺňa COLD/ACTIVE/HOT (pravidlá centralizované v SQL, bez nastavení v UI), WON metadáta, pokročilé filtre, zdrojový reporting, logo cez URL a prvý kontakt. Gmail integrácia ani hromadné oslovovanie nie sú súčasťou MVP.
 
 ## Overenie a odovzdávanie každej etapy
 
@@ -116,4 +134,4 @@ COLD/ACTIVE/HOT s nastaviteľnými pravidlami, samostatné jednorazové a mesač
 
 ## Stav tohto odovzdania
 
-Etapa 3: Pipeline/Kanban, presuny kariet aj zmena stavu cez menu, filtre, samostatný Lost pohľad, stránkovanie a ochrana pred prepísaním novších dát. Bez novej migrácie; používa existujúce firmy a históriu. Predchádzajúce etapy už pushnuté a nasadené. Nasleduje etapa 4 — Follow-ups. Podrobný prehľad: `docs/crm-stage-3.md`.
+Zostávajúce funkčné body do etapy 7 implementované; migrácie `20260922191132` a `20260922191133` aplikované. Živý integračný test prešiel cez skutočný Auth, API, RLS, uloženie firmy/kontaktu/WON, návštevu prezentácie a automatický VIEWED. Izolované testovacie údaje odstránené. Stav nasadenia a limity: `docs/crm-stage-7-completion.md`. Staršie záznamy etáp vyššie zachytávajú stav pri jednotlivých odovzdaniach.

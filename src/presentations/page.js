@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { getPresentationProject, getPrivatePresentationSource, hasSupabase, slugPattern } from './remote.js';
 import { requestOrigin } from '../http.js';
 import {normalizePresentationCtaArrows} from './cta-arrows.js';
+import {trackingClassification,signTracking} from './tracking-proof.js';
 
 const moduleRoot = path.dirname(fileURLToPath(import.meta.url));
 const defaultTemplatesRoot = path.resolve(moduleRoot, '../../presentation-templates');
@@ -58,14 +59,25 @@ export function createPresentationPageHandler({ env = process.env, send = fetch,
     try {
       const project = await getPresentationProject(slug, { env, send });
       if (!project || project.status !== 'published' || project.access_mode !== 'unlisted') {
-        res.writeHead(404, { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow, noarchive' }).end('Not found');
-        return;
+        res.writeHead(404, { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow, noarchive' }).end('Not found');return;
+      }
+      const classification=trackingClassification(req,env.SUPABASE_SECRET_KEY);
+      if(!classification&&!new URL(req.url,'http://localhost').searchParams.has('sv_gate')){
+        // A fresh same-origin navigation lets Strict admin cookies reach the gate,
+        // even when the original presentation link was opened from an external site.
+        const gate=`/api/admin?action=tracking-gate&slug=${encodeURIComponent(slug)}`;
+        res.writeHead(200,{'Cache-Control':'private, no-store','Content-Type':'text/html; charset=utf-8','X-Robots-Tag':'noindex, nofollow','Referrer-Policy':'no-referrer'}).end(`<!doctype html><title>Opening presentation</title><script>location.replace(${JSON.stringify(gate)})</script><noscript><a href="${gate.replaceAll('&','&amp;')}">Open presentation</a></noscript>`);return;
       }
       const source = project.source_type === 'template'
         ? await renderPresentationTemplate(project, { templatesRoot })
         : await getPrivatePresentationSource(project, { env, send });
       // Also repair already uploaded decks without rewriting their stored source.
-      const html = normalizePresentationCtaArrows(source);
+      const proof=classification?.exclude===false?signTracking({kind:'visit',deck:slug,exp:Date.now()+3600000},env.SUPABASE_SECRET_KEY):'';
+      const config=`<script>window.__shapevizTracking=${JSON.stringify({exclude:!proof,proof})};</script>`;
+      const normalized = normalizePresentationCtaArrows(source);
+      const html = /<head\b[^>]*>/i.test(normalized)
+        ? normalized.replace(/<head\b[^>]*>/i,match=>match+config)
+        : config + normalized;
       const etag = `"${createHash('sha256').update(html).digest('hex').slice(0, 24)}"`;
       // Explicit sources also work in WebKit versions that treat 'self' as
       // the sandbox's opaque origin. Keep the document sandboxed.

@@ -105,5 +105,7 @@ test('contact errors preserve draft, recoverable load errors and keyboard tabs w
   await expect(dialog.getByLabel('Full name')).toHaveValue('Keep my draft');
   await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
   await page.getByRole('tab',{name:'Contacts',exact:true}).focus();await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab',{name:'Presentations',exact:true})).toHaveAttribute('aria-selected','true');
+  await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('tab',{name:'Notes',exact:true})).toHaveAttribute('aria-selected','true');
 });

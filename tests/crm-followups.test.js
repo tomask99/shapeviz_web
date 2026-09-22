@@ -1,0 +1,50 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {handleCrm} from '../src/crm/handler.js';
+import {instant,withNextActions} from '../src/crm/followups.js';
+const user={id:'11111111-1111-4111-8111-111111111111'},companyId='22222222-2222-4222-8222-222222222222',id='33333333-3333-4333-8333-333333333333';
+const base={user,token:'verified-jwt',url:new URL('https://example.test'),body:{companyId,title:'Send proposal',description:'Notes',due_at:'2026-09-27T08:00:00.000Z'}};
+test('follow-up input rejects invalid/normalized dates and requires owner-scoped company/contact',async()=>{
+  for(const value of ['2026-02-30T08:00:00.000Z','tomorrow','2026-09-27','infinity',null])assert.throws(()=>instant(value),{status:400});
+  assert.equal(instant(base.body.due_at),base.body.due_at);
+  const calls=[];
+  const call=async(path,opts)=>{calls.push({path,opts});return [{id:companyId}];};
+  await handleCrm({...base,action:'crm-followup-save',body:{...base.body,owner_id:'spoof',completed_at:base.body.due_at},call});
+  assert.equal(calls.length,2);assert.match(calls[0].path,new RegExp('owner_id=eq.'+user.id));
+  assert.equal(calls[1].opts.body.owner_id,user.id);assert.equal(calls[1].opts.body.completed_at,undefined);assert.equal(calls[1].opts.token,'verified-jwt');
+  await assert.rejects(()=>handleCrm({...base,action:'crm-followup-save',body:{...base.body,contact_id:id},call:async(path)=>path.includes('crm_contacts')?[]:[{id:companyId}]}),{status:400});
+  await assert.rejects(()=>handleCrm({...base,action:'crm-followup-save',call:async()=>[{id:companyId,archived_at:'2026-09-01'}]}),{status:409});
+  await assert.rejects(()=>handleCrm({...base,action:'crm-followup-save',call:async()=>[]}),{status:404});
+  await assert.rejects(()=>handleCrm({...base,token:null,action:'crm-followup-save',call}),{status:401});
+});
+test('complete is versioned, owner/company scoped, only pending and only completion field is written',async()=>{
+  let captured;
+  const args={...base,action:'crm-followup-complete',body:{...base.body,id,version:4}};
+  await handleCrm({...args,call:async(path,opts)=>{if(opts.method==='PATCH')captured={path,opts};return [{id}];}});
+  assert.match(captured.path,/version=eq.4&completed_at=is.null/);assert.match(captured.path,new RegExp('company_id=eq.'+companyId));
+  assert.match(captured.path,new RegExp('owner_id=eq.'+user.id));assert.deepEqual(Object.keys(captured.opts.body),['completed_at']);
+  await assert.rejects(()=>handleCrm({...args,call:async(path,opts)=>opts.method==='PATCH'?[]:[{id:companyId}]}),{status:409});
+});
+test('grouped list validates local day bounds/paging, and next actions use one bounded batch',async()=>{
+  let captured;
+  const url=new URL('https://example.test/?today=2026-10-24T22:00:00.000Z&tomorrow=2026-10-25T23:00:00.000Z&group=today&page=2');
+  await handleCrm({...base,action:'crm-followups',url,call:async(path,opts)=>{captured={path,opts};return {groups:[]};}});
+  assert.equal(captured.opts.body.p_group,'today');assert.equal(captured.opts.body.p_page,2);assert.equal(captured.opts.body.p_company_id,null);
+  url.searchParams.set('page','0');await assert.rejects(()=>handleCrm({...base,action:'crm-followups',url,call:async()=>{}}),{status:400});
+  const companies=[{id:companyId},{id}];let count=0;
+  const result=await withNextActions({companies},async(path,opts)=>{count++;assert.deepEqual(opts.body.p_company_ids,[companyId,id]);return {[companyId]:{title:'Send proposal'}};});
+  assert.equal(count,1);assert.equal(result.companies[0].next_action.title,'Send proposal');assert.equal(result.companies[1].next_action,null);
+});
+test('local calendar boundaries handle DST, midnight, nonexistent times and timezone-independent instants',()=>{
+  const script=`import assert from 'node:assert/strict';import {localDayBounds,localInstant,localInput} from './public/admin/crm-dates.js';
+    const spring=localDayBounds(new Date('2026-03-29T10:00:00Z')),fall=localDayBounds(new Date('2026-10-25T10:00:00Z'));
+    assert.equal((Date.parse(spring.tomorrow)-Date.parse(spring.today))/3600000,23);
+    assert.equal((Date.parse(fall.tomorrow)-Date.parse(fall.today))/3600000,25);
+    assert.equal(localDayBounds(new Date('2026-09-22T22:01:00Z')).today,'2026-09-22T22:00:00.000Z');
+    assert.throws(()=>localInstant('2026-03-29T02:30'));
+    assert.throws(()=>localInstant('2026-02-30T12:00'));
+    assert.equal(localInstant('2026-10-25T02:30'),'2026-10-25T00:30:00.000Z');
+    assert.equal(localInput('2026-09-27T08:00:00Z'),'2026-09-27T10:00');`;
+  execFileSync(process.execPath,['--input-type=module','-e',script],{env:{...process.env,TZ:'Europe/Bratislava'}});
+});

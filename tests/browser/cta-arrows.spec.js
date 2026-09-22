@@ -20,7 +20,7 @@ for(const mobile of [false,true]){
    const page=await context.newPage(),errors=[];
    page.on('pageerror',error=>errors.push(error.message));
    await context.route('https://shapevizweb.vercel.app/**',route=>route.fulfill({body:'Destination'}));
-   await page.goto(`http://127.0.0.1:${server.address().port}/?slug=arrow-test`);
+   await page.goto(`http://127.0.0.1:${server.address().port}/?slug=arrow-test&sv_gate=1`);
    for(const preview of [false,true]){
     if(preview){
      await page.setContent('<iframe title="Template preview" sandbox="allow-scripts" style="border:0;width:100%;height:250px"></iframe>');

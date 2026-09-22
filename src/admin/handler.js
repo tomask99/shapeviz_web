@@ -1,5 +1,6 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { handleCrm } from '../crm/handler.js';
+import {trackingCookie} from '../presentations/tracking-proof.js';
 import { readJson, requestOrigin } from '../http.js';
 import { supportsClientNameApi, transformDeck } from './html.js';
 import { getPrivatePresentationSource, uploadStorageObject, slugPattern } from '../presentations/remote.js';
@@ -32,7 +33,7 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
   }
   function cookies(res, session) {
     const secure = env.VERCEL || env.SITE_URL?.startsWith('https:') ? '; Secure' : '';
-    res.setHeader('Set-Cookie', ['access','refresh'].map(name => `sv_${name}=${session?.[`${name}_token`] || ''}; HttpOnly; SameSite=Strict; Path=/api/admin; Max-Age=${session ? 604800 : 0}${secure}`));
+    res.setHeader('Set-Cookie', [...['access','refresh'].map(name => `sv_${name}=${session?.[`${name}_token`] || ''}; HttpOnly; SameSite=Strict; Path=/api/admin; Max-Age=${session ? 604800 : 0}${secure}`),trackingCookie(!!session,env)]);
   }
   async function session(req,res) {
     const jar = Object.fromEntries((req.headers.cookie || '').split(';').map(s=>s.trim().split(/=(.*)/s).slice(0,2)));
@@ -85,8 +86,8 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
       if(req.method==='POST' && req.headers.origin !== origin) throw fail(403,'Request origin rejected.');
       const url=new URL(req.url,'http://localhost');
       const action=url.searchParams.get('action') || 'me';
-      const readActions=['me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline'];
-      if(req.method==='GET' && !readActions.includes(action)) throw fail(405,'Use POST for this action.');
+      const readActions=['me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary'];
+      if(req.method==='GET' && ![...readActions,'crm-overview','crm-signals','tracking-gate'].includes(action)) throw fail(405,'Use POST for this action.');
       if(req.method==='POST' && !/^application\/json\b/i.test(req.headers['content-type']||'')) throw fail(415,'JSON is required.');
       const body=req.method==='POST' ? await readJson(req,100_000) : {};
       if(action==='login' || action==='verify') {
@@ -95,6 +96,13 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
           auth=action==='login' ? await call('/auth/v1/token?grant_type=password',{method:'POST',body:{email:text(body.email,254),password:typeof body.password==='string' ? body.password : ''}}) : await call('/auth/v1/verify',{method:'POST',body:{token_hash:text(body.tokenHash,512),type:'recovery'}});
         } catch(error) {throw fail(error.status===429 ? 429 : 401,'Sign-in failed. Check your details or setup link.');}
         await owner(auth.user);cookies(res,auth);reply(200,{email:auth.user.email});return;
+      }
+      if(action==='tracking-gate'){
+        const slug=key(url.searchParams.get('slug'));let exclude=true;
+        try{await session(req,res);}catch(error){exclude=![401,403].includes(error.status);}
+        const existing=res.getHeader('Set-Cookie')||[];
+        res.setHeader('Set-Cookie',[...(Array.isArray(existing)?existing:[existing]),trackingCookie(exclude,env)]);
+        res.writeHead(302,{Location:`/p/${slug}?sv_gate=1`});res.end();return;
       }
       if(action==='tracking-status') {
         try {await session(req,res);reply(200,{exclude:true});}
@@ -108,7 +116,7 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
         if(![7,30,90].includes(days))throw fail(400,'Invalid date range.');
         reply(200,await call('/rest/v1/rpc/website_admin_stats',{method:'POST',body:{p_days:days}}));return;
       }
-      if(action==='me') {reply(200,{email:user.email});return;}
+      if(action==='me') {const existing=res.getHeader('Set-Cookie')||[];res.setHeader('Set-Cookie',[...(Array.isArray(existing)?existing:[existing]),trackingCookie(true,env)]);reply(200,{email:user.email});return;}
       if(action==='logout') {await call('/auth/v1/logout',{method:'POST',token}).catch(()=>{});cookies(res,null);reply(200,{ok:true});return;}
       if(action==='password') {if(typeof body.password!=='string'||body.password.length<12||body.password.length>128) throw fail(400,'Use a password with 12–128 characters.');await call('/auth/v1/user',{method:'PUT',token,body:{password:body.password}});reply(200,{ok:true});return;}
       if(action==='list') {const projects=await call(`/rest/v1/presentation_projects?select=${fields}&order=updated_at.desc&limit=1000`);reply(200,{projects});return;}

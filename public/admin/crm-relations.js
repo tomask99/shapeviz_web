@@ -1,22 +1,29 @@
+import {mountPresentations} from './crm-presentations.js';
+import {createReplyRecorder} from './crm-replies.js';
+import {mountEngagement} from './crm-engagement.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const date=value=>new Date(value).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
-const events={lead_created:'Lead added',status_changed:'Pipeline status changed',lead_archived:'Lead archived',lead_restored:'Lead restored',contact_added:'Contact added',contact_updated:'Contact updated',contact_removed:'Contact removed',note_added:'Note added',note_updated:'Note updated',note_removed:'Note removed',manual_activity:'Manual activity'};
+const events={lead_created:'Lead added',status_changed:'Pipeline status changed',lead_archived:'Lead archived',lead_restored:'Lead restored',contact_added:'Contact added',contact_updated:'Contact updated',contact_removed:'Contact removed',note_added:'Note added',note_updated:'Note updated',note_removed:'Note removed',manual_activity:'Manual activity',followup_created:'Follow-up scheduled',followup_updated:'Follow-up updated',followup_rescheduled:'Follow-up rescheduled',followup_completed:'Follow-up completed'};
 const status=value=>String(value||'').toLowerCase().replaceAll('_',' ');
+Object.assign(events,{presentation_assigned:'Presentation assigned',presentation_unassigned:'Presentation unassigned',presentation_sent:'Presentation sent',reply_received:'Client reply received'});
+Object.assign(events,{presentation_viewed:'Presentation viewed · checked visit',website_clicked:'Website clicked · checked visit'});
 const field=(name,label,max=160,type='text')=>`<label>${label}<input name="${name}" type="${type}" maxlength="${max}"></label>`;
 const area=(name,label,max=5000)=>`<label>${label}<textarea name="${name}" rows="5" maxlength="${max}" ${name==='content'?'required':''}></textarea></label>`;
-const activity=item=>`<article class="crm-entry"><p class="fine"><time datetime="${esc(item.created_at)}">${esc(date(item.created_at))}</time></p><h3>${esc(events[item.event_type]||'Activity')}</h3>${item.event_type==='status_changed'?`<p>${esc(status(item.metadata?.from_status))} → ${esc(status(item.metadata?.to_status))}</p>`:''}${item.metadata?.name?`<p>${esc(item.metadata.name)}</p>`:''}${item.event_type==='manual_activity'?`<p class="crm-description">${esc(item.metadata?.content)}</p>`:''}</article>`;
+const activity=item=>`<article class="crm-entry"><p class="fine"><time datetime="${esc(item.created_at)}">${esc(date(item.created_at))}</time></p><h3>${esc(events[item.event_type]||'Activity')}</h3>${item.event_type==='status_changed'?`<p>${esc(status(item.metadata?.from_status))} → ${esc(status(item.metadata?.to_status))}</p>`:''}${item.metadata?.name?`<p>${esc(item.metadata.name)}</p>`:''}${['manual_activity','reply_received'].includes(item.event_type)?`<p class="crm-description">${esc(item.metadata?.content)}</p>`:''}${item.event_type==='reply_received'?`<p class="fine">Received: ${esc(date(item.metadata.received_at))}${item.metadata.contact_name?` · ${esc(item.metadata.contact_name)}`:''} · Manually recorded; pipeline unchanged.</p>`:''}</article>`;
 
 /** Mount the company tabs independently from the Leads list and company editor. */
 export function mountRelations({root,company,api,notify}) {
   const overview=root.querySelector('.crm-detail-grid');
   const tabs=document.createElement('div');tabs.className='crm-tabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Company sections');
-  const sections=['overview','contacts','notes','activity'];
+  const sections=['overview','contacts','presentations','notes','activity'];
   tabs.innerHTML=sections.map(s=>`<button id="crm-tab-${s}" role="tab" aria-controls="${s==='overview'?'crm-panel-overview':'crm-related-panel'}" data-tab="${s}">${s[0].toUpperCase()+s.slice(1)}</button>`).join('');
   overview.before(tabs);overview.id='crm-panel-overview';overview.setAttribute('role','tabpanel');overview.setAttribute('aria-labelledby','crm-tab-overview');
   const panel=document.createElement('section');panel.id='crm-related-panel';panel.className='crm-related-panel';panel.setAttribute('role','tabpanel');panel.hidden=true;overview.after(panel);
   const summary=document.createElement('section');summary.className='chart-panel crm-summary';overview.append(summary);
+  const engagement=document.createElement('section');engagement.className='chart-panel crm-company-engagement';overview.append(engagement);
   const dialog=document.createElement('dialog');dialog.className='crm-record-dialog';dialog.setAttribute('aria-labelledby','crm-record-title');document.body.append(dialog);
-  let disposed=false,seq=0,tab='overview',page=1,items=[],pending=false;
+  let disposed=false,seq=0,tab='overview',page=1,items=[],pending=false,cleanupPresentations,cleanupEngagement;
+  const replies=createReplyRecorder({company,api,notify,onSaved:()=>{page=1;render();}});
   const read=async(kind,p=1)=>api('crm-'+kind,null,{companyId:company.id,page:p});
   function detailsContact(c) {
     return `<h3>${esc(c.full_name)}</h3>${c.primary_contact?'<span class="badge">Primary contact</span>':''}<p class="fine">${esc(c.job_title)}</p><div class="crm-contact-links">${c.email?`<a href="mailto:${encodeURIComponent(c.email)}">${esc(c.email)}</a>`:''}${c.phone?`<span>${esc(c.phone)}</span>`:''}${['linkedin','instagram'].filter(k=>/^https?:\/\//i.test(c[k])).map(k=>`<a href="${esc(c[k])}" target="_blank" rel="noopener noreferrer">${k==='linkedin'?'LinkedIn':'Instagram'}</a>`).join('')}</div>${c.notes?`<p class="crm-description">${esc(c.notes)}</p>`:''}`;
@@ -24,17 +31,22 @@ export function mountRelations({root,company,api,notify}) {
   async function loadSummary(ticket) {
     summary.innerHTML='<p class="fine">Loading company summary…</p>';
     try {
-      const [contacts,notes,history]=await Promise.all([read('contacts'),read('notes'),read('activity')]);
+      const [contacts,notes,history,reply]=await Promise.all([read('contacts'),read('notes'),read('activity'),api('crm-reply-summary',null,{companyId:company.id})]);
       if(disposed||ticket!==seq)return;
       summary.innerHTML=`<p class="eyebrow">AT A GLANCE</p><div class="crm-summary-grid"><div><h3>Contact summary</h3>${contacts.items?.[0]?detailsContact(contacts.items[0]):'<p class="fine">No contacts yet.</p>'}<button class="quiet" data-open="contacts">View contacts</button></div><div><h3>Latest note</h3><p class="crm-description">${esc(notes.items?.[0]?.content?.slice(0,300)||'No notes yet.')}</p><button class="quiet" data-open="notes">View notes</button></div><div><h3>Latest activity</h3>${history.items?.[0]?activity(history.items[0]):'<p class="fine">No activity yet.</p>'}<button class="quiet" data-open="activity">View activity</button></div></div>`;
+      summary.querySelector('.crm-summary-grid').insertAdjacentHTML('beforeend',`<div><h3>Latest client reply</h3>${reply.item?`<p class="fine">Received: ${esc(date(reply.item.metadata.received_at))}${reply.item.metadata.contact_name?` · ${esc(reply.item.metadata.contact_name)}`:''}</p><p class="crm-description">${esc(reply.item.metadata.content.slice(0,300))}</p>`:'<p class="fine">No reply recorded yet.</p>'}<button class="quiet" data-record-reply ${company.archived_at?'disabled':''}>Record reply</button></div>`);
     }catch(error){if(!disposed&&ticket===seq)summary.innerHTML=`<p role="alert">${esc(error.message)}</p><button class="secondary" data-retry>Retry summary</button>`;}
   }
   async function render() {
+    replies.close();
+    cleanupPresentations?.();cleanupPresentations=null;
+    cleanupEngagement?.();cleanupEngagement=null;
     const ticket=++seq;
     tabs.querySelectorAll('button').forEach(b=>{const selected=b.dataset.tab===tab;b.setAttribute('aria-selected',String(selected));b.tabIndex=selected?0:-1;});
     overview.hidden=tab!=='overview';panel.hidden=tab==='overview';
-    if(tab==='overview'){loadSummary(ticket);return;}
+    if(tab==='overview'){loadSummary(ticket);cleanupEngagement=mountEngagement({panel:engagement,company,api,onPresentations:()=>select('presentations')});return;}
     panel.setAttribute('aria-labelledby','crm-tab-'+tab);
+    if(tab==='presentations'){cleanupPresentations=mountPresentations({panel,company,api,notify});return;}
     panel.innerHTML='<p role="status">Loading…</p>';
     try {
       const data=await read(tab,page);
@@ -48,6 +60,7 @@ export function mountRelations({root,company,api,notify}) {
           return `<article class="crm-entry">${tab==='contacts'?detailsContact(item):`<p class="fine">${esc(date(item.created_at))}${item.version>1?' · Edited':''}</p><p class="crm-description">${esc(item.content)}</p>`}<div class="actions"><button class="quiet" data-edit-record="${esc(item.id)}">Edit ${singular}</button><button class="quiet" data-delete-record="${esc(item.id)}">Delete ${singular}</button></div></article>`;
         }).join(''):`<div class="empty">No ${tab} yet.</div>`)+
         `<div class="actions crm-pagination"><button class="secondary" data-record-page="-1" ${page<=1?'disabled':''}>Previous</button><span class="fine">Page ${page}</span><button class="secondary" data-record-page="1" ${!data.hasMore?'disabled':''}>Next</button></div>`;
+      if(tab==='activity')panel.querySelector('.section-title').insertAdjacentHTML('beforeend',`<button class="secondary" data-record-reply ${company.archived_at?'disabled':''}>Record reply</button>`);
     }catch(error){if(!disposed&&ticket===seq)panel.innerHTML=`<p role="alert">${esc(error.message)}</p><button class="secondary" data-retry>Try again</button>`;}
   }
   function select(next,push=true) {
@@ -60,7 +73,7 @@ export function mountRelations({root,company,api,notify}) {
   tabs.onkeydown=e=>{
     if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
     e.preventDefault();const i=sections.indexOf(tab);
-    const next=e.key==='Home'?0:e.key==='End'?3:(i+(e.key==='ArrowRight'?1:3))%4;
+    const next=e.key==='Home'?0:e.key==='End'?sections.length-1:(i+(e.key==='ArrowRight'?1:sections.length-1))%sections.length;
     select(sections[next]);tabs.querySelector('[data-tab='+sections[next]+']').focus();
   };
   function edit(record=null) {
@@ -90,7 +103,9 @@ export function mountRelations({root,company,api,notify}) {
   }
   dialog.addEventListener('cancel',e=>{if(pending)e.preventDefault();});
   async function click(e) {
+    if(tab==='presentations')return;
     const b=e.target.closest('button');if(!b)return;
+    if(b.hasAttribute('data-record-reply')){replies.open();return;}
     if(b.dataset.open){select(b.dataset.open);return;}
     if(b.hasAttribute('data-retry')){render();return;}
     if(b.hasAttribute('data-add-record')){edit();return;}
@@ -106,5 +121,5 @@ export function mountRelations({root,company,api,notify}) {
   }
   panel.addEventListener('click',click);summary.addEventListener('click',click);
   select(new URLSearchParams(location.search).get('tab')||'overview',false);
-  return ()=>{disposed=true;seq++;dialog.close();dialog.remove();};
+  return ()=>{disposed=true;seq++;replies.dispose();cleanupPresentations?.();cleanupEngagement?.();dialog.close();dialog.remove();};
 }
