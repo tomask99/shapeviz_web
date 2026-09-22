@@ -1,4 +1,5 @@
 import { randomUUID, createHash } from 'node:crypto';
+import { handleCrm } from '../crm/handler.js';
 import { readJson, requestOrigin } from '../http.js';
 import { supportsClientNameApi, transformDeck } from './html.js';
 import { getPrivatePresentationSource, uploadStorageObject, slugPattern } from '../presentations/remote.js';
@@ -84,7 +85,7 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
       if(req.method==='POST' && req.headers.origin !== origin) throw fail(403,'Request origin rejected.');
       const url=new URL(req.url,'http://localhost');
       const action=url.searchParams.get('action') || 'me';
-      const readActions=['me','list','stats','website-stats','tracking-status'];
+      const readActions=['me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity'];
       if(req.method==='GET' && !readActions.includes(action)) throw fail(405,'Use POST for this action.');
       if(req.method==='POST' && !/^application\/json\b/i.test(req.headers['content-type']||'')) throw fail(415,'JSON is required.');
       const body=req.method==='POST' ? await readJson(req,100_000) : {};
@@ -101,6 +102,7 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
         return;
       }
       const {user,token}=await session(req,res);
+      if(action.startsWith('crm-')) {reply(200,await handleCrm({action,body,url,user,token,call}));return;}
       if(action==='website-stats') {
         const days=Number(url.searchParams.get('days')||30);
         if(![7,30,90].includes(days))throw fail(400,'Invalid date range.');

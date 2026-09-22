@@ -1,3 +1,5 @@
+-- RETIRED: historical one-off cleanup, never replay on an existing database.
+-- Kept outside migrations as a non-executable record. See docs/migration-reconciliation.md.
 -- Remove every presentation registry record. Foreign-key cascades also remove
 -- presentation share links, analytics sessions, and analytics events.
 delete from public.presentation_projects;

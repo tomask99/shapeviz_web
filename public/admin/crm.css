@@ -1,0 +1,31 @@
+aside nav a{display:block;color:var(--muted);padding:15px 10px;font-size:13px;border-radius:12px}
+aside nav a.active{color:var(--accent);background:#d8873910;border-left:2px solid var(--accent)}
+.crm-nav-label{margin:16px 10px 0;font-size:9px}
+@media(max-width:900px){.crm-nav-label{display:none}}
+#crm h1{overflow-wrap:anywhere}
+#crm .actions{flex-wrap:wrap;margin:20px 0}
+#crm .crm-filter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+#crm .crm-filters{margin:18px 0}
+.crm-table{border:1px solid var(--line);border-radius:22px;overflow:hidden;background:var(--surface)}
+.crm-row{display:grid;grid-template-columns:1.3fr 1fr 1fr 1.3fr .6fr;align-items:center;gap:18px;padding:22px;border-bottom:1px solid var(--line);font-size:13px;overflow-wrap:anywhere}
+.crm-row:last-child{border:0}.crm-row:hover{background:#d8873909}.crm-row strong{font-size:17px}.crm-row small{display:block}
+.crm-table-head{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.crm-tags{display:flex;flex-wrap:wrap;gap:6px}.crm-tags small{border:1px solid var(--line);border-radius:20px;padding:2px 8px}
+.crm-priority{color:var(--accent)}.crm-pagination{justify-content:space-between}
+.crm-tabs{display:flex;gap:8px;border-bottom:1px solid var(--line);margin:28px 0;flex-wrap:wrap}
+.crm-tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:14px;color:var(--muted);font:inherit;font-size:13px}
+.crm-tabs button[aria-selected=true]{color:var(--accent);border-color:var(--accent)}
+.crm-entry{border:1px solid var(--line);border-radius:20px;padding:24px;margin:16px 0;background:var(--surface);overflow-wrap:anywhere}
+.crm-entry h3{margin-bottom:12px}.crm-contact-links{display:flex;flex-wrap:wrap;gap:16px;margin:16px 0;font-size:13px}.crm-contact-links a{color:var(--accent)}
+.crm-record-dialog{max-width:680px}.crm-record-dialog textarea{width:100%;background:var(--surface);color:inherit;border:1px solid var(--line);border-radius:16px;padding:15px;font:inherit;margin:10px 0 20px;resize:vertical}.crm-record-dialog [data-error]{color:#efaa71}
+.crm-summary{grid-column:1/-1}.crm-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}.crm-summary-grid>div{min-width:0;overflow-wrap:anywhere}.crm-summary-grid .crm-entry{padding:0;border:0;background:none}
+@media(max-width:750px){.crm-summary-grid{grid-template-columns:1fr}.crm-tabs{gap:0}.crm-tabs button{padding:12px}.crm-related-panel .section-title{flex-wrap:wrap}}
+.crm-detail-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:22px;margin-top:28px}
+.crm-detail-grid .chart-panel{min-width:0}.crm-description{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65}
+.crm-detail-grid dl{font-size:13px;line-height:1.7}.crm-detail-grid dt{color:var(--muted)}.crm-detail-grid dd{margin:0 0 14px;overflow-wrap:anywhere}.crm-detail-grid hr{border:0;border-top:1px solid var(--line);margin:30px 0}
+#lead-dialog{max-width:760px}#lead-dialog textarea{width:100%;background:#100c08;color:inherit;border:1px solid var(--line);border-radius:16px;padding:15px;font:inherit;margin:10px 0 20px;resize:vertical}
+.crm-services{border:1px solid var(--line);border-radius:18px;padding:18px;margin:14px 0 24px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.crm-services legend{color:var(--muted);font-size:12px;padding:0 6px}.crm-services .check{margin:0;font-size:12px}
+#lead-dialog [data-error]{color:#efaa71}
+@media(max-width:1000px){#crm .crm-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.crm-row{gap:12px;padding:18px}.crm-detail-grid{grid-template-columns:1fr}}
+@media(max-width:650px){.crm-table{border:0;background:none;overflow:visible}.crm-table-head{display:none}.crm-row{grid-template-columns:1fr 1fr;border:1px solid var(--line)!important;border-radius:20px;margin-bottom:12px;background:var(--surface)}.crm-row>strong,.crm-row>.crm-tags{grid-column:1/-1}.crm-row>.badge{justify-self:start}.crm-services{grid-template-columns:1fr}#crm .page-heading{align-items:start}#crm h1{font-size:44px}#crm .page-heading .primary{white-space:nowrap;padding:12px}.crm-filter-grid label{min-width:0}}

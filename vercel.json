@@ -32,6 +32,14 @@
   ],
   "rewrites": [
     {
+      "source": "/admin/leads",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/admin/leads/:id",
+      "destination": "/admin/index.html"
+    },
+    {
       "source": "/adminlogin",
       "destination": "/admin/index.html"
     },

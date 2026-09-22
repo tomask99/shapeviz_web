@@ -1,4 +1,5 @@
 import './cursor.js';
+import {createCrm} from './crm.js';
 import {refreshWebsiteStats} from './website-stats.js';
 import {uploadPresentation} from './upload.js';
 const arrowIcon='<svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" focusable="false" style="vertical-align:-.125em"><path d="M5 19 19 5M5 5h14v14"/></svg>';
@@ -8,11 +9,11 @@ let projects=[],statistics={},view='all',selected=null,noticeTimer;
 const duration=n=>{n=Number(n)||0;return n>=3600?`${Math.floor(n/3600)}h ${Math.floor(n%3600/60)}m`:n>=60?`${Math.floor(n/60)}m ${n%60}s`:`${n}s`;};
 const notify=message=>{clearTimeout(noticeTimer);$('#notice').textContent=message;$('#notice').classList.add('visible');noticeTimer=setTimeout(()=>$('#notice').classList.remove('visible'),9000);};
 async function api(action,body,params={}) {
- const query=new URLSearchParams({action,...params});
+ const query=new URLSearchParams({...params,action});
  const response=await fetch(`/api/admin?${query}`,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(60000)});
  const data=await response.json().catch(()=>({error:'The server did not finish this request. Please try again.'}));if(!response.ok){if(response.status===401 && action!=='login' && action!=='verify')showLogin();throw Object.assign(new Error(data.error||'Request failed.'),{status:response.status,retryAfter:response.headers.get('Retry-After')});}return data;
 }
-function showLogin(setup=false){$('#studio').hidden=true;$('#login').hidden=false;$('#signin').hidden=setup;$('#set-password').hidden=!setup;$('#login-title').textContent=setup?'Make it yours.':'Welcome back.';$('#login-hint').textContent=setup?'Set a password with at least 12 characters.':'Sign in to your Shapeviz studio.';}
+function showLogin(setup=false){document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('#studio').hidden=true;$('#login').hidden=false;$('#signin').hidden=setup;$('#set-password').hidden=!setup;$('#login-title').textContent=setup?'Make it yours.':'Welcome back.';$('#login-hint').textContent=setup?'Set a password with at least 12 characters.':'Sign in to your Shapeviz studio.';}
 function formData(form){const data=Object.fromEntries(new FormData(form));for(const name of ['publish','isTemplate'])if(form.elements[name])data[name]=form.elements[name].checked;return data;}
 async function busy(form,task){const buttons=[...form.querySelectorAll('button')];let errorBox=form.querySelector('[data-form-error]');if(!errorBox){errorBox=document.createElement('p');errorBox.dataset.formError='';errorBox.setAttribute('role','alert');form.append(errorBox);}errorBox.textContent='';buttons.forEach(b=>b.disabled=true);try{await task();}catch(error){errorBox.textContent=error.message;notify(error.message);}finally{buttons.forEach(b=>b.disabled=false);}}
 function metricMarkup(summary={}){return [['Visits',summary.visits||0],['Active time',duration(summary.seconds)],['Average / visit',duration(summary.average_seconds)],['Slide views',summary.slide_views||0],['Website clicks',summary.website_clicks||0],['Visits with a click',summary.website_click_sessions||0],['Click-through rate',`${summary.visits ? Math.round((summary.website_click_sessions||0)/summary.visits*100) : 0}%`]].map(([label,value])=>`<div class="metric"><span>${label}</span><strong>${value}</strong></div>`).join('');}
@@ -49,7 +50,11 @@ function renderProjects() {
 async function copyPresentationLink(slug){const url=new URL(`/p/${slug}`,location.origin).href;try{await navigator.clipboard.writeText(url);notify('Link copied.');}catch{notify(`Could not copy automatically. Copy this link: ${url}`);}}
 async function refresh(){const website=refreshWebsiteStats(api);const list=await api('list');projects=list.projects;renderProjects();try{const stats=await api('stats',null,{days:$('#days').value});statistics=stats;$('#metrics').innerHTML=metricMarkup(stats.summary);drawChart();renderProjects();}catch(error){$('#metrics').textContent='Statistics are temporarily unavailable.';$('#chart-readout').textContent=error.message;}await website;}
 $('#website-days').onchange=()=>refreshWebsiteStats(api);
-async function enter(email){$('#login').hidden=true;$('#studio').hidden=false;$('#account').textContent=email;$('#today').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});await refresh();}
+const crm=createCrm({api,notify});
+const isCrmPath=()=>/^\/admin\/leads(?:\/[^/]+)?\/?$/.test(location.pathname);
+async function enter(email){$('#login').hidden=true;$('#studio').hidden=false;$('#account').textContent=email;$('#today').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});if(isCrmPath())crm.show();else{setView(new URLSearchParams(location.search).get('view')==='templates'?'templates':'all',false);await refresh();}}
+$('#nav-leads').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/leads');};
+window.addEventListener('popstate',()=>{if($('#studio').hidden)return;if(isCrmPath())crm.show();else setView(new URLSearchParams(location.search).get('view')==='templates'?'templates':'all',false);});
 $('#signin').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=await api('login',formData(e.target));e.target.reset();await enter(data.email);});};
 $('#set-password').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=formData(e.target);if(data.password!==data.confirm)throw new Error('Passwords do not match.');await api('password',{password:data.password});e.target.reset();const user=await api('me');await enter(user.email);notify('Password saved.');});};
 $('#logout').onclick=async()=>{try{await api('logout',{});showLogin();}catch(e){notify(e.message);}};
@@ -64,7 +69,10 @@ function openUpload(kind='presentation') {
  $('#upload-template-hint').hidden=!template;$('#upload-slug-label').hidden=template;
  $('#publish-label').hidden=template;$('#upload-progress').textContent='';$('#upload-dialog').showModal();
 }
-function setView(next) {
+function setView(next,push=true) {
+ const wasCrm=crm.isActive();crm.hide();
+ if(push){const path=next==='templates'?'/admin?view=templates':'/admin';if(location.pathname+location.search!==path)history.pushState(null,'',path);}
+ if(wasCrm)refresh().catch(error=>notify(error.message));
  view=next;document.querySelectorAll('[data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view===view));
  $('#page-title').innerHTML=view==='templates'?'Templates<span>.</span>':'Overview<span>.</span>';
  $('#page-kicker').textContent=view==='templates'?'CREATE ONCE. MAKE IT PERSONAL.':'YOUR WORK, IN MOTION.';
