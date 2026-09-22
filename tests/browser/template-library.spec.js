@@ -25,7 +25,10 @@ test('save multiple templates first, then choose one to create a client presenta
  await page.route('**/mock-upload',route=>route.fulfill({json:{}}));
  await page.goto('/adminlogin');
  await expect(page.locator('#projects')).toContainText('Milenium');
- await page.locator('[data-view=templates]').click();
+ await page.locator('#open-template-upload').click();
+ await expect(page.locator('#upload-title')).toHaveText('Upload a template.');
+ await page.locator('#upload-dialog [data-close]').click();
+ await expect(page.locator('#metrics')).toBeHidden();
  for(const name of ['Monthly pitch','Product launch']){
   await page.getByRole('button',{name:'Upload template ＋',exact:true}).click();
   await expect(page.locator('#upload-name-label')).toHaveText('Template name');
@@ -63,6 +66,36 @@ test('save multiple templates first, then choose one to create a client presenta
  await expect(page.locator('#projects .project-row')).toHaveCount(2);
  await page.locator('[data-view=templates]').click();
  await expect(page.locator('#projects .template-row')).toHaveCount(2);
+});
+
+test('template library supports renaming and confirmed deletion with Storage cleanup feedback',async({page})=>{
+ let template={deck_slug:'template-monthly',client:'Monthly',title:'Pitch',is_template:true,status:'draft'},deletions=0;
+ await page.route('**/api/admin?*',route=>{
+  const action=new URL(route.request().url()).searchParams.get('action');let data={};
+  if(action==='me')data={email:'owner@example.com'};
+  if(action==='list')data={projects:template?[template]:[]};
+  if(action==='stats')data={summary:{},daily:[],decks:[]};
+  if(action==='update'){const body=route.request().postDataJSON();expect(body).toEqual({slug:'template-monthly',client:'Monthly 2026',title:'New pitch'});Object.assign(template,body);}
+  if(action==='delete'){expect(route.request().postDataJSON()).toEqual({slug:'template-monthly',confirmSlug:'template-monthly'});deletions++;template=null;data={ok:true,deletedFiles:4,sharedFiles:0};}
+  return route.fulfill({json:data});
+ });
+ await page.goto('/adminlogin');await page.locator('[data-view=templates]').click();
+ await page.getByRole('button',{name:'Edit template Monthly',exact:true}).click();
+ await page.locator('#template-edit-form [name=client]').fill('Monthly 2026');
+ await page.locator('#template-edit-form [name=title]').fill('New pitch');
+ await page.locator('#template-edit-form [type=submit]').click();
+ await expect(page.locator('#projects')).toContainText('Monthly 2026');
+ await page.getByRole('button',{name:'Delete template Monthly 2026',exact:true}).click();
+ await expect(page.locator('#delete-description')).toContainText('uploaded files and associated records from Supabase');
+ await page.getByRole('button',{name:'Keep template',exact:true}).click();expect(deletions).toBe(0);
+ await page.getByRole('button',{name:'Delete template Monthly 2026',exact:true}).click();
+ await page.locator('#delete-form input').fill('wrong');
+ await page.locator('#delete-submit').click();expect(deletions).toBe(0);
+ await expect(page.locator('#delete-form [role=alert]')).toContainText('exact URL name');
+ await page.locator('#delete-form input').fill('template-monthly');await page.locator('#delete-submit').click();
+ await expect(page.locator('#projects')).toContainText('No templates saved');
+ await expect(page.locator('#notice')).toContainText('Template deleted. 4 Storage files removed.');
+ await page.locator('[data-view=all]').click();await expect(page.locator('#metrics')).toBeVisible();
 });
 
 test('empty template picker offers an upload without submitting a presentation',async({page})=>{

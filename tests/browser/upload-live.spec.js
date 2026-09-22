@@ -25,15 +25,26 @@ test('real Supabase upload, finalize, publish and file cleanup',async({page})=>{
   await expect(page.locator('#upload-dialog')).not.toBeVisible({timeout:45000});
   await expect(page.locator('#projects')).toContainText(slug);
   const r=await page.request.get(origin+'/p/'+slug);expect(r.status()).toBe(200);expect(await r.text()).toContain('Upload check');
-  expect((await api('finalize',finalizedBody)).status).toBe(200);
+  const finalized=await api('finalize',finalizedBody);expect(finalized.status).toBe(200);
   expect((await api('update',{slug,isTemplate:true})).status).toBe(200);
-  expect((await api('variant',{template:slug,slug:variant,client:'Variant check',title:'Variant check',publish:true})).status).toBe(201);
+  const created=await api('variant',{template:slug,slug:variant,client:'Variant check',title:'Variant check',publish:true});expect(created.status).toBe(201);
   const result=await api('delete',{slug,confirmSlug:slug});expect(result.status).toBe(200);expect(result.data.deletedFiles).toBe(2);expect(result.data.sharedFiles).toBe(1);
   const vr=await page.request.get(origin+'/p/'+variant);expect(vr.status()).toBe(200);
   const media=(await vr.text()).match(/https:\/\/[^" ]+\/presentation-media\/[^" ]+/)[0];
   expect((await page.request.get(media)).status()).toBe(200);
   const removed=await api('delete',{slug:variant,confirmSlug:variant});expect(removed.status).toBe(200);expect(removed.data.deletedFiles).toBe(2);
   expect((await page.request.get(origin+'/p/'+slug)).status()).toBe(404);
+  // Query Storage itself, avoiding cached public asset responses after deletion.
+  for(const [bucket,object] of [
+   ['presentation-source',finalizedBody.object],
+   ['presentation-source',finalized.data.project.source_path],
+   ['presentation-source',created.data.project.source_path],
+   ['presentation-media',finalizedBody.object]
+  ]){
+   const prefix=object.slice(0,object.lastIndexOf('/')+1);
+   const listed=await fetch(env.SUPABASE_URL+'/storage/v1/object/list/'+bucket,{method:'POST',headers:{apikey:env.SUPABASE_SECRET_KEY,'Content-Type':'application/json'},body:JSON.stringify({prefix,limit:100,offset:0})});
+   expect(listed.status).toBe(200);expect(await listed.json()).toEqual([]);
+  }
  }finally{
   await api('delete',{slug:variant,confirmSlug:variant}).catch(()=>{});
   await api('delete',{slug,confirmSlug:slug}).catch(()=>{});

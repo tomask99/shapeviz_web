@@ -38,9 +38,18 @@ presentation** (or **Upload HTML** in the sidebar). This retains the existing
 upload and publishing workflow.
 
 Save reusable HTML templates separately under **Templates → Upload template**.
+The sidebar also has a dedicated **Upload template** button available from any
+Studio view. The Templates view shows the library directly, without statistics.
 Give each template a name so you can recognize it later. Uploading a template
 only adds it to the library; it does not create a client presentation. The
 library can hold multiple templates, separately from the presentation overview.
+Use **Edit** to rename a template or change the title inherited by future copies.
+Use **Delete template** and confirm its identifier to permanently remove it.
+Deletion removes both stored HTML copies, uploaded media not used by another
+presentation, and the registry record (with cascading statistics/share records).
+The result reports how many Storage files were removed. Shared files remain
+until the last referencing presentation is deleted. Failed cleanup keeps an
+archived entry for retry; it cannot be used to create new client copies.
 
 Reusable templates mark every client-name element with
 `data-embed="client-name"` and expose `window.setShapevizClientName(name)`.

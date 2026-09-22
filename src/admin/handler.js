@@ -138,6 +138,7 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
       if(action==='variant' || action==='preview') {
         const original=await project(body.template);
         if(!original.is_template && original.source_type!=='template') throw fail(400,'Select a template first.');
+        if(original.status==='archived') throw fail(409,'This template is archived or being deleted. Select another template.');
         const company=text(body.client);
         if(!company) throw fail(400,'Enter the client name.');
         const slug=body.slug ? key(body.slug) : clientSlug(company);
@@ -175,6 +176,10 @@ export function createAdminHandler({env = process.env, send = fetch} = {}) {
         const p=await project(body.slug), patch={};
         if(body.status!==undefined) {if(!['published','draft','archived'].includes(body.status)) throw fail(400,'Invalid status.');patch.status=body.status;}
         if(body.title!==undefined) {patch.title=text(body.title);if(!patch.title)throw fail(400,'Enter a title.');}
+        if(body.client!==undefined) {
+          if(!p.is_template && p.source_type!=='template') throw fail(400,'Only template names can be edited here.');
+          patch.client=text(body.client);if(!patch.client)throw fail(400,'Enter a template name.');
+        }
         if(body.isTemplate!==undefined) {
           patch.is_template=body.isTemplate===true;patch.template_match=null;
           if(patch.is_template && !supportsClientNameApi(await source(p))) throw fail(400,'A template must include data-embed="client-name" and window.setShapevizClientName().');
