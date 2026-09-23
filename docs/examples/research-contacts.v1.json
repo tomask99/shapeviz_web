@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "candidate_id": "00000000-0000-4000-8000-000000000001",
+  "contacts": [
+    {
+      "full_name": "Fictional Example Person",
+      "job_title": "Marketing manager",
+      "email": "",
+      "phone": "",
+      "linkedin": "",
+      "confidence": "MEDIUM",
+      "sources": [
+        {
+          "url": "https://fictional-company.example/team",
+          "title": "Fictional format example, not researched contact data",
+          "source_type": "About Page",
+          "retrieved_at": null,
+          "supports": ["full_name", "job_title"]
+        }
+      ],
+      "field_provenance": {
+        "full_name": {
+          "status": "VERIFIED",
+          "confidence": "HIGH",
+          "evidence": "Illustrates how an explicitly published professional name would be cited. This person and source are fictional.",
+          "source_urls": ["https://fictional-company.example/team"]
+        },
+        "job_title": {
+          "status": "INFERRED",
+          "confidence": "LOW",
+          "evidence": "Illustrates an explained interpretation of a person's responsibilities. This fictional role must not become a verified CRM position.",
+          "source_urls": ["https://fictional-company.example/team"]
+        }
+      }
+    }
+  ]
+}

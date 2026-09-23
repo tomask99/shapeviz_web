@@ -9,6 +9,7 @@ import {signalSummary,mountCompanySignals} from './crm-signals.js';
 import {mountSavedViews} from './crm-saved-views.js';
 import {showClients,mountClient} from './crm-clients.js';
 import {mountCsv,showReports} from './crm-operations.js';
+import {createResearch} from './research.js';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const options = (values, pretty = false) => values.map(v => `<option value="${escape(v)}">${escape(pretty ? label(v) : v)}</option>`).join('');
@@ -22,6 +23,7 @@ export function createCrm({api,notify}) {
   document.querySelector('.workspace footer').before(root);
   const pipeline=createPipeline({root,api,notify});
   const followups=createFollowups({root,api,notify});
+  const research=createResearch({root,api,navigate});
   const dialog = document.createElement('dialog');
   dialog.id = 'lead-dialog'; dialog.setAttribute('aria-labelledby','lead-form-title');
   dialog.innerHTML = `<form id="lead-form"><div class="dialog-head"><div><p class="eyebrow">SALES / COMPANY</p><h2 id="lead-form-title">Add lead.</h2></div><button type="button" data-cancel aria-label="Close">×</button></div>
@@ -48,6 +50,7 @@ export function createCrm({api,notify}) {
   let active = false, requestId = 0, current = null, editing = null, pending = false, timer, cleanupDetail;
   const shell = () => document.querySelectorAll('.workspace > .page-heading,.workspace > .toolbar,.workspace > .metrics,.workspace > .chart-panel,.workspace > .library');
   function activate(value) {
+    research.hide();
     pipeline.hide();
     followups.hide();
     cleanupDetail?.();cleanupDetail=null;
@@ -56,6 +59,7 @@ export function createCrm({api,notify}) {
     document.querySelector('#nav-leads').classList.toggle('active',value);
     document.querySelector('#nav-pipeline').classList.remove('active');
     document.querySelector('#nav-followups').classList.remove('active');
+    document.querySelector('#nav-research').classList.remove('active');
     if (value) document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'));
   }
   function navigate(path, replace = false) {
@@ -122,7 +126,7 @@ export function createCrm({api,notify}) {
         <div class="crm-detail-grid"><section class="chart-panel"><p class="eyebrow">COMPANY INFORMATION</p><h2>${escape(c.industry||'Industry not set')}</h2><p class="crm-description">${escape(c.short_description||'No description yet.')}</p><dl><dt>Country / city</dt><dd>${escape([c.country,c.city].filter(Boolean).join(' / ')||'Not specified')}</dd><dt>Lead source</dt><dd>${escape(c.lead_source)}</dd><dt>Added</dt><dd>${escape(date(c.created_at))}</dd><dt>Updated</dt><dd>${escape(date(c.updated_at))}</dd></dl><div class="actions">${['website','instagram','linkedin'].filter(k=>/^https?:\/\//i.test(c[k])).map(k=>`<a class="secondary" href="${escape(c[k])}" target="_blank" rel="noopener noreferrer">${label(k)} ↗</a>`).join('')}</div></section>
         <section class="chart-panel"><p class="eyebrow">POTENTIAL SHAPEVIZ SERVICES</p><h2>Ways to collaborate.</h2><div class="crm-tags">${c.services.map(s=>`<span class="badge">${escape(s)}</span>`).join('')||'<p class="fine">No services selected.</p>'}</div><hr><p class="fine">Archiving keeps the company and its history. You can restore it at any time.</p><button class="secondary" data-archive>${c.archived_at?'Restore lead':'Archive lead'}</button></section></div>`;
       const next=document.createElement("section");next.className="chart-panel crm-next-panel";next.innerHTML=`<p class="eyebrow">NEXT ACTION</p><p class="crm-next-action">${escape(nextActionText(c.next_action))}</p><a class="secondary" data-lead href="/admin/follow-ups?companyId=${encodeURIComponent(c.id)}">Manage follow-ups</a>`;root.querySelector(".crm-detail-grid").append(next);
-      cleanupDetail=mountRelations({root,company:c,api,notify});
+      cleanupDetail=mountRelations({root,company:c,api,notify,onCompanyChanged:()=>{if(active&&current?.id===c.id)detail(c.id);}});
       const createDeck=document.createElement('button');createDeck.className='secondary';createDeck.textContent='Create presentation';createDeck.disabled=!!c.archived_at;createDeck.onclick=()=>document.dispatchEvent(new CustomEvent('crm-create-presentation',{detail:{companyId:c.id}}));root.querySelector('.page-heading .actions').append(createDeck);
       root.querySelector('.page-heading').insertAdjacentHTML('afterend',`<p class="fine">Fit: ${escape(c.fit||'Not assessed')} · manually assessed, separate from priority and engagement.</p>`);
       const cleanupRelations=cleanupDetail,cleanupSignals=mountCompanySignals({root,company:c,api}),cleanupClient=mountClient({root,company:c,api,notify});cleanupDetail=()=>{cleanupRelations();cleanupSignals();cleanupClient();};
@@ -203,6 +207,11 @@ export function createCrm({api,notify}) {
   };
   function show() {
     activate(true);
+    if(/^\/admin\/ai-research(?:\/[^/]+)?\/?$/.test(location.pathname)){
+      document.querySelector('#nav-leads').classList.remove('active');
+      document.querySelector('#nav-research').classList.add('active');
+      research.show();return;
+    }
     if(/^\/admin\/clients\/?$/.test(location.pathname)){document.querySelector('#nav-leads').classList.remove('active');showClients({root,api});return;}
     if(/^\/admin\/reports\/?$/.test(location.pathname)){document.querySelector('#nav-leads').classList.remove('active');showReports({root,api});return;}
     if(/^\/admin\/follow-ups\/?$/.test(location.pathname)){

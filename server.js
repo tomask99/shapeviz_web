@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { createContactHandler } from './src/contact.js';
 import { createWebsiteEventHandler } from './src/website/events.js';
 import { createAdminHandler } from './src/admin/handler.js';
+import {createOAuthHandler,OAUTH_ROUTES} from './src/oauth/handler.js';
 import { createPresentationEventHandler } from './src/presentations/events.js';
 import { createPresentationPageHandler } from './src/presentations/page.js';
 import { discoverProjects } from './src/presentations/registry.js';
@@ -52,6 +53,7 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
   const contact = createContactHandler({ env, send });
   const websiteEvent = createWebsiteEventHandler({ env, send });
   const admin = createAdminHandler({ env, send, templatesRoot });
+  const oauth = createOAuthHandler({env,send});
   const presentationEvent = createPresentationEventHandler({ env, send, presentationsRoot: presentationsDir });
   const presentationPage = createPresentationPageHandler({ env, send, ...(templatesRoot ? { templatesRoot } : {}) });
   return http.createServer(async (req, res) => {
@@ -65,7 +67,12 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
     if (pathname === '/api/contact') { await contact(req, res); return; }
     if (pathname === '/api/site-events') { await websiteEvent(req, res); return; }
     if (pathname === '/api/admin') { await admin(req, res); return; }
-    if (pathname === '/adminlogin' || pathname === '/admin' || /^\/admin\/(?:leads(?:\/[^/.]+)?|pipeline|follow-ups|clients|reports)\/?$/.test(pathname)) {
+    if(Object.hasOwn(OAUTH_ROUTES,pathname)){await oauth(req,res);return;}
+    if(pathname==='/admin/connections'){
+      res.setHeader('X-Robots-Tag','noindex, nofollow');res.setHeader('Referrer-Policy','no-referrer');
+      await serveFile(req,res,path.join(publicDir,'admin/connections.html'),pathname,{'Cache-Control':'no-store'});return;
+    }
+    if (pathname === '/adminlogin' || pathname === '/admin' || /^\/admin\/(?:leads(?:\/[^/.]+)?|ai-research(?:\/[^/.]+)?|pipeline|follow-ups|clients|reports)\/?$/.test(pathname)) {
       res.setHeader('X-Robots-Tag', 'noindex, nofollow');
       res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-src 'self' blob:; img-src 'self' https://*.supabase.co data: blob:; media-src 'self' https://*.supabase.co blob:; font-src 'self' https://*.supabase.co data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
       await serveFile(req,res,path.join(publicDir,'admin/index.html'),pathname,{'Cache-Control':'no-store'});return;

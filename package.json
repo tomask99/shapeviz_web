@@ -11,6 +11,9 @@
     "start": "node --env-file-if-exists=.env server.js --production",
     "build": "node scripts/build.js",
     "presentations:validate": "node scripts/validate-presentations.js",
+    "research:validate": "node scripts/validate-research.js",
+    "research:schema": "node scripts/research-schema.js",
+    "mcp:check": "node scripts/check-mcp-deployment.js",
     "presentation:new": "node scripts/new-presentation.js",
     "presentation:publish": "node --env-file-if-exists=.env scripts/publish-presentation.js",
     "presentation:create:template": "node --env-file-if-exists=.env scripts/create-template-presentation.js",
@@ -23,6 +26,7 @@
     "supabase": "^2.117.0"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
     "nodemailer": "10.0.10",
     "parse5": "8.0.1"
   }

@@ -1,6 +1,11 @@
 import {mountPresentations} from './crm-presentations.js';
 import {createReplyRecorder} from './crm-replies.js';
 import {mountEngagement} from './crm-engagement.js';
+import {createResearchSimilar} from './research-similar.js';
+import {createResearchTools} from './research-import.js';
+import {contactResearchSnapshot,createResearchContacts} from './research-contacts.js';
+import {mountResearchInsight} from './research-insight.js';
+import {createResearchEnrich} from './research-enrich.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const date=value=>new Date(value).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
 const events={lead_created:'Lead added',status_changed:'Pipeline status changed',lead_archived:'Lead archived',lead_restored:'Lead restored',contact_added:'Contact added',contact_updated:'Contact updated',contact_removed:'Contact removed',note_added:'Note added',note_updated:'Note updated',note_removed:'Note removed',manual_activity:'Manual activity',followup_created:'Follow-up scheduled',followup_updated:'Follow-up updated',followup_rescheduled:'Follow-up rescheduled',followup_completed:'Follow-up completed'};
@@ -8,12 +13,14 @@ const status=value=>String(value||'').toLowerCase().replaceAll('_',' ');
 Object.assign(events,{presentation_assigned:'Presentation assigned',presentation_unassigned:'Presentation unassigned',presentation_sent:'Presentation sent',reply_received:'Client reply received'});
 Object.assign(events,{presentation_viewed:'Presentation viewed · checked visit',website_clicked:'Website clicked · checked visit'});
 events.presentation_returned='Returned to presentation · checked visit';
+events.ai_research_approved='AI research approved';
+events.ai_research_enriched='AI Insight accepted';
 const field=(name,label,max=160,type='text')=>`<label>${label}<input name="${name}" type="${type}" maxlength="${max}"></label>`;
 const area=(name,label,max=5000)=>`<label>${label}<textarea name="${name}" rows="5" maxlength="${max}" ${name==='content'?'required':''}></textarea></label>`;
-const activity=item=>`<article class="crm-entry"><p class="fine"><time datetime="${esc(item.created_at)}">${esc(date(item.created_at))}</time></p><h3>${esc(events[item.event_type]||'Activity')}</h3>${item.event_type==='status_changed'?`<p>${esc(status(item.metadata?.from_status))} → ${esc(status(item.metadata?.to_status))}</p>`:''}${item.metadata?.name?`<p>${esc(item.metadata.name)}</p>`:''}${['manual_activity','reply_received'].includes(item.event_type)?`<p class="crm-description">${esc(item.metadata?.content)}</p>`:''}${item.event_type==='reply_received'?`<p class="fine">Received: ${esc(date(item.metadata.received_at))}${item.metadata.contact_name?` · ${esc(item.metadata.contact_name)}`:''} · Manually recorded; pipeline unchanged.</p>`:''}</article>`;
+const activity=item=>`<article class="crm-entry"><p class="fine"><time datetime="${esc(item.created_at)}">${esc(date(item.created_at))}</time></p><h3>${esc(events[item.event_type]||'Activity')}</h3>${item.event_type==='status_changed'?`<p>${esc(status(item.metadata?.from_status))} → ${esc(status(item.metadata?.to_status))}</p>`:''}${item.metadata?.name?`<p>${esc(item.metadata.name)}</p>`:''}${['manual_activity','reply_received'].includes(item.event_type)?`<p class="crm-description">${esc(item.metadata?.content)}</p>`:''}${item.event_type==='reply_received'?`<p class="fine">Received: ${esc(date(item.metadata.received_at))}${item.metadata.contact_name?` · ${esc(item.metadata.contact_name)}`:''} · Manually recorded; pipeline unchanged.</p>`:''}${item.event_type==='ai_research_approved'?`<p class="fine">Reviewed Fit: ${esc(item.metadata?.fit || 'Not assessed')}</p>${item.metadata?.candidate_id?`<a class="research-source-link" href="/admin/ai-research/${encodeURIComponent(item.metadata.candidate_id)}">View approved research</a>`:''}`:''}</article>`;
 
 /** Mount the company tabs independently from the Leads list and company editor. */
-export function mountRelations({root,company,api,notify}) {
+export function mountRelations({root,company,api,notify,onCompanyChanged}) {
   const overview=root.querySelector('.crm-detail-grid');
   const tabs=document.createElement('div');tabs.className='crm-tabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Company sections');
   const sections=['overview','contacts','presentations','notes','activity'];
@@ -22,12 +29,19 @@ export function mountRelations({root,company,api,notify}) {
   const panel=document.createElement('section');panel.id='crm-related-panel';panel.className='crm-related-panel';panel.setAttribute('role','tabpanel');panel.hidden=true;overview.after(panel);
   const summary=document.createElement('section');summary.className='chart-panel crm-summary';overview.append(summary);
   const engagement=document.createElement('section');engagement.className='chart-panel crm-company-engagement';overview.append(engagement);
+  const research=document.createElement('section');research.className='chart-panel crm-company-research';overview.append(research);
+  const similarPanel=document.createElement('section');similarPanel.className='chart-panel crm-company-similar';similarPanel.innerHTML='<p class="eyebrow">AI RESEARCH</p><h2>Find your next opportunity.</h2><p class="fine">Use this company\'s profile to research similar businesses in your chosen countries.</p><a class="research-source-link" href="/admin/ai-research">Open Research inbox</a>';overview.append(similarPanel);
   const dialog=document.createElement('dialog');dialog.className='crm-record-dialog';dialog.setAttribute('aria-labelledby','crm-record-title');document.body.append(dialog);
-  let disposed=false,seq=0,tab='overview',page=1,items=[],pending=false,cleanupPresentations,cleanupEngagement;
+  let disposed=false,seq=0,tab='overview',page=1,items=[],pending=false,cleanupPresentations,cleanupEngagement,cleanupInsight;
+  const researchTools=createResearchTools({api,onImported:()=>{api.invalidate?.();if(!disposed)notify('Research import complete. Open AI Research to review the candidates.');}});
+  const similar=createResearchSimilar({api,onImport:()=>{if(!disposed)researchTools.openImport();}});
+  const contactsResearch=createResearchContacts({api,onChanged:()=>api.invalidate?.()});
+  const enrichment=createResearchEnrich({api,onChanged:()=>{if(!disposed){api.invalidate?.();notify('AI Insight saved.');onCompanyChanged?.();}}});
+  similarPanel.addEventListener('click',event=>{if(event.target.closest('[data-company-similar]')&&!disposed)similar.open({type:'company',id:company.id,name:company.company_name,country:company.country,status:company.archived_at?'ARCHIVED':company.pipeline_status});});
   const replies=createReplyRecorder({company,api,notify,onSaved:()=>{page=1;render();}});
   const read=async(kind,p=1)=>api('crm-'+kind,null,{companyId:company.id,page:p});
   function detailsContact(c) {
-    return `<h3>${esc(c.full_name)}</h3>${c.primary_contact?'<span class="badge">Primary contact</span>':''}<p class="fine">${esc(c.job_title)}</p><div class="crm-contact-links">${c.email?`<a href="mailto:${encodeURIComponent(c.email)}">${esc(c.email)}</a>`:''}${c.phone?`<span>${esc(c.phone)}</span>`:''}${['linkedin','instagram'].filter(k=>/^https?:\/\//i.test(c[k])).map(k=>`<a href="${esc(c[k])}" target="_blank" rel="noopener noreferrer">${k==='linkedin'?'LinkedIn':'Instagram'}</a>`).join('')}</div>${c.notes?`<p class="crm-description">${esc(c.notes)}</p>`:''}`;
+    return `<h3>${esc(c.full_name)}</h3>${c.primary_contact?'<span class="badge">Primary contact</span>':''}<p class="fine">${esc(c.job_title)}</p><div class="crm-contact-links">${c.email?`<a href="mailto:${encodeURIComponent(c.email)}">${esc(c.email)}</a>`:''}${c.phone?`<span>${esc(c.phone)}</span>`:''}${['linkedin','instagram'].filter(k=>/^https?:\/\//i.test(c[k])).map(k=>`<a href="${esc(c[k])}" target="_blank" rel="noopener noreferrer">${k==='linkedin'?'LinkedIn':'Instagram'}</a>`).join('')}</div>${c.notes?`<p class="crm-description">${esc(c.notes)}</p>`:''}${contactResearchSnapshot(c.research_evidence)}`;
   }
   async function loadSummary(ticket) {
     summary.innerHTML='<p class="fine">Loading company summary…</p>';
@@ -40,12 +54,14 @@ export function mountRelations({root,company,api,notify}) {
   }
   async function render() {
     replies.close();
+    similar.close();researchTools.close();contactsResearch.close();enrichment.close();
+    cleanupInsight?.();cleanupInsight=null;
     cleanupPresentations?.();cleanupPresentations=null;
     cleanupEngagement?.();cleanupEngagement=null;
     const ticket=++seq;
     tabs.querySelectorAll('button').forEach(b=>{const selected=b.dataset.tab===tab;b.setAttribute('aria-selected',String(selected));b.tabIndex=selected?0:-1;});
     overview.hidden=tab!=='overview';panel.hidden=tab==='overview';
-    if(tab==='overview'){loadSummary(ticket);cleanupEngagement=mountEngagement({panel:engagement,company,api,onPresentations:()=>select('presentations')});return;}
+    if(tab==='overview'){loadSummary(ticket);cleanupInsight=mountResearchInsight({panel:research,company,api,onEnrich:current=>enrichment.open(current),onSimilar:current=>similar.open({type:'company',id:current.id,name:current.company_name,country:current.country,status:current.archived_at?'ARCHIVED':company.pipeline_status}),onContacts:candidate=>contactsResearch.open(candidate)});cleanupEngagement=mountEngagement({panel:engagement,company,api,onPresentations:()=>select('presentations')});return;}
     panel.setAttribute('aria-labelledby','crm-tab-'+tab);
     if(tab==='presentations'){cleanupPresentations=mountPresentations({panel,company,api,notify});return;}
     panel.innerHTML='<p role="status">Loading…</p>';
@@ -124,5 +140,5 @@ export function mountRelations({root,company,api,notify}) {
   const noteSaved=e=>{if(e.detail.companyId===company.id&&!disposed&&['overview','notes','activity'].includes(tab)){page=1;render();}};
   document.addEventListener('crm-note-saved',noteSaved);
   select(new URLSearchParams(location.search).get('tab')||'overview',false);
-  return ()=>{disposed=true;seq++;document.removeEventListener('crm-note-saved',noteSaved);replies.dispose();cleanupPresentations?.();cleanupEngagement?.();dialog.close();dialog.remove();};
+  return ()=>{disposed=true;seq++;document.removeEventListener('crm-note-saved',noteSaved);replies.dispose();similar.close();researchTools.close();contactsResearch.close();enrichment.close();cleanupInsight?.();cleanupPresentations?.();cleanupEngagement?.();dialog.close();dialog.remove();};
 }

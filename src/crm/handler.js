@@ -19,6 +19,7 @@ import {handleClients,clientActions} from './clients.js';
 import {handleOperations,operationActions} from './operations.js';
 import {filterConfig,FILTER_CHOICES} from '../../public/admin/crm-filter-config.js';
 import {normalizedDomain,normalizedName} from '../../public/admin/crm-normalize.js';
+import {handleResearch,researchReadActions,researchWriteActions} from '../research/handler.js';
 
 /** Validate the editable company fields; never accept owner IDs or audit timestamps. */
 export function companyInput(body) {
@@ -45,9 +46,10 @@ export function companyInput(body) {
   };
 }
 
-export async function handleCrm({action, body, url, user, token, call}) {
+export async function handleCrm({action, body, url, user, token, call, signingKey}) {
   // Every CRM request carries the verified user's JWT, including reads.
   if (!token || !uuid(user.id)) throw fail(401, 'Please sign in.');
+  if([...researchReadActions,...researchWriteActions].includes(action))return handleResearch({action,body,url,user,token,call,signingKey,validateCompany:companyInput});
   const request = (path, options = {}) => call(path, {...options, token});
   if(['crm-suggestions','crm-suggestion-state'].includes(action))return handleSuggestions({action,body,url,request});
   if(action==='crm-recent-activity')return recentActivityPage(await request(recentActivityQuery(url.searchParams,user.id)));

@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "candidates": [
+    {
+      "company_name": "Example Furniture (fictional format example)",
+      "website": "https://furniture.example",
+      "country": "CZ",
+      "industry": "Furniture",
+      "business_type": "Manufacturer",
+      "product_categories": ["Sofas", "Armchairs"],
+      "secondary_categories": ["Beds"],
+      "market_segments": ["B2C", "Architects"],
+      "positioning": {
+        "value": "Premium",
+        "status": "INFERRED",
+        "confidence": "MEDIUM",
+        "evidence": "Illustrative inference from the fictional brand's presentation; not a verified price segment.",
+        "source_urls": ["https://furniture.example/products"]
+      },
+      "short_description": "Fictional Czech upholstered furniture manufacturer used only to demonstrate the import format.",
+      "research_summary": "This is example data, not actual company research. Replace all example claims and URLs with evidence from public sources.",
+      "fit": "HIGH",
+      "fit_reason": "The example's configurable furniture catalogue could reuse product assets across CGI, social content and architect downloads.",
+      "potential_services": [
+        {"service": "Product CGI", "relevance": "HIGH", "reason": "Consistent product imagery across material variants."},
+        {"service": "3D Models for Architects", "relevance": "HIGH", "reason": "Reusable assets for professional audiences."}
+      ],
+      "opportunity_signals": [
+        {
+          "signal": "MULTIPLE_FABRICS",
+          "status": "VERIFIED",
+          "confidence": "HIGH",
+          "evidence": "In this fictional example, the product page lists several fabric options.",
+          "source_urls": ["https://furniture.example/products"]
+        }
+      ],
+      "suggested_pitch_angle": "Propose one reusable 3D product asset for product imagery, lifestyle scenes and architect downloads.",
+      "research_confidence": "MEDIUM",
+      "sources": [
+        {
+          "url": "https://furniture.example/about",
+          "title": "Fictional About page",
+          "source_type": "About Page",
+          "retrieved_at": null,
+          "supports": ["business_type", "country"]
+        },
+        {
+          "url": "https://furniture.example/products",
+          "title": "Fictional product catalogue",
+          "source_type": "Product Page",
+          "retrieved_at": null,
+          "supports": ["product_categories", "positioning", "opportunity_signals"]
+        }
+      ],
+      "field_provenance": {
+        "business_type": {
+          "status": "VERIFIED",
+          "confidence": "HIGH",
+          "source_urls": ["https://furniture.example/about"]
+        },
+        "product_categories": {
+          "status": "VERIFIED",
+          "confidence": "HIGH",
+          "source_urls": ["https://furniture.example/products"]
+        }
+      },
+      "last_researched_at": null,
+      "source_origin": "MANUAL"
+    }
+  ]
+}

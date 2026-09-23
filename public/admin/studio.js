@@ -62,13 +62,14 @@ const crm=createCrm({api,notify});
 installQuickNotes({api,notify});
 installCommandPalette({api,navigate:path=>path.startsWith('/admin?deck=')?location.assign(path):crm.navigate(path),createPresentation:()=>api('list').then(d=>{projects=d.projects;$('#new-dialog').showModal();}).catch(e=>notify(e.message))});
 const business=createBusinessOverview({api,notify});
-const isCrmPath=()=>/^\/admin\/(?:leads(?:\/[^/]+)?|pipeline|follow-ups|clients|reports)\/?$/.test(location.pathname);
-const clientNav=document.createElement('a');clientNav.href='/admin/clients';clientNav.textContent='Clients';$('#nav-followups').after(clientNav);clientNav.onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/clients');};
+const isCrmPath=()=>/^\/admin\/(?:leads(?:\/[^/]+)?|ai-research(?:\/[^/]+)?|pipeline|follow-ups|clients|reports)\/?$/.test(location.pathname);
+const clientNav=document.createElement('a');clientNav.href='/admin/clients';clientNav.textContent='Clients';$('#nav-research').after(clientNav);clientNav.onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/clients');};
 const reportsNav=document.createElement('a');reportsNav.href='/admin/reports';reportsNav.textContent='Reports';clientNav.after(reportsNav);reportsNav.onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/reports');};
 async function enter(email){$('#login').hidden=true;$('#studio').hidden=false;$('#account').textContent=email;$('#today').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});if(isCrmPath())crm.show();else{setView(new URLSearchParams(location.search).get('view')==='templates'?'templates':'all',false);await refresh();const deck=new URLSearchParams(location.search).get('deck');if(deck){if(projects.some(p=>p.deck_slug===deck))showDetail(deck);else notify('Presentation is not in the current library. Refresh or search the library.');}}}
 $('#nav-leads').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/leads');};
 $('#nav-followups').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/follow-ups');};
 $('#nav-pipeline').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/pipeline');};
+$('#nav-research').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/ai-research');};
 // Warm only the destination the user is approaching; never preload every board.
 for(const [id,action] of [['nav-leads','crm-list'],['nav-pipeline','crm-pipeline'],['nav-followups','crm-followups']]){
  const warm=()=>{if($('#studio').hidden||navigator.connection?.saveData)return;api(action,null,action==='crm-followups'?localDayBounds():{}).catch(()=>{});};

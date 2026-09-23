@@ -1,5 +1,9 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { handleCrm } from '../crm/handler.js';
+import {researchReadActions} from '../research/handler.js';
+import {handleReadTools,READ_TOOL_ACTIONS,MAX_TOOL_REQUEST_BYTES,ADMIN_READ_SCOPES} from '../tools/handler.js';
+import {handleReadMcp,MCP_ACTION,mcpHttpError} from '../tools/mcp.js';
+import {handleOAuthAdmin,OAUTH_ADMIN_ACTIONS} from '../oauth/admin.js';
 import {trackingCookie} from '../presentations/tracking-proof.js';
 import {recipientParam} from '../presentations/recipient-token.js';
 import { readJson, requestOrigin } from '../http.js';
@@ -14,7 +18,7 @@ const text = (value, max = 160) => typeof value === 'string' && value.trim().len
 const key = value => { if (!slugPattern.test(value || '') || value.length > 100) throw fail(400,'Use a URL name such as hrno or company-name.'); return value; };
 const clientSlug = value => key(value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''));
 
-export function createAdminHandler({env = process.env, send = fetch, templatesRoot} = {}) {
+export function createAdminHandler({env = process.env, send = fetch, templatesRoot, toolAudit} = {}) {
   const root = env.SUPABASE_URL?.replace(/\/$/, '');
   async function call(url, {method='GET',body,token,headers={}} = {}) {
     const response = await send(`${root}${url}`, {method, headers:{apikey:env.SUPABASE_SECRET_KEY,...(token ? {Authorization:`Bearer ${token}`} : {}),...(body ? {'Content-Type':'application/json'} : {}),...headers}, ...(body ? {body:JSON.stringify(body)} : {}), signal:AbortSignal.timeout(25_000)});
@@ -22,7 +26,9 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
     let data; try {data = value ? JSON.parse(value) : null;} catch {data = null;}
     if (!response.ok) {
       const status=[400,401,403,409,413,429].includes(response.status) ? response.status : 502;
-      throw Object.assign(fail(status,response.status===409 ? 'This URL is already in use. Choose another name.' : `The service could not complete this request (HTTP ${response.status}). Please try again.`),{retryAfter:response.headers.get('Retry-After')});
+      const researchConflict=url.startsWith('/rest/v1/rpc/crm_research_') && response.status===409;
+      const reviewConflict=researchConflict && url!=='/rest/v1/rpc/crm_research_import';
+      throw Object.assign(fail(status,reviewConflict ? 'The candidate, review or duplicate check changed. Reload the saved candidate and review it again.' : researchConflict ? 'The duplicate check or import batch changed. Preview the JSON again before importing.' : response.status===409 ? 'This URL is already in use. Choose another name.' : `The service could not complete this request (HTTP ${response.status}). Please try again.`),{retryAfter:response.headers.get('Retry-After')});
     }
     return data;
   }
@@ -79,18 +85,29 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
   return async function admin(req,res) {
     res.setHeader('Cache-Control','private, no-store');res.setHeader('X-Robots-Tag','noindex, nofollow');res.setHeader('X-Content-Type-Options','nosniff');
     const reply=(status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
+    let action,body={};
     try {
+      const url=new URL(req.url,'http://localhost');
+      action=url.searchParams.get('action') || 'me';
       if (!root || !env.SUPABASE_SECRET_KEY) throw fail(503,'Admin service is not configured.');
       if (!['GET','POST'].includes(req.method)) throw fail(405,'Method not allowed.');
       const origin=requestOrigin(req,env);
       if (req.headers.origin && req.headers.origin !== origin || req.headers['sec-fetch-site']==='cross-site') throw fail(403,'Request origin rejected.');
       if(req.method==='POST' && req.headers.origin !== origin) throw fail(403,'Request origin rejected.');
-      const url=new URL(req.url,'http://localhost');
-      const action=url.searchParams.get('action') || 'me';
-      const readActions=['me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary'];
-      if(req.method==='GET' && ![...readActions,'crm-global-search','crm-sales-report','crm-clients','crm-client','crm-projects','crm-saved-views','crm-overview','crm-action-center','crm-recent-activity','crm-suggestions','crm-recipients','crm-recipient-stats','crm-signals','tracking-gate'].includes(action)) throw fail(405,'Use POST for this action.');
+      if(action===MCP_ACTION&&req.method!=='POST')throw fail(405,'Use POST for the stateless MCP endpoint.');
+      if(OAUTH_ADMIN_ACTIONS.includes(action)&&req.method!==(action==='oauth-connections'?'GET':'POST'))throw fail(405,'Use the required connection method.');
+      if(action==='crm-tools-list'&&req.method!=='GET'||action==='crm-tools-call'&&req.method!=='POST')throw fail(405,'Use GET for the tool catalog and POST for tool calls.');
+      const readActions=['me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary','crm-tools-list',...researchReadActions];
+      if(req.method==='GET' && ![...readActions,'oauth-connections','crm-global-search','crm-sales-report','crm-clients','crm-client','crm-projects','crm-saved-views','crm-overview','crm-action-center','crm-recent-activity','crm-suggestions','crm-recipients','crm-recipient-stats','crm-signals','tracking-gate'].includes(action)) throw fail(405,'Use POST for this action.');
       if(req.method==='POST' && !/^application\/json\b/i.test(req.headers['content-type']||'')) throw fail(415,'JSON is required.');
-      const body=req.method==='POST' ? await readJson(req,action.startsWith('crm-import-')?500_000:100_000) : {};
+      // A JSON string is escaped inside the transport envelope; the research validator
+      // independently enforces the 500,000-byte source limit after decoding.
+      if(req.method==='POST'){
+        try{body=await readJson(req,READ_TOOL_ACTIONS.includes(action)||action===MCP_ACTION||OAUTH_ADMIN_ACTIONS.includes(action)?MAX_TOOL_REQUEST_BYTES:action.startsWith('crm-research-')?3_100_000:action.startsWith('crm-import-')?500_000:100_000);}
+        catch(error){if(action===MCP_ACTION&&error instanceof SyntaxError)throw Object.assign(fail(400,'Invalid JSON.'),{rpcCode:-32700});
+          if(OAUTH_ADMIN_ACTIONS.includes(action)&&error instanceof SyntaxError)throw fail(400,'Invalid JSON.');
+          if(READ_TOOL_ACTIONS.includes(action)&&error instanceof SyntaxError)throw fail(400,'Tool request must be valid JSON.');throw error;}
+      }
       if(action==='login' || action==='verify') {
         let auth;
         try {
@@ -113,14 +130,17 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
         return;
       }
       const {user,token}=await session(req,res);
-      if(action.startsWith('crm-')) {reply(200,await handleCrm({action,body,url,user,token,call}));return;}
+      if(OAUTH_ADMIN_ACTIONS.includes(action)){reply(200,await handleOAuthAdmin({action,body,url,req,res,user,token,env,call}));return;}
+      if(action===MCP_ACTION){await handleReadMcp({req,res,body,url,user,token,scopes:[...ADMIN_READ_SCOPES],call,audit:toolAudit});return;}
+      if(READ_TOOL_ACTIONS.includes(action)){reply(200,await handleReadTools({action,body,url,user,token,call,audit:toolAudit}));return;}
+      if(action.startsWith('crm-')) {reply(200,await handleCrm({action,body,url,user,token,call,signingKey:env.SUPABASE_SECRET_KEY}));return;}
       if(action==='website-stats') {
         const days=Number(url.searchParams.get('days')||30);
         if(![7,30,90].includes(days))throw fail(400,'Invalid date range.');
         reply(200,await call('/rest/v1/rpc/website_admin_stats',{method:'POST',body:{p_days:days}}));return;
       }
       if(action==='me') {const existing=res.getHeader('Set-Cookie')||[];res.setHeader('Set-Cookie',[...(Array.isArray(existing)?existing:[existing]),trackingCookie(true,env)]);reply(200,{email:user.email});return;}
-      if(action==='logout') {await call('/auth/v1/logout',{method:'POST',token}).catch(()=>{});cookies(res,null);reply(200,{ok:true});return;}
+      if(action==='logout') {const logout=call('/auth/v1/logout',{method:'POST',token});if(env.MCP_OAUTH_ENABLED==='true')await logout;else await logout.catch(()=>{});cookies(res,null);reply(200,{ok:true});return;}
       if(action==='password') {if(typeof body.password!=='string'||body.password.length<12||body.password.length>128) throw fail(400,'Use a password with 12–128 characters.');await call('/auth/v1/user',{method:'PUT',token,body:{password:body.password}});reply(200,{ok:true});return;}
       if(action==='list') {const projects=await call(`/rest/v1/presentation_projects?select=${fields}&order=updated_at.desc&limit=1000`);reply(200,{projects});return;}
       if(action==='clone-presentation') {
@@ -212,6 +232,6 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
         await call(`/rest/v1/presentation_projects?deck_slug=eq.${p.deck_slug}`,{method:'PATCH',body:patch});reply(200,{ok:true});return;
       }
       throw fail(404,'Unknown action.');
-    } catch(error) {if(error.retryAfter && /^(?:\d+|[A-Za-z0-9,: -]{1,64})$/.test(error.retryAfter))res.setHeader('Retry-After',error.retryAfter);reply(error.status || 500,{error:error.status ? error.message : 'Something went wrong. Please try again.'});}
+    } catch(error) {if(error.retryAfter && /^(?:\d+|[A-Za-z0-9,: -]{1,64})$/.test(error.retryAfter))res.setHeader('Retry-After',error.retryAfter);if(action===MCP_ACTION){mcpHttpError(res,error,body);return;}reply(error.status || 500,{error:error.status ? error.message : 'Something went wrong. Please try again.'});}
   };
 }
