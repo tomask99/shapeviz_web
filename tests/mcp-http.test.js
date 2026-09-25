@@ -76,6 +76,21 @@ test('Official MCP client initializes, discovers the exact schemas, pings and re
   assert.ok(state.reads.every(read=>read.token==='jwt-a'));assert.equal(state.reads[0].body.p_filters.country,'SK');
 }));
 
+test('Official MCP import validation accepts full multiline files, returns row errors and performs no business writes',()=>fixture(async({client,state,post})=>{
+  const {instance}=await client();
+  const file={candidates:Array.from({length:10},()=>({company_name:'Sofa example',short_description:'x'.repeat(3000),website:'https://sofa.example/',sources:[{url:'https://sofa.example/about'}],field_provenance:{website:{status:'VERIFIED',source_urls:['https://sofa.example/']}}}))};
+  const json=JSON.stringify(file,null,2);assert.ok(Buffer.byteLength(json)>16384);
+  const invalid=await instance.callTool({name:'validate_research_import',arguments:{json}});
+  assert.equal(invalid.isError,false);assert.equal(invalid.structuredContent.data.valid,false);assert.equal(invalid.structuredContent.data.invalid_count,10);assert.equal(invalid.structuredContent.data.rows[0].errors[0].code,'missing_source');
+  for(const c of file.candidates)c.field_provenance.website.source_urls=[c.sources[0].url];
+  const valid=await instance.callTool({name:'validate_research_import',arguments:{json:JSON.stringify(file,null,2)}});
+  assert.equal(valid.structuredContent.data.valid,true);assert.equal(valid.structuredContent.data.valid_count,10);assert.equal(state.reads.length,0);
+  const malformed=await instance.callTool({name:'validate_research_import',arguments:{json:'{not json'}});
+  assert.equal(malformed.structuredContent.data.errors[0].code,'invalid_json');
+  assert.equal((await post(rpc('tools/call',{name:'validate_research_import',arguments:{json:' '.repeat(3100000)}}))).status,413);
+  assert.doesNotMatch(JSON.stringify(state.audits),/sofa\.example|Sofa example|source_urls/);
+}));
+
 test('MCP authentication covers initialize, list, ping, notifications and calls without accepting bearer credentials',()=>fixture(async({post,state})=>{
   for(const body of [initialize(),rpc('tools/list'),rpc('ping'),{jsonrpc:'2.0',method:'notifications/initialized'},rpc('tools/call',{name:'get_research_catalog'})]){
     for(const headers of [{Cookie:''},{Cookie:'',Authorization:'Bearer jwt-a'},{Cookie:'sv_access=invalid'}]){
@@ -133,7 +148,7 @@ test('Concurrent MCP clients with identical JSON-RPC ids keep separate owner tok
 }));
 
 test('MCP discovery and calls obey trusted scopes even when metadata claims wider grants',()=>fixture(async({client,state})=>{
-  const {instance}=await client();assert.deepEqual((await instance.listTools()).tools.map(tool=>tool.name),['get_research_catalog']);
+  const {instance}=await client();assert.deepEqual((await instance.listTools()).tools.map(tool=>tool.name),['get_research_catalog','validate_research_import']);
   const denied=await instance.callTool({name:'search_leads',_meta:{scopes:['crm:read'],owner_id:other}});assert.equal(denied.isError,true);assert.equal(denied._meta['shapeviz/httpStatus'],403);
   assert.equal((await instance.callTool({name:'get_research_catalog'})).isError,false);assert.equal(state.reads.length,0);
 },{scopes:['catalog:read']}));

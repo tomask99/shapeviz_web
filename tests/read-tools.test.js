@@ -34,9 +34,9 @@ function harness(changes = {}) {
   return {state,calls,run:(name,args = {},override = {}) => executeReadTool({name,args,...context,...override}),list:(override = {}) => listReadTools({...context,...override})};
 }
 
-test('Read-tool manifest contains exactly eight immutable read-only definitions with strict schemas',async () => {
+test('Read-tool manifest contains exactly nine immutable read-only definitions with strict schemas',async () => {
   const h = harness(),catalog = await h.list();
-  assert.equal(catalog.length,8);assert.equal(new Set(catalog.map(tool => tool.name)).size,8);
+  assert.equal(catalog.length,9);assert.equal(new Set(catalog.map(tool => tool.name)).size,9);
   for (const tool of catalog) {assert.equal(tool.read_only,true);assert.equal(tool.inputSchema.additionalProperties,false);assert.ok(tool.required_scopes.length);if (tool.inputSchema.properties.filters) assert.equal(tool.inputSchema.properties.filters.additionalProperties,false);}
   catalog[0].inputSchema.properties.filters.properties.fit.enum.push('SECRET');
   assert.equal(READ_TOOLS[0].inputSchema.properties.filters.properties.fit.enum.includes('SECRET'),false);

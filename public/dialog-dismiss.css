@@ -1,0 +1,5 @@
+.dialog-dismiss-bar{position:sticky;top:0;z-index:20;display:flex;justify-content:flex-end;height:0;pointer-events:none}
+.dialog-dismiss-bar>button{pointer-events:auto;display:grid;place-items:center;flex:none;width:36px;height:36px;margin:0;padding:0;border:1px solid #f1ede622;border-radius:50%;background:#21180f;color:#f1ede6;font:28px/1 sans-serif;cursor:pointer}
+.dialog-dismiss-bar>button:hover{background:#3b2919}
+.dialog-dismiss-bar>button:focus-visible{outline:2px solid #dc903e;outline-offset:3px}
+dialog.has-dialog-dismiss>h2:first-of-type,dialog.has-dialog-dismiss>form>h2:first-of-type{padding-inline-end:48px}

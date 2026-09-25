@@ -45,7 +45,7 @@ test('live read tools enforce owner scope, complete pagination and immutable bus
     const [owner,other]=accounts;
     const company=async(account,name,domain,overrides={})=>(await request('/rest/v1/crm_companies',{method:'POST',jwt:account.jwt,representation:true,body:{
       owner_id:account.user.id,company_name:name,website:`https://${domain}/`,country:'SK',industry:'Furniture',city:'Bratislava',fit:'HIGH',services:['Product visualization'],
-      short_description:'Synthetic current CRM description.',pipeline_status:'QUALIFIED',priority:'HIGH',lead_source:'Referral',estimated_value:'12345.67',value_type:'ONE_TIME',...overrides,
+      short_description:'Synthetic current CRM description.',pipeline_status:'PRESENTATION_READY',priority:'HIGH',lead_source:'Referral',estimated_value:'12345.67',value_type:'ONE_TIME',...overrides,
     }}))[0];
     const main=await company(owner,'Read tools Product studio','tools-main.example');
     const fallback=await company(owner,'Read tools Original studio','tools-original.example',{fit:'LOW',services:['Product CGI']});
@@ -93,7 +93,7 @@ test('live read tools enforce owner scope, complete pagination and immutable bus
     await expect(page.locator('#crm')).toBeVisible();await expect(page.getByRole('button',{name:'Sign out'})).toBeVisible();
     const listResponse=await page.request.get(origin+'/api/admin?action=crm-tools-list');expect(listResponse.status()).toBe(200);
     const catalog=await listResponse.json();expect(catalog.schema_version).toBe(1);
-    expect(catalog.tools.map(tool=>tool.name).sort()).toEqual(['check_company_duplicates','get_existing_domains','get_lead','get_rejected_domains','get_research_candidate','get_research_candidates','get_research_catalog','search_leads']);
+    expect(catalog.tools.map(tool=>tool.name).sort()).toEqual(['check_company_duplicates','get_existing_domains','get_lead','get_rejected_domains','get_research_candidate','get_research_candidates','get_research_catalog','search_leads','validate_research_import']);
     for(const tool of catalog.tools){expect(tool.read_only).toBe(true);expect(tool.required_scopes.length).toBeGreaterThan(0);expect(tool.inputSchema.additionalProperties).toBe(false);}
 
     const filtered=await run('search_leads',{filters:{country:'sk',industry:'Furniture',fit:'HIGH',service:'Product Visualization'}});

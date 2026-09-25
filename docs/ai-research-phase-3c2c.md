@@ -6,6 +6,8 @@
 
 ## Prepared
 
+Follow-up on 23 September: [import validation](ai-research-import-validation.md) adds a ninth read-only MCP tool and pre-delivery validation instructions. That follow-up is deployed as `dpl_CzsjjY6NSnWLBnjeKstT3a1c2DUA`. The eight-tool client and conversation results below are historical evidence from before this addition. The Phase 3 checkpoint was subsequently pushed as `bb9a539c85fffc43929318f78f17a94244510e18`; the validation follow-up is now included in the [25 September repository completion checkpoint](completion-checkpoint-2026-09-25.md).
+
 `npm.cmd run mcp:check -- https://shapevizweb.vercel.app` checks both protected-resource discovery routes, authorization-server metadata, anonymous MCP initialization denial and the consent page. It requires exact canonical issuer/resource/endpoint values, the three read scopes, public-client support, PKCE S256 and issuer identification. Responses are limited to 64 KiB and requests have a 15-second timeout. Redirects are not followed. The check sends no credentials or cookies, grants no access and reads no CRM data. Exit code is nonzero when any check fails.
 
 The command is in `scripts/check-mcp-deployment.js`. Its integration test uses the actual OAuth handler and confirms that a successful check makes zero database calls. Other cases cover disabled OAuth, invalid origins, deployment-protection redirects, HTML metadata, anonymous success and excessive response sizes.

@@ -76,7 +76,13 @@ test('live OAuth consent, scoped MCP, replay, owner isolation and revocation use
     await expect(page.locator('#connection-list')).toContainText('No applications are connected.',{timeout:deployedOrigin?15000:5000});
     await connect('catalog:read',false);let list=await (await page.request.get(origin+'/api/admin?action=oauth-connections')).json();expect(list.connections).toHaveLength(0);
 
-    const first=await tokenFor(),client=await clientFor(first.token);expect((await client.listTools()).tools).toHaveLength(8);
+    const first=await tokenFor(),client=await clientFor(first.token);expect((await client.listTools()).tools).toHaveLength(9);
+    const importFile={candidates:Array.from({length:10},(_,i)=>({company_name:'Import validation fixture',short_description:'x'.repeat(3000),website:'https://validation.example/',sources:[{url:'https://validation.example/about'}],field_provenance:{website:{status:'VERIFIED',source_urls:[i===0||i===6||i===7?'https://validation.example/':'https://validation.example/about']}}}))};
+    const invalidImport=await client.callTool({name:'validate_research_import',arguments:{json:JSON.stringify(importFile,null,2)}});
+    expect(invalidImport.isError).toBe(false);expect(invalidImport.structuredContent.data.valid).toBe(false);expect(invalidImport.structuredContent.data.rows.filter(row=>!row.valid).map(row=>row.row)).toEqual([1,7,8]);
+    for(const candidate of importFile.candidates)candidate.field_provenance.website.source_urls=[candidate.sources[0].url];
+    const validImport=await client.callTool({name:'validate_research_import',arguments:{json:JSON.stringify(importFile,null,2)}});
+    expect(validImport.structuredContent.data.valid).toBe(true);expect(validImport.structuredContent.data.valid_count).toBe(10);
     const search=await client.callTool({name:'search_leads'});expect(search.isError).toBe(false);expect(search.structuredContent.data.items.map(item=>item.id)).toEqual([companies[0].id]);
     expect((await client.callTool({name:'get_lead',arguments:{id:companies[0].id}})).isError).toBe(false);
     const inaccessible=await client.callTool({name:'get_lead',arguments:{id:companies[1].id}});expect(inaccessible.isError).toBe(true);expect(inaccessible._meta['shapeviz/httpStatus']).toBe(404);
@@ -85,7 +91,7 @@ test('live OAuth consent, scoped MCP, replay, owner isolation and revocation use
     const adminBypass=await fetch(origin+'/api/admin?action=crm-tools-list',{headers:{Authorization:'Bearer '+first.token}});expect(adminBypass.status).toBe(401);
 
     const limited=await tokenFor('catalog:read'),limitedClient=await clientFor(limited.token);expect((await rpc(first.token)).status).toBe(401);
-    expect((await limitedClient.listTools()).tools.map(tool=>tool.name)).toEqual(['get_research_catalog']);
+    expect((await limitedClient.listTools()).tools.map(tool=>tool.name)).toEqual(['get_research_catalog','validate_research_import']);
     const denied=await limitedClient.callTool({name:'search_leads'});expect(denied.isError).toBe(true);expect(denied._meta['mcp/www_authenticate'][0]).toContain('insufficient_scope');
     list=await (await page.request.get(origin+'/api/admin?action=oauth-connections')).json();const active=list.connections.find(item=>item.status==='active');expect(!!active).toBe(true);
     otherContext=await browser.newContext();expect((await post('login',{email:other.email,password:other.password},otherContext.request)).status()).toBe(200);
@@ -105,7 +111,7 @@ test('live OAuth consent, scoped MCP, replay, owner isolation and revocation use
     await sb('/rest/v1/presentation_admins',{method:'POST',body:{user_id:owner.user.id,role:'owner'}});removedMembership=false;expect((await rpc(last.token)).status).toBe(200);
     expect(await snapshot()).toEqual(initial);
     await page.goto(origin+'/admin/connections');await expect(page.locator('#connection-account')).toBeVisible();await page.getByRole('button',{name:'Sign out',exact:true}).click();await expect(page.locator('#connection-login')).toBeVisible();expect((await rpc(last.token)).status).toBe(401);expect(browserErrors).toEqual([]);
-    console.info(`OAuth ${deployedOrigin?'production':'local'}${native?' desktop':''} assertions passed: eight tools, owner isolation, scopes, replay, disconnect and logout.`);
+    console.info(`OAuth ${deployedOrigin?'production':'local'}${native?' desktop':''} assertions passed: nine tools, owner isolation, scopes, replay, disconnect and logout.`);
   }finally{
     const failures=[];await Promise.all(clients.map(client=>client.close()));
     if(removedMembership&&accounts[0])try{await sb('/rest/v1/presentation_admins',{method:'POST',body:{user_id:accounts[0].user.id,role:'owner'}});}catch{failures.push('Owner membership restoration');}

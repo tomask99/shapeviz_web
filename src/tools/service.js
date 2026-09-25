@@ -1,5 +1,6 @@
 import {fail,uuid} from '../crm/validation.js';
 import {READ_TOOLS} from './catalog.js';
+import {IMPORT_WORKFLOW,validateImportJson} from './import-validation.js';
 import {readInsight} from '../research/enrich.js';
 import {researchExcludedDomains} from '../research/exclusions.js';
 import {candidateProposal,plain,REFRESH_CANDIDATE_FIELDS} from '../research/refresh-domain.js';
@@ -40,7 +41,8 @@ function validateShape(schema,value) {
   } else if (schema.type === 'integer') {
     if (!Number.isSafeInteger(value) || value < schema.minimum || value > schema.maximum) throw invalid();
   } else if (schema.type === 'string') {
-    if (!validText(value,schema.maxLength ?? 2048) || /[\u0000-\u001f\u007f]/u.test(value) || (schema.enum && !schema.enum.includes(value)) || (schema.pattern && !new RegExp(schema.pattern).test(value)) || (schema.format === 'uuid' && !uuid(value))) throw invalid();
+    const controls=schema.contentMediaType==='application/json'?/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u:/[\u0000-\u001f\u007f]/u;
+    if (!validText(value,schema.maxLength ?? 2048) || controls.test(value) || (schema.enum && !schema.enum.includes(value)) || (schema.pattern && !new RegExp(schema.pattern).test(value)) || (schema.format === 'uuid' && !uuid(value))) throw invalid();
   } else throw invalid();
 }
 
@@ -208,7 +210,8 @@ export async function executeReadTool({name,args,...context}) {
       result = pageResult(await call('/rest/v1/rpc/crm_tool_rejected_domains',{token,method:'POST',body:{p_page:page}}),page,100,domain => {if (!validDomain(domain)) throw malformed();return domain;},'domains');
       if (new Set(result.domains).size !== result.domains.length || result.domains.some((domain,index) => index > 0 && domain <= result.domains[index-1])) throw malformed();break;
     }
-    case 'get_research_catalog': result = researchCatalog();break;
+    case 'get_research_catalog': result = {...researchCatalog(),import_workflow:[...IMPORT_WORKFLOW],import_validation_tool:'validate_research_import'};break;
+    case 'validate_research_import': result = validateImportJson(args.json);break;
     default: throw fail(400,'Unknown read tool.');
   }
   return bounded(result);

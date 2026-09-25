@@ -46,7 +46,7 @@ test('Read-tool HTTP adapter keeps same-origin, method, JSON and no-store bounda
   assert.equal((await post('{broken')).status,400);
   assert.equal((await post({tool:'get_research_catalog',arguments:{text:'x'.repeat(16384)}})).status,413);
   const response=await get();assert.equal(response.status,200);assert.match(response.headers.get('Cache-Control'),/no-store/);assert.match(response.headers.get('X-Robots-Tag'),/noindex/);
-  const catalog=await response.json();assert.equal(catalog.schema_version,1);assert.equal(catalog.tools.length,8);assert.ok(catalog.tools.every(tool=>tool.read_only===true));
+  const catalog=await response.json();assert.equal(catalog.schema_version,1);assert.equal(catalog.tools.length,9);assert.ok(catalog.tools.every(tool=>tool.read_only===true));
 }));
 
 test('Strict read-tool envelope refuses owner/scope/query injection and mutation tools without business calls',()=>fixture(async({state,get,post})=>{

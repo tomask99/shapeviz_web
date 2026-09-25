@@ -9,7 +9,7 @@ test('pipeline reads fixed bounded stages using user JWT and excludes archived l
   const calls=[];
   const data=await handleCrm({...base,action:'crm-pipeline',url:new URL('https://example.test/?archived=all&country_category=SK&q=chair'),call:async(path,opts)=>{calls.push({path,opts});return {companies:[],total:0,page:1,pageSize:25};}});
   assert.deepEqual(data.columns.map(c=>c.status),STATUSES.filter(s=>s!=='LOST'));
-  assert.equal(calls.length,9);
+  assert.equal(calls.length,8);
   for(const {path,opts}of calls){assert.equal(path,'/rest/v1/rpc/crm_list_companies');assert.equal(opts.token,'user-jwt');assert.equal(opts.body.p_filters.archived,'active');assert.equal(opts.body.p_filters.country_category,'SK');assert.equal(opts.body.p_filters.q,'chair');assert.equal(opts.body.p_page,1);}
 });
 test('lost view is explicit and invalid pipeline mode is rejected',async()=>{
@@ -20,9 +20,9 @@ test('lost view is explicit and invalid pipeline mode is rejected',async()=>{
 });
 test('status move updates only status, scopes by owner/version and rejects archived or stale cards',async()=>{
   let captured;
-  const args={...base,action:'crm-status',url:new URL('https://example.test'),body:{id,version:3,pipeline_status:'QUALIFIED',company_name:'Do not overwrite',owner_id:'attacker'}};
+  const args={...base,action:'crm-status',url:new URL('https://example.test'),body:{id,version:3,pipeline_status:'PRESENTATION_READY',company_name:'Do not overwrite',owner_id:'attacker'}};
   const data=await handleCrm({...args,call:async(path,opts)=>{captured={path,opts};return [{id,version:4}];}});
-  assert.equal(data.company.version,4);assert.deepEqual(captured.opts.body,{pipeline_status:'QUALIFIED'});
+  assert.equal(data.company.version,4);assert.deepEqual(captured.opts.body,{pipeline_status:'PRESENTATION_READY'});
   assert.match(captured.path,new RegExp('owner_id=eq.'+user.id));assert.match(captured.path,/version=eq.3&archived_at=is.null/);assert.equal(captured.opts.token,'user-jwt');
   await assert.rejects(()=>handleCrm({...args,call:async()=>[]}),{status:409});
   await assert.rejects(()=>handleCrm({...args,body:{...args.body,pipeline_status:'BOGUS'},call:async()=>[]}),{status:400});

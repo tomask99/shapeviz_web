@@ -9,16 +9,16 @@ do $test$
 declare c public.crm_companies; affected integer; result jsonb;
 begin
  insert into public.crm_companies(owner_id,company_name) values(auth.uid(),'Pipeline fixture') returning * into c;
- update public.crm_companies set pipeline_status='QUALIFIED'
+ update public.crm_companies set pipeline_status='PRESENTATION_READY'
  where id=c.id and owner_id=auth.uid() and version=c.version and archived_at is null;
  get diagnostics affected=row_count;
  if affected<>1 then raise exception 'Active move failed';end if;
  if not exists(select 1 from public.crm_activities where company_id=c.id and event_type='status_changed'
-  and metadata->>'from_status'='NEW_LEAD' and metadata->>'to_status'='QUALIFIED') then raise exception 'Move history missing';end if;
+  and metadata->>'from_status'='NEW_LEAD' and metadata->>'to_status'='PRESENTATION_READY') then raise exception 'Move history missing';end if;
  update public.crm_companies set pipeline_status='WON' where id=c.id and version=1 and archived_at is null;
  get diagnostics affected=row_count;
  if affected<>0 then raise exception 'Stale move overwrote current status';end if;
- result:=public.crm_list_companies('{"pipeline_status":"QUALIFIED","archived":"active","sort":"updated"}',1);
+ result:=public.crm_list_companies('{"pipeline_status":"PRESENTATION_READY","archived":"active","sort":"updated"}',1);
  if (result->>'total')::int<>1 then raise exception 'Stage query missing company';end if;
  update public.crm_companies set pipeline_status='LOST' where id=c.id and version=2 and archived_at is null;
  if (public.crm_list_companies('{"pipeline_status":"LOST","archived":"active"}',1)->>'total')::int<>1 then raise exception 'Lost view failed';end if;

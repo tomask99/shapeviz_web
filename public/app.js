@@ -1,4 +1,5 @@
 import './gallery.js';
+import './dialog-dismiss.js';
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = matchMedia('(pointer: fine)');
 const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
@@ -154,7 +155,6 @@ document.querySelectorAll('[data-lightbox]').forEach(button => {
 });
 dialog.querySelector('button').addEventListener('click', closeLightbox);
 dialog.querySelector('img').addEventListener('click', closeLightbox);
-dialog.addEventListener('click', event => { if (event.target === dialog) closeLightbox(); });
 dialog.addEventListener('keydown', event => {
   if (event.key !== 'Tab') return;
   const focusable = [...dialog.querySelectorAll('button, a[href], input, [tabindex="0"]')];

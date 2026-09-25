@@ -2,9 +2,15 @@
 
 Stav k 23. septembru 2026: **Shapeviz MCP úspešne fungoval priamo v používateľovej lokálnej Work konverzácii**. Používateľ potvrdil výsledok obrázkom a záznam konverzácie potvrdzuje skutočné volanie `mcp__shapeviz__get_research_catalog({})` o 16:34:32 UTC a úspešnú odpoveď o dve sekundy neskôr. Zoznam obsahoval všetkých osem nástrojov. Nešlo o náhradné volanie cez Supabase.
 
+Aktualizácia importu: server teraz ponúka **deväť nástrojov**, vrátane `validate_research_import`. Pred odovzdaním JSON dostáva chat pokyn skontrolovať presný finálny súbor tým istým validátorom, ktorý používa web, opraviť chyby a kontrolu zopakovať. Podrobnosti a overenie sú v [zázname opravy](ai-research-import-validation.md).
+
 ## Čo teraz urobiť
 
-Pokračuj v tej istej **Work / Práca** konverzácii. Napríklad: **„Cez Shapeviz ukáž prvú stránku mojich leadov.“** Katalóg už bol úspešne načítaný, tú istú skúšku netreba opakovať.
+Pre nové pokyny a deviaty nástroj otvor novú **Work / Práca → Pracovať lokálne** konverzáciu s načítaným pripojením Shapeviz. Ak klient stále zobrazuje starý zoznam, obnov pripojenie MCP alebo aplikáciu. Katalóg už bol úspešne načítaný v predchádzajúcej konverzácii.
+
+Príklad zadania: **„Nájdi 10 výrobcov sedačiek na Slovensku, ktorých ešte nemáme v databáze. Over duplicity, dolož zistenia skutočnými zdrojmi a priprav Research import JSON. Pred odovzdaním zavolaj validate_research_import s presným obsahom celého súboru. Oprav všetky chyby a kontrolu opakuj, kým valid=true. Potom mi daj ten istý súbor.“**
+
+Kontrola overuje formát a odkazy na zdroje; pravdivosť zistení a duplicity treba overiť samostatne. Nič neukladá do databázy. Ak nástroj nie je dostupný, chat má súbor označiť ako neoverený. Serverové pokyny pomáhajú viesť chat, ale nemôžu zaručiť, že ich model vždy dodrží; web naďalej blokuje neplatné riadky.
 
 Pri budúcich skúškach používaj **Work → Work locally / Pracovať lokálne**. Uložené nastavenie pri načítaní konfigurácie predĺži čakanie na nástroje na začiatku konverzácie.
 
@@ -71,7 +77,7 @@ Pre používanie desktopovej aplikácie tento krok netreba. Ak budeš chcieť aj
 2. Otvor správu **Plugins**, klikni na plus a pridaj MCP server s webovým Client ID uvedeným vyššie. Zvoľ OAuth a vopred registrovaného klienta, ak rozhranie ponúka výber.
 3. Skontroluj presnú callback/redirect URL. Ak sa líši od registrácie, najprv treba upraviť server. Nevypĺňaj vymyslený Client secret, ak ho rozhranie vyžaduje; tento režim treba vyriešiť podľa možností konkrétneho účtu.
 4. Prihlás sa do Shapeviz, skontroluj zobrazený účet a tri oprávnenia na čítanie, potom povoľ prístup.
-5. Skontroluj zoznam ôsmich nástrojov a pridaj pripojenie v novej konverzácii cez ponuku nástrojov.
+5. Skontroluj zoznam deviatich nástrojov a pridaj pripojenie v novej konverzácii cez ponuku nástrojov.
 
 Názvy a dostupnosť ovládacích prvkov závisia od aktuálneho účtu. Postup vychádza z [oficiálneho návodu na pripojenie a testovanie](https://developers.openai.com/plugins/deploy/connect-chatgpt).
 
@@ -82,6 +88,7 @@ Uložené prihlásenie, zoznam ôsmich nástrojov a volanie katalógu už prešl
 | Požiadavka | Očakávaný výsledok |
 | --- | --- |
 | „Ukáž katalóg služieb Shapeviz.“ | `get_research_catalog`; žiadny zápis. |
+| „Skontroluj tento celý Research JSON pred importom.“ | `validate_research_import` s presným textom súboru; konkrétne chyby podľa riadkov, žiadny zápis. |
 | „Ukáž prvú stránku mojich leadov.“ | `search_leads`; len firmy prihláseného vlastníka. |
 | „Otvor detail jednej z týchto firiem a jej uložený AI Insight.“ | `get_lead` s ID z predchádzajúceho výsledku; uložený výskum má zostať označený ako historický. |
 | „Ukáž prvú stránku Research inboxu a zdroje jedného kandidáta.“ | `get_research_candidates`, následne `get_research_candidate`. |

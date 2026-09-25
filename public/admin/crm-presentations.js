@@ -19,7 +19,7 @@ export function mountPresentations({panel,company,api,notify}) {
       if(!items.length&&page>1){page--;load();return;}
       panel.innerHTML=`<div class="section-title"><h2>Presentations</h2><button class="primary" data-link-deck ${company.archived_at?'disabled':''}>Assign presentation</button></div>
         <p class="fine">Assign a finished deck, not a reusable template. Marking sent records a past action; it does not send an email or change the pipeline.</p>
-        <div class="actions"><button class="secondary" data-create-company-deck ${company.archived_at?'disabled':''}>Create from template</button><button class="secondary" data-upload-company-deck ${company.archived_at?'disabled':''}>Upload finished presentation</button></div><p role="alert" data-presentation-error></p>`+
+        <div class="actions"><button class="primary" data-create-company-deck ${company.archived_at?'disabled':''}>Prepare presentation</button><button class="secondary" data-upload-company-deck ${company.archived_at?'disabled':''}>Upload finished presentation</button></div><p role="alert" data-presentation-error></p>`+
         (items.length?items.map(item=>{
           const p=item.project;
           return `<article class="crm-entry" data-presentation-link="${esc(item.id)}"><h3>${esc(p?.title||'Presentation unavailable')}</h3><p class="fine">${esc(p?.client||'')} · /p/${esc(item.deck_slug)}</p>

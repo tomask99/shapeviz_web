@@ -25,12 +25,12 @@ async function fixture(page) {
 }
 test('pipeline drag, menu, lost view and route history persist without overflow',async({page})=>{
   await fixture(page);const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('/admin/pipeline');await expect(page.locator('[data-stage]')).toHaveCount(9);
+  await page.goto('/admin/pipeline');await expect(page.locator('[data-stage]')).toHaveCount(8);
   await expect(page.locator('[data-stage=LOST]')).toHaveCount(0);
   const card=page.locator('[data-card]');
-  await card.dragTo(page.locator('[data-stage=QUALIFIED]'));
-  await expect(page.locator('[data-stage=QUALIFIED] [data-card]')).toHaveCount(1);
-  await page.reload();await expect(page.locator('[data-stage=QUALIFIED] [data-card]')).toHaveCount(1);
+  await card.dragTo(page.locator('[data-stage=PRESENTATION_READY]'));
+  await expect(page.locator('[data-stage=PRESENTATION_READY] [data-card]')).toHaveCount(1);
+  await page.reload();await expect(page.locator('[data-stage=PRESENTATION_READY] [data-card]')).toHaveCount(1);
   await page.getByRole('combobox',{name:'Status for Nario <studio>',exact:true}).selectOption('CONTACTED');
   await expect(page.locator('[data-stage=CONTACTED] [data-card]')).toHaveCount(1);
   await page.screenshot({path:'.cache/crm-pipeline-desktop.png',fullPage:true});
@@ -45,7 +45,7 @@ test('pipeline drag, menu, lost view and route history persist without overflow'
   await expect(page.locator('#crm h1')).toContainText('Nario');
   await page.goBack();await expect(page.locator('[data-stage=LOST] [data-card]')).toHaveCount(1);
   await page.locator('[data-view=all]').click();await expect(page.locator('#crm')).toBeHidden();
-  await page.getByRole('link',{name:'Pipeline',exact:true}).click();await expect(page.locator('[data-stage]')).toHaveCount(9);
+  await page.getByRole('link',{name:'Pipeline',exact:true}).click();await expect(page.locator('[data-stage]')).toHaveCount(8);
   expect(errors).toEqual([]);
 });
 test('failed status save restores the visible selection and reports conflict',async({page})=>{

@@ -12,7 +12,7 @@ do $$ declare c uuid; r jsonb; s jsonb:='{"next_followup":null,"has_replied":fal
  if public.crm_suggestion_rule('REPLIED',s,false,now()) is distinct from 'REPLIED_NEEDS_ACTION' then raise exception 'Reply rule';end if;
  if public.crm_suggestion_rule('MEETING',s,false,now()) is distinct from 'MEETING_NEEDS_ACTION' then raise exception 'Meeting rule';end if;
  if public.crm_suggestion_rule('PROPOSAL',s||'{"engagement":"HOT"}',true,now()) is distinct from 'HOT_LEAD_IDLE' then raise exception 'HOT rule';end if;
- if public.crm_suggestion_rule('QUALIFIED',s,false,now()) is distinct from 'QUALIFIED_NOT_CONTACTED' or public.crm_suggestion_rule('QUALIFIED',s,true,now()) is not null then raise exception 'Qualified rule';end if;
+ if public.crm_suggestion_rule('QUALIFIED',s,false,now()) is not null or public.crm_suggestion_rule('QUALIFIED',s,true,now()) is not null then raise exception 'Retired qualification rule still active';end if;
  if public.crm_suggestion_rule('PRESENTATION_VIEWED',s||jsonb_build_object('last_visit',now()-interval '3 days'),true,now()) is distinct from 'VIEWED_NO_REPLY' then raise exception 'Visit boundary';end if;
  if public.crm_suggestion_rule('PRESENTATION_VIEWED',s||jsonb_build_object('last_visit',now()-interval '3 days'+interval '1 second'),true,now()) is not null then raise exception 'Visit too early';end if;
  if public.crm_suggestion_rule('CONTACTED',s,true,now()) is not null then raise exception 'Missing visits fabricated';end if;

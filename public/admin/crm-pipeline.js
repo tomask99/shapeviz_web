@@ -19,6 +19,7 @@ export function createPipeline({root,api,notify}) {
         <button class="quiet" data-quick-note="${esc(c.id)}" data-company-name="${esc(c.company_name)}">+ Note</button>
         <p class="fine">${signalSummary(c)}</p>
         <p class="fine crm-next-action">${esc(nextActionText(c.next_action))}</p>
+        <button class="secondary" data-prepare-presentation="${esc(c.id)}" ${saving||loading?'disabled':''}>Prepare presentation</button>
         <label>Move to<select data-move="${esc(c.id)}" aria-label="Status for ${esc(c.company_name)}" ${saving||loading?'disabled':''}>${STATUSES.map(s=>`<option value="${s}" ${s===c.pipeline_status?'selected':''}>${esc(label(s))}</option>`).join('')}</select></label>
       </article>`).join('')||'<p class="fine pipeline-empty">No leads in this stage.</p>'}</div>
       <p class="fine">${col.companies.length} of ${col.total} shown</p>
@@ -26,7 +27,7 @@ export function createPipeline({root,api,notify}) {
     </section>`).join('');
   }
   function lock(value) {
-    root.querySelectorAll('#pipeline-filters input,#pipeline-filters select,#pipeline-filters button,[data-move],[data-stage-more]').forEach(e=>e.disabled=value);
+    root.querySelectorAll('#pipeline-filters input,#pipeline-filters select,#pipeline-filters button,[data-move],[data-stage-more],[data-prepare-presentation]').forEach(e=>e.disabled=value);
     root.querySelectorAll('[data-card]').forEach(e=>e.draggable=!value);
   }
   async function load() {
@@ -102,6 +103,7 @@ export function createPipeline({root,api,notify}) {
     const b=e.target.closest('button');if(!b)return;
     if(b.hasAttribute('data-pipeline-retry'))load();
     if(b.dataset.stageMore)more(b.dataset.stageMore);
+    if(b.dataset.preparePresentation&&!saving&&!loading)document.dispatchEvent(new CustomEvent('crm-create-presentation',{detail:{companyId:b.dataset.preparePresentation}}));
   });
   root.addEventListener('dragstart',e=>{
     const card=e.target.closest('[data-card]');

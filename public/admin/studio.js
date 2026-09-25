@@ -1,4 +1,5 @@
 import './cursor.js';
+import '../dialog-dismiss.js';
 import {createCrm} from './crm.js';
 import {createCrmReadCache} from './crm-read-cache.js';
 import {localDayBounds} from './crm-dates.js';
@@ -7,6 +8,7 @@ import {installCommandPalette} from './crm-command.js';
 import {refreshWebsiteStats} from './website-stats.js';
 import {uploadPresentation} from './upload.js';
 import {createStudioCompany} from './studio-company.js';
+import {createPreparePresentation} from './crm-prepare-presentation.js';
 import {createBusinessOverview} from './crm-overview.js';
 const arrowIcon='<svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" focusable="false" style="vertical-align:-.125em"><path d="M5 19 19 5M5 5h14v14"/></svg>';
 const $=s=>document.querySelector(s);
@@ -24,7 +26,7 @@ async function requestApi(action,body,params={}) {
 function showLogin(setup=false){api.invalidate();business.hide();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('#studio').hidden=true;$('#login').hidden=false;$('#signin').hidden=setup;$('#set-password').hidden=!setup;$('#login-title').textContent=setup?'Make it yours.':'Welcome back.';$('#login-hint').textContent=setup?'Set a password with at least 12 characters.':'Sign in to your Shapeviz studio.';}
 function formData(form){const data=Object.fromEntries(new FormData(form));for(const name of ['publish','isTemplate'])if(form.elements[name])data[name]=form.elements[name].checked;return data;}
 const uploadCompany=createStudioCompany($('#upload-form'),api),variantCompany=createStudioCompany($('#variant-form'),api),editCompany=createStudioCompany($('#edit-form'),api);
-async function busy(form,task){const buttons=[...form.querySelectorAll('button')];let errorBox=form.querySelector('[data-form-error]');if(!errorBox){errorBox=document.createElement('p');errorBox.dataset.formError='';errorBox.setAttribute('role','alert');form.append(errorBox);}errorBox.textContent='';buttons.forEach(b=>b.disabled=true);try{await task();}catch(error){errorBox.textContent=error.message;notify(error.message);}finally{buttons.forEach(b=>b.disabled=false);}}
+async function busy(form,task){const dialog=form.closest('dialog');if(dialog)dialog.dataset.dismissPending='true';const buttons=[...form.querySelectorAll('button')];let errorBox=form.querySelector('[data-form-error]');if(!errorBox){errorBox=document.createElement('p');errorBox.dataset.formError='';errorBox.setAttribute('role','alert');form.append(errorBox);}errorBox.textContent='';buttons.forEach(b=>b.disabled=true);try{await task();}catch(error){errorBox.textContent=error.message;notify(error.message);}finally{buttons.forEach(b=>b.disabled=false);if(dialog)delete dialog.dataset.dismissPending;}}
 function metricMarkup(summary={}){return [['Visits',summary.visits||0],['Active time',duration(summary.seconds)],['Average / visit',duration(summary.average_seconds)],['Slide views',summary.slide_views||0],['Website clicks',summary.website_clicks||0],['Visits with a click',summary.website_click_sessions||0],['Click-through rate',`${summary.visits ? Math.round((summary.website_click_sessions||0)/summary.visits*100) : 0}%`]].map(([label,value])=>`<div class="metric"><span>${label}</span><strong>${value}</strong></div>`).join('');}
 function drawChart() {
  const days=Number($('#days').value), rows=statistics.daily||[];
@@ -91,6 +93,7 @@ $('#set-password').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=
 $('#logout').onclick=async()=>{try{await api('logout',{});showLogin();}catch(e){notify(e.message);}};
 $('#change-password').onclick=()=>showLogin(true);
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{const dialog=b.closest('dialog');if(dialog.id==='preview-dialog')$('#variant-preview').srcdoc='';dialog.close();});
+$('#preview-dialog').addEventListener('close',()=>{$('#variant-preview').srcdoc='';});
 function openUpload(kind='presentation') {
  uploadCompany.reset({hidden:kind==='template'});
  const form=$('#upload-form'),template=kind==='template';form.reset();pendingUpload=null;
@@ -152,7 +155,8 @@ function openVariant(slug='',company=null) {
  if(slug)form.elements.client.focus();else form.elements.template.focus();
 }
 $('#variant-form').addEventListener('input',()=>{$('#replacement-count').textContent='';});
-document.addEventListener('crm-create-presentation',async e=>{try{const {company}=await api('crm-detail',null,{id:e.detail.companyId});if(company.archived_at)throw new Error('Restore the company first.');if(e.detail.mode==='upload'){openUpload();uploadCompany.reset({company});const f=$('#upload-form');f.elements.client.value=company.company_name;f.elements.slug.value=slugify(company.company_name);return;}projects=(await api('list')).projects;openVariant('',company);}catch(error){notify(error.message);}});
+const preparePresentation=createPreparePresentation({api,notify,onPrepared(){api.invalidate();if(crm.isActive())crm.show();}});
+document.addEventListener('crm-create-presentation',async e=>{if(e.detail.mode!=='upload'){preparePresentation.open(e.detail.companyId);return;}try{const {company}=await api('crm-detail',null,{id:e.detail.companyId});if(company.archived_at)throw new Error('Restore the company first.');openUpload();uploadCompany.reset({company});const f=$('#upload-form');f.elements.client.value=company.company_name;f.elements.slug.value=slugify(company.company_name);}catch(error){notify(error.message);}});
 function openEdit(slug){const p=projects.find(p=>p.deck_slug===slug);editCompany.reset({slug,hidden:isTemplate(p)});if(isTemplate(p)){const form=$('#template-edit-form');form.reset();form.querySelector('[data-form-error]')?.remove();for(const name of ['client','title'])form.elements[name].value=p[name];form.elements.slug.value=slug;$('#template-edit-dialog').showModal();return;}const form=$('#edit-form');form.querySelector('[data-form-error]')?.remove();form.elements.slug.value=slug;form.elements.title.value=p.title;form.elements.status.value=p.status;form.elements.isTemplate.checked=p.is_template;form.elements.match.required=false;form.elements.match.closest('label').hidden=true;$('#edit-dialog').showModal();}
 $('#template-edit-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{await api('update',formData(e.target));$('#template-edit-dialog').close();await refresh();notify('Template settings saved.');});};
 $('#edit-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=formData(e.target);await editCompany.save(()=>api('update',data),{slug:e.target.elements.slug.value,isTemplate:data.isTemplate,archived:e.target.elements.status.value==='archived'});$('#edit-dialog').close();await refresh();notify('Presentation settings saved.');});};

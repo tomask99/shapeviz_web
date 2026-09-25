@@ -40,6 +40,18 @@ async function fixture(page,{duplicates=[],saveFailures=[],approveFailures=[],st
 }
 const detail=async page=>{await page.goto('/admin/ai-research/'+id);await expect(page.getByRole('heading',{name:'Example Furniture.'})).toBeVisible();};
 
+test('lead approval has a close cross after preview and also dismisses outside without approving',async({page})=>{
+ const calls=await fixture(page);await detail(page);await page.getByRole('button',{name:'Approve as lead',exact:true}).click();
+ let dialog=page.getByRole('dialog');await dialog.getByRole('button',{name:'Preview lead',exact:true}).click();await expect(dialog).toContainText('Lead preview');
+ await expect(dialog.getByRole('button',{name:'Close dialog',exact:true})).toBeVisible();
+ await page.setViewportSize({width:390,height:844});await dialog.evaluate(d=>d.scrollTop=d.scrollHeight);
+ await expect(dialog.getByRole('button',{name:'Close dialog',exact:true})).toBeInViewport();await page.screenshot({path:'.cache/review-close-mobile.png'});
+ await dialog.getByRole('button',{name:'Close dialog',exact:true}).click();await expect(dialog).toHaveCount(0);
+ await page.getByRole('button',{name:'Approve as lead',exact:true}).click();dialog=page.getByRole('dialog');
+ const box=await dialog.boundingBox();await page.mouse.click(Math.max(1,box.x-5),box.y+20);await expect(dialog).toHaveCount(0);
+ expect(calls.filter(c=>c.action==='crm-research-approve')).toHaveLength(0);
+});
+
 test('Candidate editing retains rejected input, sends full proposal, and records manual Fit with escaped history',async({page})=>{
   const calls=await fixture(page,{saveFailures:[409],events:[{event_type:'candidate_rejected',metadata:{reason:'<img src=x onerror=alert(1)>'},created_at:initial.created_at}]});await detail(page);
   await expect(page.getByRole('heading',{name:'Review history'}).locator('..')).toContainText('<img src=x onerror=alert(1)>');

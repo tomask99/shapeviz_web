@@ -21,7 +21,7 @@ test('rapid navigation reuses all three views; refresh bypasses and status save 
  await page.locator('[data-followup-refresh]').click();await expect.poll(()=>calls['crm-followups']).toBe(2);
  await leads();await page.locator('[data-reload]').click();await expect.poll(()=>calls['crm-list']).toBe(3);
  await pipeline();await page.locator('[data-pipeline-refresh]').click();await expect.poll(()=>calls['crm-pipeline']).toBe(3);
- await page.locator('[data-move]').selectOption('QUALIFIED');await expect(page.locator('[data-stage=QUALIFIED]')).toBeVisible();
- await leads();await expect(page.locator('#lead-results')).toContainText('Qualified');expect(calls['crm-list']).toBe(4);
+ await page.locator('[data-move]').selectOption('PRESENTATION_READY');await expect(page.locator('[data-stage=PRESENTATION_READY]')).toBeVisible();
+ await leads();await expect(page.locator('#lead-results')).toContainText('Presentation ready');expect(calls['crm-list']).toBe(4);
  expect(errors).toEqual([]);
 });

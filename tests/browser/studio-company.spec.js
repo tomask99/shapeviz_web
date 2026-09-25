@@ -9,9 +9,10 @@ async function fixture(page,{linked=false,failLink=false}={}){
     if(action==='list')data={projects:[{deck_slug:'template',client:'Template',title:'Pitch',is_template:true,status:'draft',slide_count:1},{deck_slug:'pitch',client:'Client',title:'Pitch',is_template:false,status:'published',slide_count:1}]};
     if(action==='stats')data={summary:{},daily:[],decks:[]};
     if(action==='crm-list')data={companies:[{id:companyId,company_name:'Nario <studio>'}],total:1};
-    if(action==='crm-detail')data={company:{id:companyId,company_name:'Nario <studio>',services:[],priority:'HIGH',pipeline_status:'QUALIFIED',version:1,short_description:'Private description'}};
+    if(action==='crm-detail')data={company:{id:companyId,company_name:'Nario <studio>',services:[],priority:'HIGH',pipeline_status:'PRESENTATION_READY',version:1,short_description:'Private description'}};
     if(action==='crm-presentation-company')data={item:linked?{company_id:companyId,company:{company_name:'Nario <studio>'}}:null};
     if(action==='variant')data={project:{deck_slug:'new-pitch'},url:'/p/new-pitch'};
+    if(action==='prepare-presentation')data={project:{deck_slug:'new-pitch'},url:'/p/new-pitch',company:{id:companyId,pipeline_status:'PRESENTATION_READY'}};
     if(action==='sign-upload')data={uploadId:'test-id',object:'uploads/owner/test-id/source.html',url:'/mock-upload'};
     if(action==='finalize')data={url:'/p/uploaded-pitch'};
     if(action==='crm-presentation-ensure'&&failLink){failLink=false;return route.fulfill({status:503,json:{error:'Temporary failure'}});}
@@ -27,7 +28,7 @@ async function choose(form){
   await form.getByLabel('CRM company',{exact:true}).selectOption(companyId);
 }
 test('creation from company preselects its name and association without copying private descriptions',async({page})=>{
- const calls=await fixture(page);await page.goto('/admin/leads/'+companyId);await page.getByRole('button',{name:'Create presentation',exact:true}).click();const form=page.locator('#variant-form');await expect(form.locator('[name=client]')).toHaveValue('Nario <studio>');await expect(form.getByLabel('CRM company',{exact:true})).toHaveValue(companyId);await form.locator('[name=template]').selectOption('template');await form.getByRole('button',{name:'Create & publish',exact:true}).click();await expect(page.locator('#variant-dialog')).toBeHidden();expect(calls.find(c=>c.action==='crm-presentation-ensure').body.companyId).toBe(companyId);expect(JSON.stringify(calls.find(c=>c.action==='variant').body)).not.toContain('Private description');
+ const calls=await fixture(page);await page.goto('/admin/leads/'+companyId);await page.getByRole('button',{name:'Prepare presentation',exact:true}).click();const dialog=page.locator('#crm-prepare-presentation');await expect(dialog.getByLabel('Company',{exact:true})).toHaveValue('Nario <studio>');await expect(dialog.getByLabel('Company',{exact:true})).toHaveAttribute('readonly','');await dialog.getByLabel('Template',{exact:true}).selectOption('template');await dialog.getByRole('button',{name:'Prepare presentation',exact:true}).click();await expect(dialog).toBeHidden();const request=calls.find(c=>c.action==='prepare-presentation').body;expect(request.companyId).toBe(companyId);expect(request.template).toBe('template');expect(request.version).toBe(1);expect(request.operationId).toMatch(/^[a-f0-9-]{36}$/);expect(JSON.stringify(request)).not.toContain('Private description');
 });
 test('template creation retries only CRM association after deck save, then resets on reopen',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));const calls=await fixture(page,{failLink:true});

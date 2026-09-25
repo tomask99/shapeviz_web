@@ -1,6 +1,7 @@
 import {configuration,SCOPES,authorization,parameters,plain,oauthError,randomSecret,hash,challenge,seal,unseal,requestAad,grantAad,bindingCookie,authChallenge,redirectAllowed} from './domain.js';
 import {readJson} from '../http.js';
 import {handleReadMcp, mcpHttpError} from '../tools/mcp.js';
+import {MAX_IMPORT_TOOL_REQUEST_BYTES} from '../tools/handler.js';
 import {uuid} from '../crm/validation.js';
 
 export const OAUTH_ROUTES=Object.freeze({'/oauth/authorize':'authorize','/oauth/token':'token','/oauth/revoke':'revoke','/.well-known/oauth-authorization-server':'metadata','/.well-known/oauth-protected-resource':'resource','/.well-known/oauth-protected-resource/api/mcp':'resource','/api/mcp':'mcp'});
@@ -78,7 +79,7 @@ export function createOAuthHandler({env=process.env,send=fetch,endpoint,audit}={
         if(typeof source?.token!=='string')throw oauthError('invalid_token',401);
         const user=await call('/auth/v1/user',{token:source.token});if(user?.id!==grant.owner_id)throw oauthError('invalid_token',401);
         if(!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type']||''))throw oauthError('invalid_request',415);
-        let body;try{body=await readJson(req,16384);}catch(error){throw oauthError('invalid_request',error.status===413?413:400);}
+        let body;try{body=await readJson(req,MAX_IMPORT_TOOL_REQUEST_BYTES);}catch(error){throw oauthError('invalid_request',error.status===413?413:400);}
         await handleReadMcp({req,res,body,url,user,token:source.token,scopes:grant.scopes,call,audit,oauth:{challenge:(error,scopes)=>authChallenge(config,error,scopes)}});return;
       }
     }catch(error){

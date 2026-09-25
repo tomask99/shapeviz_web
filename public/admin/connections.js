@@ -1,3 +1,4 @@
+import '../dialog-dismiss.js';
 const $=selector=>document.querySelector(selector);
 const request=new URLSearchParams(location.hash.slice(1)).get('request');
 // Keep the pending request in memory, out of history, storage and referrers.
@@ -61,4 +62,5 @@ $('#connection-revoke-confirm').addEventListener('click',async()=>{
   if(busy||!revoking)return;busy=true;const button=$('#connection-revoke-confirm');button.disabled=true;
   try{await api('oauth-disconnect',{id:revoking.id,confirm:true});$('#connection-revoke').close();revoking=null;await load();}catch(error){if([401,403].includes(error.status))failure(error);else $('#revoke-error').textContent=error.message;}finally{busy=false;button.disabled=false;}
 });
+$('#connection-revoke').addEventListener('cancel',event=>{if(busy)event.preventDefault();});
 load();

@@ -1,7 +1,7 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { handleCrm } from '../crm/handler.js';
 import {researchReadActions} from '../research/handler.js';
-import {handleReadTools,READ_TOOL_ACTIONS,MAX_TOOL_REQUEST_BYTES,ADMIN_READ_SCOPES} from '../tools/handler.js';
+import {handleReadTools,READ_TOOL_ACTIONS,MAX_TOOL_REQUEST_BYTES,MAX_IMPORT_TOOL_REQUEST_BYTES,ADMIN_READ_SCOPES} from '../tools/handler.js';
 import {handleReadMcp,MCP_ACTION,mcpHttpError} from '../tools/mcp.js';
 import {handleOAuthAdmin,OAUTH_ADMIN_ACTIONS} from '../oauth/admin.js';
 import {trackingCookie} from '../presentations/tracking-proof.js';
@@ -11,6 +11,7 @@ import { supportsClientNameApi, transformDeck } from './html.js';
 import { getPrivatePresentationSource, uploadStorageObject, slugPattern } from '../presentations/remote.js';
 import { renderPresentationTemplate } from '../presentations/page.js';
 import { removeProjectFiles, storageScopes, referencedMedia } from './storage.js';
+import {preparePresentation} from './prepare-presentation.js';
 
 const fail = (status, message) => Object.assign(new Error(message), {status});
 const fields = 'deck_slug,client,title,status,source_type,template_key,is_template,template_match,parent_slug,slide_count,analytics_enabled,updated_at';
@@ -103,7 +104,7 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
       // A JSON string is escaped inside the transport envelope; the research validator
       // independently enforces the 500,000-byte source limit after decoding.
       if(req.method==='POST'){
-        try{body=await readJson(req,READ_TOOL_ACTIONS.includes(action)||action===MCP_ACTION||OAUTH_ADMIN_ACTIONS.includes(action)?MAX_TOOL_REQUEST_BYTES:action.startsWith('crm-research-')?3_100_000:action.startsWith('crm-import-')?500_000:100_000);}
+        try{body=await readJson(req,action==='crm-tools-call'||action===MCP_ACTION?MAX_IMPORT_TOOL_REQUEST_BYTES:READ_TOOL_ACTIONS.includes(action)||OAUTH_ADMIN_ACTIONS.includes(action)?MAX_TOOL_REQUEST_BYTES:action.startsWith('crm-research-')?3_100_000:action.startsWith('crm-import-')?500_000:100_000);}
         catch(error){if(action===MCP_ACTION&&error instanceof SyntaxError)throw Object.assign(fail(400,'Invalid JSON.'),{rpcCode:-32700});
           if(OAUTH_ADMIN_ACTIONS.includes(action)&&error instanceof SyntaxError)throw fail(400,'Invalid JSON.');
           if(READ_TOOL_ACTIONS.includes(action)&&error instanceof SyntaxError)throw fail(400,'Tool request must be valid JSON.');throw error;}
@@ -143,6 +144,11 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
       if(action==='logout') {const logout=call('/auth/v1/logout',{method:'POST',token});if(env.MCP_OAUTH_ENABLED==='true')await logout;else await logout.catch(()=>{});cookies(res,null);reply(200,{ok:true});return;}
       if(action==='password') {if(typeof body.password!=='string'||body.password.length<12||body.password.length>128) throw fail(400,'Use a password with 12–128 characters.');await call('/auth/v1/user',{method:'PUT',token,body:{password:body.password}});reply(200,{ok:true});return;}
       if(action==='list') {const projects=await call(`/rest/v1/presentation_projects?select=${fields}&order=updated_at.desc&limit=1000`);reply(200,{projects});return;}
+      if(action==='prepare-presentation') {
+        try{reply(200,await preparePresentation({body,user,token,call,project,source,saveDeck}));}
+        catch(error){if(error.status===409)throw fail(409,'The company or presentation changed. Reopen Prepare presentation to load its current state.');throw error;}
+        return;
+      }
       if(action==='clone-presentation') {
         if(!/^[a-f0-9-]{36}$/i.test(body.companyId||''))throw fail(400,'Invalid company.');
         const slug=key(body.source),target=key(body.slug),companyId=body.companyId;

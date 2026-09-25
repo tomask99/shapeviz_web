@@ -128,7 +128,13 @@ test('Official MCP client reads with an opaque grant, advertises OAuth and canno
   const client=new Client({name:'oauth-fixture',version:'1'});client.onerror=()=>{};
   try{
     await client.connect(new StreamableHTTPClientTransport(new URL(resource),{requestInit:{headers:{Authorization:'bEaReR sv_mcp_'+'a'.repeat(43)}}}));
-    const tools=(await client.listTools()).tools;assert.deepEqual(tools.map(tool=>tool.name),['get_research_catalog']);assert.deepEqual(tools[0]._meta.securitySchemes,[{type:'oauth2',scopes:['catalog:read']}]);
+    const tools=(await client.listTools()).tools;assert.deepEqual(tools.map(tool=>tool.name),['get_research_catalog','validate_research_import']);assert.deepEqual(tools[0]._meta.securitySchemes,[{type:'oauth2',scopes:['catalog:read']}]);
+    const json=JSON.stringify({candidates:Array.from({length:10},()=>({company_name:'Validation fixture',short_description:'x'.repeat(3000)}))},null,2);
+    assert.ok(Buffer.byteLength(json)>16384);
+    const validation=await client.callTool({name:'validate_research_import',arguments:{json}});
+    assert.equal(validation.isError,false);assert.equal(validation.structuredContent.data.valid,true);assert.equal(validation.structuredContent.data.valid_count,10);
+    const invalid=await client.callTool({name:'validate_research_import',arguments:{json:'{"candidates":[{"company_name":"Fixture","fit":"HIGH"}]}'}});
+    assert.equal(invalid.structuredContent.data.valid,false);assert.equal(invalid.structuredContent.data.rows[0].errors[0].code,'fit_reason_required');
     assert.equal((await client.callTool({name:'get_research_catalog'})).isError,false);
     const denied=await client.callTool({name:'get_lead',arguments:{id:grantId}});assert.equal(denied.isError,true);assert.match(denied._meta['mcp/www_authenticate'][0],/insufficient_scope/);assert.match(denied._meta['mcp/www_authenticate'][0],/crm:read research:read/);
     state.role=null;await assert.rejects(client.ping(),error=>error.code===403);
