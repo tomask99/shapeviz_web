@@ -18,8 +18,8 @@ async function fixture(page,{listFailures=0,detailFailures=0,empty=false,record=
       const pageNumber=Number(url.searchParams.get('page')||1),isEmpty=empty||url.searchParams.get('q')==='no-match';
       if(items) {
         const industry=url.searchParams.get('industry');
-        const filtered=items.filter(item=>!industry||item.industry.toLowerCase()===industry.toLowerCase());
-        return route.fulfill({json:{items:filtered,total:filtered.length,page:pageNumber,pageSize:25}});
+        const filtered=items.filter(item=>(!industry||item.industry.toLowerCase()===industry.toLowerCase())&&(url.searchParams.get('hide_in_leads')!=='true'||!item.approved_company_id));
+        return route.fulfill({json:{items:filtered.slice((pageNumber-1)*25,pageNumber*25),total:filtered.length,page:pageNumber,pageSize:25}});
       }
       return route.fulfill({json:{items:isEmpty?[]:[{...summary,company_name:pageNumber===2?'Second page company':summary.company_name}],total:isEmpty?0:26,page:pageNumber,pageSize:25}});
     }
@@ -65,6 +65,58 @@ test('Research navigation, compact cards, evidence detail and list return work w
   await expect(page.locator('#nav-research')).not.toHaveClass('active');
   expect(calls.filter(call=>call.action.startsWith('crm-research')).every(call=>call.method==='GET')).toBe(true);
   expect(errors).toEqual([]);
+});
+
+test('The whole research card opens its detail, supports keyboard and native new-tab navigation',async({page})=>{
+  await fixture(page);await page.goto('/admin/ai-research?industry=Furniture');
+  const card=page.locator('.research-card');
+  await card.click({position:{x:15,y:120}});
+  await expect(page).toHaveURL('/admin/ai-research/'+id);
+  await expect(page.getByRole('heading',{name:'Example Furniture.'})).toBeVisible();
+  await page.getByRole('link',{name:'Research inbox'}).click();
+  await expect(page).toHaveURL('/admin/ai-research?industry=Furniture');
+  const popupPromise=page.context().waitForEvent('page');
+  await card.click({position:{x:15,y:120},button:'middle'});
+  const popup=await popupPromise;await expect(popup).toHaveURL('/admin/ai-research/'+id);await popup.close();
+  await expect(page).toHaveURL('/admin/ai-research?industry=Furniture');
+  await card.getByRole('link',{name:'Example Furniture',exact:true}).focus();
+  await page.keyboard.press('Enter');await expect(page).toHaveURL('/admin/ai-research/'+id);
+});
+
+test('Research cards share the image hover effect, respect reduced motion and retain the separate lead link',async({page})=>{
+  await fixture(page,{items:[{...summary,approved_company_id:id,research_status:'APPROVED'}]});
+  await page.goto('/admin/ai-research');const card=page.locator('.research-card');
+  await card.hover();
+  await expect.poll(()=>card.evaluate(element=>getComputedStyle(element).boxShadow)).toContain('70px');
+  await expect.poll(()=>card.evaluate(element=>new DOMMatrix(getComputedStyle(element).transform).m42)).toBe(-8);
+  await expect(card).toHaveCSS('background-color','rgb(216, 135, 57)');
+  await page.screenshot({path:'.cache/research-card-hover.png',fullPage:true});
+  await page.emulateMedia({reducedMotion:'reduce'});await card.hover();await expect(card).toHaveCSS('transform','none');
+  await card.getByRole('link',{name:'Open lead'}).click();await expect(page).toHaveURL('/admin/leads/'+id);
+});
+
+test('Hide companies in Leads filters immediately, resets pagination and persists with industries and history',async({page})=>{
+  const items=[{...summary,id:'approved',approved_company_id:id,research_status:'APPROVED'},
+    {...summary,id:'possible',company_name:'Possible duplicate',duplicate_company_id:id},
+    ...Array.from({length:25},(_,index)=>({...summary,id:'new-'+index,industry:'Shoes',company_name:'Shoes '+index}))];
+  const calls=await fixture(page,{items});await page.goto('/admin/ai-research');
+  const checkbox=page.getByRole('checkbox',{name:'Hide companies in Leads'});
+  await expect(checkbox).not.toBeChecked();await expect(page.locator('.research-card-in-leads')).toHaveCount(1);
+  await page.goto('/admin/ai-research?page=2');await checkbox.check();
+  await expect(page.locator('.research-count')).toHaveText('26 matching candidates');
+  await expect(page.locator('.research-card')).toHaveCount(25);
+  await expect(page.locator('.research-card-in-leads')).toHaveCount(0);
+  await expect(page.getByRole('link',{name:'Possible duplicate',exact:true})).toBeVisible();
+  expect(new URL(page.url()).searchParams.has('page')).toBe(false);
+  expect(calls.filter(call=>call.action==='crm-research-list').at(-1).params.hide_in_leads).toBe('true');
+  await page.getByRole('button',{name:'Shoes brands',exact:true}).click();
+  await expect(checkbox).toBeChecked();await expect(page.locator('.research-count')).toHaveText('25 matching candidates');
+  await page.reload();await expect(checkbox).toBeChecked();
+  await checkbox.uncheck();await expect(page).not.toHaveURL(/hide_in_leads/);
+  await page.goBack();await expect(checkbox).toBeChecked();
+  await page.getByRole('button',{name:'Clear filters',exact:true}).click();
+  await expect(checkbox).not.toBeChecked();await expect(page.locator('.research-card-in-leads')).toHaveCount(1);
+  await expect(page.locator('.research-count')).toHaveText('27 candidates');
 });
 
 test('Industry shortcuts filter brands, preserve other filters and restore history',async({page})=>{

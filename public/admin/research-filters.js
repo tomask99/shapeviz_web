@@ -10,6 +10,7 @@ export const RESEARCH_FILTER_CHOICES = Object.freeze({
   country_category:['SK','CZ','INT'], potential_service:RESEARCH_SERVICES,
   opportunity_signal:OPPORTUNITY_SIGNALS, source_origin:SOURCE_ORIGINS,
   duplicate_status:['unchecked','possible','clear'], last_researched:['never','last30','older30'],
+  hide_in_leads:['true','false'],
   sort:Object.keys(RESEARCH_SORTS),
 });
 const textLimits = {q:160,country:2,industry:120,business_type:120,product_category:120,market_segment:120};

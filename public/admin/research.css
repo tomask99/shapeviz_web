@@ -1,9 +1,17 @@
 .research-intro{color:var(--muted);font-size:16px;line-height:1.65;max-width:800px;margin:24px 0 32px;overflow-wrap:anywhere}
 .research-main-filters{display:grid;grid-template-columns:2fr 1fr 1fr 1.3fr;gap:16px;align-items:end}
 #research-filters input,#research-filters select{min-width:0;width:100%;margin-bottom:0}
+#research-filters .research-hide-leads{display:flex;align-items:center;gap:10px;width:fit-content;min-height:44px;cursor:pointer}
+#research-filters .research-hide-leads input{width:18px;height:18px;margin:0;flex-shrink:0;cursor:pointer}
 .research-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
 .research-card,.research-panel{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:26px;min-width:0;overflow-wrap:anywhere}
 .research-card{display:flex;flex-direction:column}.research-card h2{font-size:26px;margin:22px 0 12px;line-height:1.15}.research-card h2 a:hover{color:var(--accent)}
+.research-card{position:relative;cursor:pointer;box-shadow:0 22px 48px #0000002e;transform:translateY(0) rotate(0) scale(1);transform-origin:center;transition:transform 400ms ease-out,box-shadow 400ms ease-out}
+.research-card-link::after{content:"";position:absolute;inset:0;border-radius:inherit}
+.research-card :is(.research-open,.research-lead-link){position:relative;z-index:1}
+.research-card:has(a:focus-visible){outline:2px solid var(--accent);outline-offset:5px}
+@media(hover:hover) and (pointer:fine){.research-card:hover{transform:translateY(-8px) rotate(-2deg) scale(1.012);box-shadow:0 28px 70px #00000047;z-index:2}}
+@media(prefers-reduced-motion:reduce){.research-card,.research-card:hover{transform:none;transition:none;box-shadow:0 22px 48px #0000002e}}
 .research-card-in-leads{background:var(--accent);border-color:var(--accent);color:#0b0805}
 .research-card-in-leads :is(.fine,.research-location,.research-summary,.research-card-footer,.eyebrow,.research-open,.research-tag){color:#26190d}
 .research-card-in-leads :is(.research-tag,.research-card-footer){border-color:#26190d40}

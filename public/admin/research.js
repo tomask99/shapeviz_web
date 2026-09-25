@@ -53,7 +53,7 @@ function card(candidate) {
   const inLeads = Boolean(candidate.approved_company_id);
   return `<article class="research-card${inLeads ? ' research-card-in-leads' : ''}">
     <div class="research-card-top">${inLeads ? tag('In Leads',true) : tag(RESEARCH_STATUSES[candidate.research_status] || 'Unknown')}${fit(candidate.fit)}</div>
-    <h2><a data-research-link href="/admin/ai-research/${encodeURIComponent(candidate.id)}">${escape(candidate.company_name)}</a></h2>
+    <h2><a class="research-card-link" data-research-link href="/admin/ai-research/${encodeURIComponent(candidate.id)}">${escape(candidate.company_name)}</a></h2>
     <p class="research-location">${escape([candidate.country || 'Country unknown',candidate.industry,...array(candidate.product_categories).slice(0,2)].filter(Boolean).join(' · '))}</p>
     <p class="fine">${escape(candidate.normalized_domain || 'Website not recorded')}</p>
     <div class="research-tags">${candidate.business_type ? tag(candidate.business_type) : ''}${candidate.positioning_value ? tag(candidate.positioning_value)+' '+factStatus(candidate.positioning_status) : ''}</div>
@@ -111,6 +111,7 @@ export function createResearch({root,api,navigate}) {
     root.innerHTML = heading('AI Research',true)+'<p class="research-intro">Understand the company. See the opportunity.</p>'+`
       <form id="research-filters"><div class="research-main-filters"><label>Search research<input name="q" type="search" maxlength="160" placeholder="Company, domain, products, services…"></label>${select('research_status','Research status',RESEARCH_STATUSES)}${select('fit','Fit')}${select('sort','Sort',RESEARCH_SORTS)}</div>
       <fieldset class="research-industries"><legend>Browse by industry</legend><div class="research-industry-options">${Object.entries({'':'All industries',...INDUSTRY_SHORTCUTS}).map(([value,title]) => `<button type="button" class="secondary research-industry" data-research-industry="${escape(value)}" aria-pressed="false">${escape(title)}</button>`).join('')}</div></fieldset>
+      <label class="research-hide-leads"><input type="checkbox" name="hide_in_leads" value="true">Hide companies in Leads</label>
       <details class="crm-filters"><summary>More filters</summary><div class="crm-filter-grid">
         <label>Country code<input name="country" maxlength="2" placeholder="e.g. CZ"></label>${select('country_category','Country group',{INT:'International'})}
         ${input('industry','Industry',INDUSTRIES)}${input('business_type','Business type',BUSINESS_TYPES)}${input('product_category','Product category',PRODUCT_CATEGORIES)}${input('market_segment','Market segment',MARKET_SEGMENTS)}
@@ -119,9 +120,13 @@ export function createResearch({root,api,navigate}) {
       </div></details><div class="actions"><button type="submit" class="secondary">Apply filters</button><button type="button" class="quiet" data-research-clear>Clear filters</button></div></form>
       <div id="research-results" aria-live="polite"><p class="fine">Loading research candidates…</p></div>`;
     const form = root.querySelector('#research-filters'), params = new URLSearchParams(location.search);
-    for (const element of form.elements) if (element.name && params.has(element.name)) element.value = params.get(element.name);
+    for (const element of form.elements) if (element.name && params.has(element.name)) {
+      if (element.type === 'checkbox') element.checked = params.get(element.name) === 'true';
+      else element.value = params.get(element.name);
+    }
     for (const button of form.querySelectorAll('[data-research-industry]')) button.setAttribute('aria-pressed',String(button.dataset.researchIndustry.toLowerCase() === (params.get('industry') || '').toLowerCase()));
-    if ([...params.keys()].some(key => !['q','research_status','fit','sort','page'].includes(key))) form.querySelector('details').open = true;
+    if ([...params.keys()].some(key => !['q','research_status','fit','sort','page','hide_in_leads'].includes(key))) form.querySelector('details').open = true;
+    form.elements.hide_in_leads.onchange = () => form.requestSubmit();
     form.onsubmit = event => {
       event.preventDefault();
       try {

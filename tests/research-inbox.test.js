@@ -13,16 +13,18 @@ const url = query => new URL('https://example.test/?'+query);
 
 test('Research filters preserve custom taxonomy and validate enums, bounds and ownership injection',() => {
   assert.deepEqual(researchFilters({q:' sofas ',country:'cz',industry:'Custom category',fit:'HIGH',sort:'signals'}),{q:'sofas',country:'CZ',industry:'Custom category',fit:'HIGH',sort:'signals'});
+  for (const value of ['true','false']) assert.deepEqual(researchFilters({hide_in_leads:value}),{hide_in_leads:value});
+  for (const value of [true,false,'yes','1']) assert.throws(()=>researchFilters({hide_in_leads:value}));
   for (const input of [[],null,{owner_id:owner},{q:[]},{q:'x'.repeat(161)},{country:'USA'},{fit:'87'},{sort:'sql'},{potential_service:'Invented'},{duplicate_status:'none'}]) assert.throws(()=>researchFilters(input));
 });
 
 test('Research list delegates bounded filters to an invoker RPC using the user JWT',async() => {
   const calls = [], result = {items:[],total:0,page:2,pageSize:25};
-  const response = await handleCrm({...context,action:'crm-research-list',url:url('action=crm-research-list&q=%25_%27&country=cz&fit=HIGH&sort=fit&page=2'),call:async(path,options)=>{calls.push({path,options});return result;}});
+  const response = await handleCrm({...context,action:'crm-research-list',url:url('action=crm-research-list&q=%25_%27&country=cz&fit=HIGH&sort=fit&hide_in_leads=true&page=2'),call:async(path,options)=>{calls.push({path,options});return result;}});
   assert.equal(response,result);
   assert.equal(calls[0].path,'/rest/v1/rpc/crm_research_list');
   assert.equal(calls[0].options.token,'user-jwt');
-  assert.deepEqual(calls[0].options.body,{p_filters:{q:"%_'",country:'CZ',fit:'HIGH',sort:'fit'},p_page:2});
+  assert.deepEqual(calls[0].options.body,{p_filters:{q:"%_'",country:'CZ',fit:'HIGH',sort:'fit',hide_in_leads:'true'},p_page:2});
   for (const query of ['page=0','page=-1','page=1.5','page=10001','page=1e3','page=','page=1&page=2','q=a&q=b','owner_id=spoof','research_status=BOGUS']) {
     await assert.rejects(()=>handleCrm({...context,action:'crm-research-list',url:url(query),call:async()=>assert.fail('Invalid query reached database')}),{status:400});
   }
