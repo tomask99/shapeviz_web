@@ -4,6 +4,20 @@
 .research-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
 .research-card,.research-panel{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:26px;min-width:0;overflow-wrap:anywhere}
 .research-card{display:flex;flex-direction:column}.research-card h2{font-size:26px;margin:22px 0 12px;line-height:1.15}.research-card h2 a:hover{color:var(--accent)}
+.research-card-in-leads{background:var(--accent);border-color:var(--accent);color:#0b0805}
+.research-card-in-leads :is(.fine,.research-location,.research-summary,.research-card-footer,.eyebrow,.research-open,.research-tag){color:#26190d}
+.research-card-in-leads :is(.research-tag,.research-card-footer){border-color:#26190d40}
+.research-card-in-leads .research-tag-accent{background:#26190d12}
+.research-card-in-leads .research-card-top>.research-tag-accent:first-child{background:#26190d;color:#f1ede6;border-color:#26190d}
+.research-card-in-leads h2 a:hover{color:#26190d;text-decoration:underline}
+.research-lead-link{display:flex;justify-content:space-between;gap:20px;color:#0b0805;font-size:12px;font-weight:700;padding:10px 0}
+.research-card-in-leads :is(.research-open,.research-lead-link):hover{text-decoration:underline}
+.research-card-in-leads a:focus-visible{outline:2px solid #26190d;outline-offset:4px}
+.research-industries{border:0;padding:0;margin:24px 0;min-width:0}
+.research-industries legend{padding:0;margin-bottom:12px;font-size:12px;color:var(--muted)}
+.research-industry-options{display:flex;flex-wrap:wrap;gap:8px}
+.research-industry.secondary{padding:10px 15px;font-size:12px;line-height:1.5;white-space:normal}
+.research-industry[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#0b0805}
 .research-card-top,.research-tags,.research-detail-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.research-card-top{justify-content:space-between}
 .research-tag{display:inline-block;border:1px solid #f1ede626;border-radius:30px;padding:5px 10px;color:#c7b8a7;font-size:11px;line-height:1.4;max-width:100%;overflow-wrap:anywhere}
 .research-tag-accent{color:#efaa71;border-color:#d8873966;background:#d887390c}

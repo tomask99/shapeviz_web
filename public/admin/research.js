@@ -1,4 +1,4 @@
-import {RESEARCH_STATUSES,FACT_STATUSES,INDUSTRIES,BUSINESS_TYPES,PRODUCT_CATEGORIES,MARKET_SEGMENTS} from './research-options.js';
+import {RESEARCH_STATUSES,FACT_STATUSES,INDUSTRIES,INDUSTRY_SHORTCUTS,BUSINESS_TYPES,PRODUCT_CATEGORIES,MARKET_SEGMENTS} from './research-options.js';
 import {RESEARCH_FILTER_CHOICES,RESEARCH_SORTS,researchFilters} from './research-filters.js';
 import {createResearchTools} from './research-import.js';
 import {createResearchReview,researchReviewActions,researchHistory} from './research-review.js';
@@ -50,8 +50,9 @@ function duplicateMarkup(candidate) {
 
 function card(candidate) {
   const duplicate = candidate.duplicate_company_id || candidate.duplicate_candidate_id || candidate.research_status === 'DUPLICATE';
-  return `<article class="research-card">
-    <div class="research-card-top">${tag(RESEARCH_STATUSES[candidate.research_status] || 'Unknown')}${fit(candidate.fit)}</div>
+  const inLeads = Boolean(candidate.approved_company_id);
+  return `<article class="research-card${inLeads ? ' research-card-in-leads' : ''}">
+    <div class="research-card-top">${inLeads ? tag('In Leads',true) : tag(RESEARCH_STATUSES[candidate.research_status] || 'Unknown')}${fit(candidate.fit)}</div>
     <h2><a data-research-link href="/admin/ai-research/${encodeURIComponent(candidate.id)}">${escape(candidate.company_name)}</a></h2>
     <p class="research-location">${escape([candidate.country || 'Country unknown',candidate.industry,...array(candidate.product_categories).slice(0,2)].filter(Boolean).join(' · '))}</p>
     <p class="fine">${escape(candidate.normalized_domain || 'Website not recorded')}</p>
@@ -61,6 +62,7 @@ function card(candidate) {
     <p class="research-summary">${escape(candidate.summary || 'No research summary recorded.')}</p>
     <div class="research-card-footer"><span>${escape(candidate.research_confidence ? label(candidate.research_confidence)+' confidence' : 'Confidence unknown')} · ${Number(candidate.source_count)||0} sources</span><span>${duplicate ? 'Possible duplicate' : candidate.duplicate_checked_at ? 'Duplicate check recorded' : 'Duplicates not checked'}</span></div>
     <a class="research-open" data-research-link href="/admin/ai-research/${encodeURIComponent(candidate.id)}">View research <span aria-hidden="true">↗</span></a>
+    ${inLeads ? `<a class="research-lead-link" href="/admin/leads/${encodeURIComponent(candidate.approved_company_id)}">Open lead <span aria-hidden="true">↗</span></a>` : ''}
   </article>`;
 }
 
@@ -108,6 +110,7 @@ export function createResearch({root,api,navigate}) {
   function listShell() {
     root.innerHTML = heading('AI Research',true)+'<p class="research-intro">Understand the company. See the opportunity.</p>'+`
       <form id="research-filters"><div class="research-main-filters"><label>Search research<input name="q" type="search" maxlength="160" placeholder="Company, domain, products, services…"></label>${select('research_status','Research status',RESEARCH_STATUSES)}${select('fit','Fit')}${select('sort','Sort',RESEARCH_SORTS)}</div>
+      <fieldset class="research-industries"><legend>Browse by industry</legend><div class="research-industry-options">${Object.entries({'':'All industries',...INDUSTRY_SHORTCUTS}).map(([value,title]) => `<button type="button" class="secondary research-industry" data-research-industry="${escape(value)}" aria-pressed="false">${escape(title)}</button>`).join('')}</div></fieldset>
       <details class="crm-filters"><summary>More filters</summary><div class="crm-filter-grid">
         <label>Country code<input name="country" maxlength="2" placeholder="e.g. CZ"></label>${select('country_category','Country group',{INT:'International'})}
         ${input('industry','Industry',INDUSTRIES)}${input('business_type','Business type',BUSINESS_TYPES)}${input('product_category','Product category',PRODUCT_CATEGORIES)}${input('market_segment','Market segment',MARKET_SEGMENTS)}
@@ -117,6 +120,7 @@ export function createResearch({root,api,navigate}) {
       <div id="research-results" aria-live="polite"><p class="fine">Loading research candidates…</p></div>`;
     const form = root.querySelector('#research-filters'), params = new URLSearchParams(location.search);
     for (const element of form.elements) if (element.name && params.has(element.name)) element.value = params.get(element.name);
+    for (const button of form.querySelectorAll('[data-research-industry]')) button.setAttribute('aria-pressed',String(button.dataset.researchIndustry.toLowerCase() === (params.get('industry') || '').toLowerCase()));
     if ([...params.keys()].some(key => !['q','research_status','fit','sort','page'].includes(key))) form.querySelector('details').open = true;
     form.onsubmit = event => {
       event.preventDefault();
@@ -181,6 +185,11 @@ export function createResearch({root,api,navigate}) {
       if (target.hasAttribute('data-research-contacts')) contacts.open(currentCandidate);
     }
     if (target.hasAttribute('data-research-clear')) navigate('/admin/ai-research');
+    if (target.hasAttribute('data-research-industry')) {
+      const form = root.querySelector('#research-filters');
+      form.elements.industry.value = target.dataset.researchIndustry;
+      form.requestSubmit();
+    }
     if (target.dataset.researchPage) {
       const params = new URLSearchParams(location.search); params.set('page',target.dataset.researchPage);
       navigate('/admin/ai-research?'+params);

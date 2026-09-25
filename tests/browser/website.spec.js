@@ -75,7 +75,7 @@ test('separate website dashboard has period controls, accessible graph and safe 
  });
  await page.goto('/adminlogin');
  await expect(page.locator('#website-metrics')).toContainText('Website visits3');
- await expect(page.locator('#metrics')).toContainText('Visits99');
+ await expect(page.locator('#metrics')).toBeHidden();
  await expect(page.locator('#website-sources img')).toHaveCount(0);
  await page.locator('#website-days').selectOption('7');
  await expect(page.locator('#website-chart button')).toHaveCount(7);

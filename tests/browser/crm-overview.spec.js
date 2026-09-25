@@ -15,9 +15,9 @@ async function fixture(page,{fail=false,value={currency:'EUR',one_time:{amount:'
   return route.fulfill({json:data});
  });return calls;
 }
-test('business overview preserves analytics, links to filtered pipeline, hides on template/CRM views',async({page})=>{
+test('business overview excludes presentation analytics, links to filtered pipeline, hides on template/CRM views',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));const calls=await fixture(page);await page.goto('/admin');const root=page.locator('#business-overview');
- await expect(root).toContainText('Your business, at a glance.');await expect(root.locator('.business-cards').first()).toContainText('10');await expect(root).toContainText('not a historical conversion funnel');await expect(root.getByRole('link',{name:'Nario <client>'})).toHaveAttribute('href','/admin/leads/22222222-2222-4222-8222-222222222222');await expect(page.locator('#metrics')).toContainText('9');await expect(page.locator('#visits-chart')).toBeVisible();
+ await expect(root).toContainText('Your business, at a glance.');await expect(root.locator('.business-cards').first()).toContainText('10');await expect(root).toContainText('not a historical conversion funnel');await expect(root.getByRole('link',{name:'Nario <client>'})).toHaveAttribute('href','/admin/leads/22222222-2222-4222-8222-222222222222');await expect(page.locator('#metrics')).toBeHidden();await expect(page.locator('#visits-chart')).toBeHidden();
  await expect(root.locator('[data-value-kind=one_time]')).toContainText('12,500.25');await expect(root.locator('[data-value-kind=monthly]')).toContainText('4,500.00 / month');await expect(root.locator('.business-value')).toContainText('1 without an amount; 1 with an amount');
  await root.screenshot({path:'.cache/crm-overview-desktop.png'});await page.setViewportSize({width:390,height:844});await root.screenshot({path:'.cache/crm-overview-mobile.png'});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
  await page.locator('[data-view=templates]').click();await expect(root).toBeHidden();await page.locator('[data-view=all]').click();await expect(root).toBeVisible();
@@ -31,11 +31,11 @@ test('pipeline value zero, absent estimates, refresh and invalid payload retain 
  await expect(root.locator('[data-value-kind=one_time]')).toContainText('€0.00');await expect(root.locator('[data-value-kind=monthly]')).toContainText('Not estimated');
  value.one_time.amount='99999999999999.99';await root.getByRole('button',{name:'Refresh sales'}).click();await expect(root.locator('[data-value-kind=one_time]')).toContainText('99,999,999,999,999.99');
  await page.setViewportSize({width:320,height:844});await root.locator('.business-value').screenshot({path:'.cache/crm-pipeline-value-mobile.png'});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
- value.one_time.amount='<img src=x onerror=alert(1)>';await root.getByRole('button',{name:'Refresh sales'}).click();await expect(root.locator('.business-value')).toContainText('Value summary unavailable');await expect(root.locator('[data-value-kind]')).toHaveCount(0);await expect(root.getByRole('heading',{name:'Follow-ups',exact:true})).toBeVisible();await expect(page.locator('#metrics')).toContainText('9');
+ value.one_time.amount='<img src=x onerror=alert(1)>';await root.getByRole('button',{name:'Refresh sales'}).click();await expect(root.locator('.business-value')).toContainText('Value summary unavailable');await expect(root.locator('[data-value-kind]')).toHaveCount(0);await expect(root.getByRole('heading',{name:'Follow-ups',exact:true})).toBeVisible();await expect(page.locator('#metrics')).toBeHidden();
  expect(calls.filter(c=>c.action==='crm-overview')).toHaveLength(3);expect(calls.some(c=>c.action==='crm-detail')).toBe(false);
 });
-test('CRM failure does not hide presentation analytics, retry recovers and logout clears sales',async({page})=>{
- await fixture(page,{fail:true});await page.goto('/admin');const root=page.locator('#business-overview');await expect(root.getByRole('alert')).toContainText('CRM unavailable');await expect(page.locator('#metrics')).toContainText('9');await expect(root.locator('.business-cards')).toHaveCount(0);
+test('CRM failure keeps presentation analytics hidden, retry recovers and logout clears sales',async({page})=>{
+ await fixture(page,{fail:true});await page.goto('/admin');const root=page.locator('#business-overview');await expect(root.getByRole('alert')).toContainText('CRM unavailable');await expect(page.locator('#metrics')).toBeHidden();await expect(root.locator('.business-cards')).toHaveCount(0);
  await root.getByRole('button',{name:'Retry sales overview'}).click();await expect(root).toContainText('Your business, at a glance.');await page.locator('#logout').click();await expect(page.locator('#login')).toBeVisible();await expect(root).toBeEmpty();
 });
 test('overview refreshes local day boundaries after midnight',async({page})=>{

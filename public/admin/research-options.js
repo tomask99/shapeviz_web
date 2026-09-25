@@ -13,6 +13,12 @@ export const SOURCE_TYPES = Object.freeze([
   'Download Page','Instagram','LinkedIn','Press Article','Other Public Source',
 ]);
 export const INDUSTRIES = Object.freeze([...CRM_INDUSTRIES,'Home Accessories','Kitchens','Bathrooms','Materials / Surfaces','Technology']);
+export const INDUSTRY_SHORTCUTS = Object.freeze({
+  Furniture:'Furniture brands', Shoes:'Shoes brands', Eyewear:'Eyewear brands',
+  Lighting:'Lighting brands', Fashion:'Fashion brands', Jewelry:'Jewelry brands',
+  'Beauty / Cosmetics':'Beauty brands', 'Consumer Electronics':'Electronics brands',
+  'Sports / Outdoor':'Sports / Outdoor brands',
+});
 export const BUSINESS_TYPES = Object.freeze([
   'Manufacturer','Brand','Retailer','Distributor','Architecture Studio','Interior Design Studio',
   'Developer','Agency','Ecommerce','Showroom','Hospitality Company','Product Design Studio','Other',
@@ -21,7 +27,9 @@ export const PRODUCT_CATEGORIES = Object.freeze([
   'Sofas','Armchairs','Chairs','Tables','Beds','Storage','Outdoor Furniture','Office Furniture',
   'Kitchens','Custom Furniture','Pendant Lamps','Floor Lamps','Table Lamps','Architectural Lighting',
   'Decorative Lighting','Outdoor Lighting','Rugs','Textiles','Accessories','Surfaces','Flooring',
-  'Sanitary Products','Bathrooms',
+  'Sanitary Products','Bathrooms','Sneakers','Boots','Sandals','Formal Shoes','Sports Shoes',
+  'Prescription Glasses','Sunglasses','Optical Frames','Clothing','Bags','Watches','Jewelry',
+  'Skincare','Makeup','Fragrances','Consumer Electronics','Sports Equipment','Outdoor Gear',
 ]);
 export const MARKET_SEGMENTS = Object.freeze([
   'B2C','B2B','Architects','Interior Designers','Developers','Hospitality','Retail','Ecommerce',
@@ -54,6 +62,18 @@ export const IDEAL_CLIENT_PROFILES = Object.freeze([
     industries:['Lighting'], business_types:['Manufacturer','Brand'],
     signals:['DESIGN_FOCUSED','MULTIPLE_FINISHES','ARCHITECT_AUDIENCE','INTERNATIONAL_MARKET','LARGE_PRODUCT_CATALOG'],
     services:['Product CGI','Lifestyle CGI','3D Models for Architects','Product Animation','Social Content'],
+  },
+  {
+    id:'shoes-brand', name:'Shoes Brand',
+    industries:['Shoes'], business_types:['Manufacturer','Brand','Retailer','Ecommerce'],
+    signals:['ECOMMERCE','FREQUENT_COLLECTIONS','LARGE_PRODUCT_CATALOG','ACTIVE_SOCIAL_MEDIA','PREMIUM_BRAND'],
+    services:['Product CGI','Lifestyle CGI','Product Animation','Social Content','Art Direction'],
+  },
+  {
+    id:'eyewear-brand', name:'Eyewear Brand',
+    industries:['Eyewear'], business_types:['Manufacturer','Brand','Retailer','Ecommerce'],
+    signals:['DESIGN_FOCUSED','MULTIPLE_FINISHES','ECOMMERCE','PREMIUM_BRAND','NEW_COLLECTION'],
+    services:['Product CGI','Lifestyle CGI','Product Animation','Social Content','Art Direction'],
   },
   {
     id:'architecture-interior-studio', name:'Architecture / Interior Studio',

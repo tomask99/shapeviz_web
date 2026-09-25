@@ -183,7 +183,7 @@ test('Research prompt is current owner-scoped, canonical and explicitly evidence
   assert.deepEqual(h.calls[0].options.body,{});
   assert.equal(result.excluded_count,4);
   assert.equal(result.profile,'lighting-brand');
-  assert.equal(result.profiles.length,3);
+  assert.equal(result.profiles.length,5);
   assert.ok(result.prompt.includes('Lighting Brand'));
   assert.ok(!result.prompt.includes('Furniture Manufacturer'));
   for (const domain of ['rejected.example','client.example','lead.example','research.example']) assert.ok(result.prompt.includes(domain));
@@ -196,6 +196,16 @@ test('Research prompt is current owner-scoped, canonical and explicitly evidence
   assert.equal(all.profile,null);
   assert.ok(all.prompt.includes('Furniture Manufacturer'));
   assert.equal(h.calls.length,2);
+});
+
+test('Shoes and eyewear research profiles use the same industries as inbox filters',async () => {
+  const h = harness();
+  for (const [profile,industry] of [['shoes-brand','Shoes'],['eyewear-brand','Eyewear']]) {
+    const result = await h.run('crm-research-prompt',undefined,{url:new URL('https://shapeviz.example/api/admin?action=crm-research-prompt&profile='+profile)});
+    const selected = JSON.parse(result.prompt.split('SELECTED IDEAL CLIENT PROFILES (guidance, not verified company facts):\n\n')[1].split('\n\nCANONICAL CATALOGS:')[0]);
+    assert.deepEqual(selected.map(item=>item.industries),[[industry]]);
+    assert.equal(result.profile,profile);
+  }
 });
 
 test('Prompt rejects incomplete exclusion lists and unknown or repeated options instead of silently truncating',async () => {

@@ -6,7 +6,7 @@ const example=JSON.parse(await readFile(new URL('../../docs/examples/research-ca
 const candidate={...example,id,company_name:'Example Furniture',normalized_domain:'furniture.example',research_status:'NEEDS_REVIEW',source_origin:'CHATGPT',source_count:2,signal_count:1,created_at:'2026-09-23T08:00:00Z',updated_at:'2026-09-23T08:00:00Z',last_researched_at:'2026-09-23T08:00:00Z',duplicate_checked_at:null,duplicate_company_id:null};
 const summary={id,company_name:candidate.company_name,country:'CZ',industry:'Furniture',business_type:'Manufacturer',product_categories:['Sofas','Armchairs'],positioning_value:'Premium',positioning_status:'INFERRED',normalized_domain:'furniture.example',fit:'HIGH',research_confidence:'MEDIUM',research_status:'NEEDS_REVIEW',source_count:2,best_services:['Product CGI','3D Models for Architects'],top_signals:['MULTIPLE_FABRICS'],summary:'Upholstered furniture for homes and design professionals.'};
 
-async function fixture(page,{listFailures=0,detailFailures=0,empty=false,record=candidate,listDelay=0}={}) {
+async function fixture(page,{listFailures=0,detailFailures=0,empty=false,record=candidate,listDelay=0,items=null}={}) {
   const calls=[];
   await page.route('**/api/admin?*',async route=>{
     const request=route.request(),url=new URL(request.url()),action=url.searchParams.get('action');
@@ -16,6 +16,11 @@ async function fixture(page,{listFailures=0,detailFailures=0,empty=false,record=
       if(listDelay)await new Promise(resolve=>setTimeout(resolve,listDelay));
       if(listFailures-->0)return route.fulfill({status:502,json:{error:'Research temporarily unavailable.'}});
       const pageNumber=Number(url.searchParams.get('page')||1),isEmpty=empty||url.searchParams.get('q')==='no-match';
+      if(items) {
+        const industry=url.searchParams.get('industry');
+        const filtered=items.filter(item=>!industry||item.industry.toLowerCase()===industry.toLowerCase());
+        return route.fulfill({json:{items:filtered,total:filtered.length,page:pageNumber,pageSize:25}});
+      }
       return route.fulfill({json:{items:isEmpty?[]:[{...summary,company_name:pageNumber===2?'Second page company':summary.company_name}],total:isEmpty?0:26,page:pageNumber,pageSize:25}});
     }
     if(action==='crm-research-detail') {
@@ -59,6 +64,51 @@ test('Research navigation, compact cards, evidence detail and list return work w
   await expect(page.getByRole('heading',{name:'Leads.'})).toBeVisible();
   await expect(page.locator('#nav-research')).not.toHaveClass('active');
   expect(calls.filter(call=>call.action.startsWith('crm-research')).every(call=>call.method==='GET')).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('Industry shortcuts filter brands, preserve other filters and restore history',async({page})=>{
+  const items=['Furniture','Shoes','Eyewear'].map((industry,index)=>({...summary,id:String(index),company_name:industry+' Example',industry}));
+  const calls=await fixture(page,{items});
+  await page.goto('/admin/ai-research?fit=HIGH&page=2');
+  await page.getByRole('button',{name:'Shoes brands',exact:true}).click();
+  await expect(page.locator('.research-card')).toHaveCount(1);
+  await expect(page.locator('.research-card')).toContainText('Shoes Example');
+  expect(calls.filter(call=>call.action==='crm-research-list').at(-1).params).toMatchObject({industry:'Shoes',fit:'HIGH'});
+  expect(new URL(page.url()).searchParams.has('page')).toBe(false);
+  await expect(page.getByRole('button',{name:'Shoes brands',exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.reload();
+  await expect(page.getByRole('button',{name:'Shoes brands',exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.getByRole('button',{name:'Eyewear brands',exact:true}).click();
+  await expect(page.locator('.research-card')).toContainText('Eyewear Example');
+  await page.goBack();
+  await expect(page.locator('.research-card')).toContainText('Shoes Example');
+  await page.getByRole('button',{name:'All industries',exact:true}).click();
+  await expect(page.locator('.research-card')).toHaveCount(3);
+  await expect(page.getByRole('combobox',{name:'Fit',exact:true})).toHaveValue('HIGH');
+  await page.getByRole('button',{name:'Clear filters',exact:true}).click();
+  await expect(page).toHaveURL(/\/admin\/ai-research$/);
+});
+
+test('Only companies moved to Leads have an orange card and a lead link on desktop and mobile',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await fixture(page,{items:[
+    {...summary,company_name:'BRIK a.s.',research_status:'APPROVED',approved_company_id:id},
+    {...summary,company_name:'Shoes Example',industry:'Shoes'},
+    {...summary,company_name:'Possible match',industry:'Eyewear',duplicate_company_id:id},
+  ]});
+  await page.setViewportSize({width:1600,height:1100});
+  await page.goto('/admin/ai-research');
+  const lead=page.locator('.research-card-in-leads');
+  await expect(lead).toHaveCount(1);
+  await expect(lead).toContainText('BRIK a.s.');
+  await expect(lead).toContainText('In Leads');
+  await expect(lead.getByRole('link',{name:'Open lead'})).toHaveAttribute('href','/admin/leads/'+id);
+  await expect(lead).toHaveCSS('background-color','rgb(216, 135, 57)');
+  await page.screenshot({path:'.cache/research-industries-desktop.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+  await page.screenshot({path:'.cache/research-industries-mobile.png',fullPage:true});
   expect(errors).toEqual([]);
 });
 

@@ -9,7 +9,7 @@ test('reset beside Edit affects only the confirmed presentation',async({page})=>
   if(action==='reset-statistics'){resets.push(route.request().postDataJSON());data={ok:true};}
   return route.fulfill({json:data});
  });
- await page.goto('/adminlogin');
+ await page.goto('/admin?view=presentations');
  const button=page.locator('[data-reset-stats=first]');
  await expect(page.locator('[data-edit=first] + [data-reset-stats=first]')).toBeVisible();
  page.once('dialog',d=>d.dismiss());await button.click();expect(resets).toEqual([]);

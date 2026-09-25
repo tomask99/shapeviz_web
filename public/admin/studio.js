@@ -11,7 +11,8 @@ import {createBusinessOverview} from './crm-overview.js';
 const arrowIcon='<svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" focusable="false" style="vertical-align:-.125em"><path d="M5 19 19 5M5 5h14v14"/></svg>';
 const $=s=>document.querySelector(s);
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let projects=[],statistics={},view='all',selected=null,noticeTimer;
+let projects=[],statistics={},view='all',selected=null,noticeTimer,refreshVersion=0;
+const locationView=()=>{const params=new URLSearchParams(location.search);return params.has('deck')?'presentations':['templates','presentations'].includes(params.get('view'))?params.get('view'):'all';};
 const duration=n=>{n=Number(n)||0;return n>=3600?`${Math.floor(n/3600)}h ${Math.floor(n%3600/60)}m`:n>=60?`${Math.floor(n/60)}m ${n%60}s`:`${n}s`;};
 const notify=message=>{clearTimeout(noticeTimer);$('#notice').textContent=message;$('#notice').classList.add('visible');noticeTimer=setTimeout(()=>$('#notice').classList.remove('visible'),9000);};
 const api=createCrmReadCache(requestApi);
@@ -56,7 +57,14 @@ function renderProjects() {
  }).join('') : `<div class="empty">${view==='templates'?'No templates saved yet. Upload a template to reuse it for different companies.':'No presentations here yet. Create one from a template or upload a finished HTML presentation.'}</div>`;
 }
 async function copyPresentationLink(slug){const url=new URL(`/p/${slug}`,location.origin).href;try{await navigator.clipboard.writeText(url);notify('Link copied.');}catch{notify(`Could not copy automatically. Copy this link: ${url}`);}}
-async function refresh(){const website=refreshWebsiteStats(api);const list=await api('list');projects=list.projects;renderProjects();try{const stats=await api('stats',null,{days:$('#days').value});statistics=stats;$('#metrics').innerHTML=metricMarkup(stats.summary);drawChart();renderProjects();}catch(error){$('#metrics').textContent='Statistics are temporarily unavailable.';$('#chart-readout').textContent=error.message;}await website;}
+async function refresh(){
+ const version=++refreshVersion,current=()=>version===refreshVersion&&!crm.isActive()&&!$('#studio').hidden;
+ if(view==='all'){await refreshWebsiteStats(api);return;}
+ const list=await api('list');if(!current())return;projects=list.projects;renderProjects();
+ if(view==='templates')return;
+ try{const stats=await api('stats',null,{days:$('#days').value});if(!current())return;statistics=stats;$('#metrics').innerHTML=metricMarkup(stats.summary);drawChart();renderProjects();}
+ catch(error){if(current()){$('#metrics').textContent='Statistics are temporarily unavailable.';$('#chart-readout').textContent=error.message;}}
+}
 $('#website-days').onchange=()=>refreshWebsiteStats(api);
 const crm=createCrm({api,notify});
 installQuickNotes({api,notify});
@@ -65,7 +73,7 @@ const business=createBusinessOverview({api,notify});
 const isCrmPath=()=>/^\/admin\/(?:leads(?:\/[^/]+)?|ai-research(?:\/[^/]+)?|pipeline|follow-ups|clients|reports)\/?$/.test(location.pathname);
 const clientNav=document.createElement('a');clientNav.href='/admin/clients';clientNav.textContent='Clients';$('#nav-research').after(clientNav);clientNav.onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/clients');};
 const reportsNav=document.createElement('a');reportsNav.href='/admin/reports';reportsNav.textContent='Reports';clientNav.after(reportsNav);reportsNav.onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/reports');};
-async function enter(email){$('#login').hidden=true;$('#studio').hidden=false;$('#account').textContent=email;$('#today').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});if(isCrmPath())crm.show();else{setView(new URLSearchParams(location.search).get('view')==='templates'?'templates':'all',false);await refresh();const deck=new URLSearchParams(location.search).get('deck');if(deck){if(projects.some(p=>p.deck_slug===deck))showDetail(deck);else notify('Presentation is not in the current library. Refresh or search the library.');}}}
+async function enter(email){$('#login').hidden=true;$('#studio').hidden=false;$('#account').textContent=email;$('#today').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});if(isCrmPath())crm.show();else{await setView(locationView(),false);const deck=new URLSearchParams(location.search).get('deck');if(deck){if(projects.some(p=>p.deck_slug===deck))showDetail(deck);else notify('Presentation is not in the current library. Refresh or search the library.');}}}
 $('#nav-leads').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/leads');};
 $('#nav-followups').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/follow-ups');};
 $('#nav-pipeline').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/pipeline');};
@@ -77,7 +85,7 @@ for(const [id,action] of [['nav-leads','crm-list'],['nav-pipeline','crm-pipeline
 }
 document.addEventListener('visibilitychange',()=>{if(document.hidden)api.invalidate();});
 window.addEventListener('focus',()=>api.invalidate());
-window.addEventListener('popstate',()=>{if($('#studio').hidden)return;if(isCrmPath())crm.show();else setView(new URLSearchParams(location.search).get('view')==='templates'?'templates':'all',false);});
+window.addEventListener('popstate',()=>{if($('#studio').hidden)return;if(isCrmPath())crm.show();else setView(locationView(),false);});
 $('#signin').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=await api('login',formData(e.target));e.target.reset();await enter(data.email);});};
 $('#set-password').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=formData(e.target);if(data.password!==data.confirm)throw new Error('Passwords do not match.');await api('password',{password:data.password});e.target.reset();const user=await api('me');await enter(user.email);notify('Password saved.');});};
 $('#logout').onclick=async()=>{try{await api('logout',{});showLogin();}catch(e){notify(e.message);}};
@@ -94,21 +102,27 @@ function openUpload(kind='presentation') {
  $('#publish-label').hidden=template;$('#upload-progress').textContent='';$('#upload-dialog').showModal();
 }
 function setView(next,push=true) {
- const wasCrm=crm.isActive();crm.hide();
- if(push){const path=next==='templates'?'/admin?view=templates':'/admin';if(location.pathname+location.search!==path)history.pushState(null,'',path);}
- if(wasCrm)refresh().catch(error=>notify(error.message));
+ crm.hide();
+ if(push){const path=next==='all'?'/admin':'/admin?view='+next;if(location.pathname+location.search!==path)history.pushState(null,'',path);}
  view=next;document.querySelectorAll('[data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view===view));
- if(view==='templates')business.hide();else business.show();
- $('#page-title').innerHTML=view==='templates'?'Templates<span>.</span>':'Overview<span>.</span>';
- $('#page-kicker').textContent=view==='templates'?'CREATE ONCE. MAKE IT PERSONAL.':'YOUR WORK, IN MOTION.';
+ if(view==='all')business.show();else business.hide();
+ $('#page-title').innerHTML=(view==='templates'?'Templates':view==='presentations'?'Presentation overview':'Overview')+'<span>.</span>';
+ $('#page-title').classList.toggle('presentation-title',view==='presentations');
+ $('#page-kicker').textContent=view==='templates'?'CREATE ONCE. MAKE IT PERSONAL.':view==='presentations'?'YOUR PRESENTATIONS, IN ONE PLACE.':'YOUR WORK, IN MOTION.';
  $('#library-title').textContent=view==='templates'?'Reusable templates':'Your presentations';
- document.querySelectorAll('.workspace > .metrics,.workspace > .chart-panel,.toolbar .range-label').forEach(element=>element.hidden=view==='templates');
+ $('#metrics').hidden=view!=='presentations';
+ $('#presentation-chart').hidden=view!=='presentations';
+ $('.toolbar .range-label').hidden=view!=='presentations';
+ $('.workspace > .toolbar').hidden=view==='all';
+ $('.workspace > .library').hidden=view==='all';
+ $('#website-analytics').hidden=view!=='all';
  $('#search').placeholder=view==='templates'?'Search templates…':'Search a company or presentation…';
  $('#upload-top').textContent=view==='templates'?'Upload template ＋':'New presentation ＋';renderProjects();
+ return refresh().catch(error=>notify(error.message));
 }
 $('#open-upload').onclick=()=>openUpload();
 $('#open-template-upload').onclick=()=>{setView('templates');openUpload('template');};
-$('#upload-top').onclick=()=>view==='templates'?openUpload('template'):$('#new-dialog').showModal();
+$('#upload-top').onclick=()=>view==='templates'?openUpload('template'):api('list').then(data=>{projects=data.projects;$('#new-dialog').showModal();}).catch(error=>notify(error.message));
 $('#create-from-template').onclick=()=>{$('#new-dialog').close();openVariant();};
 $('#create-from-upload').onclick=()=>{$('#new-dialog').close();openUpload();};
 $('#upload-template-from-create').onclick=()=>{$('#variant-dialog').close();openUpload('template');};
@@ -125,7 +139,7 @@ $('#upload-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>
   if(!pendingUpload)pendingUpload=await uploadPresentation($('#html-file').files[0],[...$('#asset-files').files],api,message=>$('#upload-progress').textContent=message);
   $('#upload-progress').textContent='Files uploaded. Saving…';return api('finalize',{...data,object:pendingUpload.object});
  },{slug:form.elements.slug.value,isTemplate:data.isTemplate});
- pendingUpload=null;$('#upload-dialog').close();$('#search').value='';setView(data.isTemplate?'templates':'all');notify(data.isTemplate?'Template saved to your library. Use it later from New presentation → From template.':`Presentation saved at ${result.url}`);await refresh();
+ pendingUpload=null;$('#upload-dialog').close();$('#search').value='';await setView(data.isTemplate?'templates':'presentations');notify(data.isTemplate?'Template saved to your library. Use it later from New presentation → From template.':`Presentation saved at ${result.url}`);
 });};
 function openVariant(slug='',company=null) {
  variantCompany.reset({company});
@@ -143,7 +157,7 @@ function openEdit(slug){const p=projects.find(p=>p.deck_slug===slug);editCompany
 $('#template-edit-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{await api('update',formData(e.target));$('#template-edit-dialog').close();await refresh();notify('Template settings saved.');});};
 $('#edit-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=formData(e.target);await editCompany.save(()=>api('update',data),{slug:e.target.elements.slug.value,isTemplate:data.isTemplate,archived:e.target.elements.status.value==='archived'});$('#edit-dialog').close();await refresh();notify('Presentation settings saved.');});};
 $('#preview-variant').onclick=()=>{const form=$('#variant-form');if(!form.reportValidity())return;busy(form,async()=>{const result=await api('preview',formData(form));const iframe=$('#variant-preview');iframe.hidden=false;iframe.srcdoc=result.html;$('#preview-dialog').showModal();$('#replacement-count').textContent=`${result.replacements} client fields · ${result.slides} slides. Review the presentation before saving.`;});};
-$('#variant-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=formData(e.target);const result=await variantCompany.save(()=>api('variant',data));$('#variant-dialog').close();$('#search').value='';setView('all');await refresh();notify(`Your company presentation is ready: ${location.origin}${result.url}`);});};
+$('#variant-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>{const data=formData(e.target);const result=await variantCompany.save(()=>api('variant',data));$('#variant-dialog').close();$('#search').value='';await setView('presentations');notify(`Your company presentation is ready: ${location.origin}${result.url}`);});};
 async function showDetail(slug){selected=slug;const p=projects.find(p=>p.deck_slug===slug);$('#detail-title').textContent=p.client;$('#detail-metrics').innerHTML='<p class="empty">Loading statistics…</p>';$('#slide-chart').innerHTML='';$('#sessions').innerHTML='';$('#detail-actions').innerHTML=`<span class="badge ${p.status}">${p.status}</span><span class="fine">/p/${slug} · ${p.slide_count} slides</span>${p.status==='published'?`<button class="secondary" id="copy-link">Copy link ${arrowIcon}</button>`:''}`;$('#detail-dialog').showModal();if($('#copy-link'))$('#copy-link').onclick=()=>copyPresentationLink(slug);try{const stats=await api('stats',null,{slug,days:$('#days').value});if(selected!==slug)return;$('#detail-metrics').innerHTML=metricMarkup(stats.summary);const max=Math.max(1,...stats.slides.map(s=>Number(s.views)));$('#slide-chart').innerHTML=Array.from({length:Math.min(p.slide_count,1000)},(_,i)=>{const row=stats.slides.find(s=>s.slide_index===i+1)||{};return `<div class="slide-row"><span>Slide ${i+1}</span><div class="slide-track"><div class="slide-fill" style="width:${(row.views||0)/max*100}%"></div></div><small>${row.views||0} views · ${duration(row.seconds)}</small></div>`;}).join('');$('#sessions').innerHTML=stats.sessions.length?`<div class="session-cards">${stats.sessions.map(s=>`<article class="session-card"><div><strong>${escape(new Date(s.started_at).toLocaleString())}</strong><span class="badge">${escape(s.user_agent_category)}</span></div><dl><div><dt>Active time</dt><dd>${duration(s.active_seconds)}</dd></div><div><dt>Slides viewed</dt><dd>${s.slides_viewed} / ${p.slide_count}</dd></div><div><dt>Website clicks</dt><dd>${Number(s.website_clicks)||0}</dd></div><div><dt>Furthest slide</dt><dd>${s.max_slide}</dd></div></dl></article>`).join('')}</div>`:'<p class="empty">No visits in this period yet. Share the presentation link to start collecting insights.</p>';}catch(e){notify(e.message);$('#detail-metrics').innerHTML='<p class="empty">Could not load statistics. Close and try again.</p>';}}
 async function resetStatistics(button) {
  const slug=button.dataset.resetStats;

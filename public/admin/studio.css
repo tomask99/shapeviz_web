@@ -24,6 +24,9 @@ dialog{border-radius:28px;border-color:#f1ede61a;box-shadow:0 40px 140px #000b;b
 #notice,#variant-preview{border-radius:18px}
 .login-brand{border-radius:0 44px 44px 0}.login-form{background:#ffffff02;border:1px solid #f1ede60b;border-radius:28px;padding:38px}
 .chart-readout{display:flex;align-items:center;min-height:44px;width:fit-content;max-width:100%;border-radius:13px;padding:10px 16px;background:#d8873910;color:#e8be94;font-size:12px;margin:0 0 18px;line-height:1.5}
+.workspace>.page-heading>div{min-width:0}
+#page-title.presentation-title{font-size:clamp(32px,4.5vw,72px);overflow-wrap:anywhere}
+@media(max-width:720px){#page-title.presentation-title{font-size:clamp(30px,10vw,48px)}}
 .chart{overflow-x:auto;overflow-y:hidden;height:210px;padding-top:30px;gap:8px;scrollbar-width:thin;scrollbar-color:#4b3520 transparent}
 button.bar-column{appearance:none;border:0;padding:0;background:none;color:inherit;min-width:18px;cursor:pointer;outline-offset:-2px;border-radius:8px}
 .bar{display:block;border-radius:8px 8px 4px 4px;transition:filter .18s,box-shadow .18s}

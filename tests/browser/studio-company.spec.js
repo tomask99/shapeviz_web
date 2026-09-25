@@ -18,7 +18,7 @@ async function fixture(page,{linked=false,failLink=false}={}){
     return route.fulfill({json:data});
   });
   await page.route('**/mock-upload',route=>route.fulfill({json:{}}));
-  await page.goto('/admin');return calls;
+  await page.goto('/admin?view=presentations');return calls;
 }
 async function choose(form){
   await form.locator('summary').filter({hasText:'CRM company'}).click();

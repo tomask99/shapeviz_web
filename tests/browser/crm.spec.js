@@ -61,7 +61,7 @@ test('Leads create, edit, refresh, archive, restore and history navigation on de
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
   await page.screenshot({path:'.cache/crm-list-mobile.png',fullPage:true});
   await page.locator('a.crm-row').click();await page.goBack();await expect(page.locator('a.crm-row')).toBeVisible();
-  await page.locator('[data-view=all]').click();await expect(page.locator('#crm')).toBeHidden();await expect(page.locator('#projects')).toBeVisible();
+  await page.locator('[data-view=all]').click();await expect(page.locator('#crm')).toBeHidden();await expect(page.locator('#projects')).toBeHidden();await expect(page.locator('#business-overview')).toBeVisible();
   await page.goBack();await expect(page.locator('a.crm-row')).toBeVisible();expect(errors).toEqual([]);
 });
 test('deep-link login returns to Leads and styles/scripts are served as assets',async({page})=>{

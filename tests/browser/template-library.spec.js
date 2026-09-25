@@ -23,7 +23,7 @@ test('save multiple templates first, then choose one to create a client presenta
   await route.fulfill({json:data});
  });
  await page.route('**/mock-upload',route=>route.fulfill({json:{}}));
- await page.goto('/adminlogin');
+ await page.goto('/admin?view=presentations');
  await expect(page.locator('#projects')).toContainText('Milenium');
  await page.locator('#open-template-upload').click();
  await expect(page.locator('#upload-title')).toHaveText('Upload a template.');
@@ -45,7 +45,7 @@ test('save multiple templates first, then choose one to create a client presenta
  expect(finalizations.every(body=>body.isTemplate===true&&body.publish===false)).toBe(true);
  await expect(page.locator('#projects .template-row')).toHaveCount(2);
  await expect(page.locator('#projects')).not.toContainText('Milenium');
- await page.locator('[data-view=all]').click();
+ await page.locator('[data-view=presentations]').click();
  await expect(page.locator('#projects .project-row')).toHaveCount(1);
  await expect(page.locator('#projects a.project-icon')).toHaveAttribute('href','/p/milenium');
  await page.locator('#upload-top').click();
@@ -100,7 +100,7 @@ test('template library supports renaming and confirmed deletion with Storage cle
  await page.locator('#delete-form input').fill('delete');await page.locator('#delete-submit').click();
  await expect(page.locator('#projects')).toContainText('No templates saved');
  await expect(page.locator('#notice')).toContainText('Template deleted. 4 Storage files removed.');
- await page.locator('[data-view=all]').click();await expect(page.locator('#metrics')).toBeVisible();
+ await page.locator('[data-view=presentations]').click();await expect(page.locator('#metrics')).toBeVisible();
 });
 
 test('empty template picker offers an upload without submitting a presentation',async({page})=>{
