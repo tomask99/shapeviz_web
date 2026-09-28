@@ -144,11 +144,7 @@ figcaption .accent { margin-inline: 6px; }
 .gallery-toggle[aria-expanded="true"] svg, .gallery-collapse svg { transform: rotate(180deg); }
 .gallery-toggle:hover, .gallery-collapse:hover { color: var(--accent); border-color: var(--accent); }
 .gallery-count { color: var(--muted); font-size: 8px; }
-#expanded-gallery { position: relative; padding-top: clamp(60px,8vw,120px); }
-.gallery-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; padding-block: 38px 64px; border-top: 1px solid var(--line); }
-.gallery-intro h3 { margin: 28px 0 0; font-size: clamp(56px,8vw,126px); line-height: .9; letter-spacing: -.06em; text-transform: uppercase; }
-.gallery-intro h3 span { color: var(--accent); }
-.gallery-intro p { color: var(--muted); font-size: 15px; line-height: 1.7; padding-bottom: 4px; }
+#expanded-gallery { position: relative; padding-top: 32px; }
 .gallery-toolbar { position: sticky; top: 0; z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 66px; margin-bottom: 32px; border-block: 1px solid var(--line); background: rgba(0,0,0,.95); backdrop-filter: blur(18px); }
 .gallery-edition { color: var(--muted); font-size: 9px; }
 .gallery-edition .accent { margin-inline: 12px; }
@@ -172,9 +168,6 @@ figcaption .accent { margin-inline: 6px; }
  .gallery-slot--film { grid-row: span 3; }
 }
 @media (max-width: 600px) {
- .gallery-intro { flex-direction: column; align-items: flex-start; gap: 28px; padding-block: 28px 40px; }
- .gallery-intro h3 { font-size: 15vw; }
- .gallery-intro p { font-size: 13px; }
  .gallery-toolbar { gap: 16px; margin-bottom: 24px; }
  .gallery-edition { font-size: 8px; }
  .gallery-toolbar .gallery-collapse { font-size: 8px; gap: 6px; }
