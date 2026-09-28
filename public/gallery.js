@@ -24,6 +24,17 @@ function setExpanded(expanded) {
   else toggle.focus({ preventScroll: true });
   dispatchEvent(new Event('resize'));
   dispatchEvent(new Event('gallerychange'));
+  if (expanded) {
+    requestAnimationFrame(() => {
+      if (gallery.hidden) return;
+      const grid = gallery.querySelector('.gallery-grid');
+      const toolbar = gallery.querySelector('.gallery-toolbar');
+      scrollTo({
+        top: grid.getBoundingClientRect().top + scrollY - toolbar.offsetHeight - 24,
+        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      });
+    });
+  }
 }
 toggle.addEventListener('click', () => setExpanded(gallery.hidden));
 gallery.querySelectorAll('.gallery-collapse').forEach(button => button.addEventListener('click', () => setExpanded(false)));
