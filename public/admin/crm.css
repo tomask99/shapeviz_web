@@ -62,7 +62,62 @@ aside nav a.active{color:var(--accent);background:#d8873910;border-left:2px soli
 .business-cards.business-value-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.business-value-cards div strong{font-size:clamp(20px,2.5vw,30px);overflow-wrap:anywhere}.business-value-cards small{display:block;color:var(--muted);margin-top:12px}@media(max-width:650px){.business-cards.business-value-cards{grid-template-columns:1fr}}
 .crm-company-logo{width:64px;height:64px;object-fit:contain;border-radius:12px}.crm-won-panel dd{overflow-wrap:anywhere}
 #crm-share-dialog{width:min(760px,calc(100vw - 32px));max-height:90vh;overflow:auto}#crm-share-dialog .actions,#crm-share-dialog .section-title{flex-wrap:wrap;gap:12px}#crm-share-dialog .crm-entry{overflow-wrap:anywhere}#crm-share-dialog [data-created]{margin:20px 0;padding:16px;border:1px solid var(--accent);border-radius:16px}#crm-share-dialog input,#crm-share-dialog select{max-width:100%;min-width:0}
-#crm-suggestions .section-title,#crm-suggestions .actions{flex-wrap:wrap;gap:12px}#crm-suggestions .crm-entry{overflow-wrap:anywhere}#crm-suggestions .suggestion-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}@media(max-width:850px){#crm-suggestions .suggestion-list{grid-template-columns:1fr}}
-.recent-events{list-style:none;margin:20px 0;padding:0}.recent-events li{display:grid;gap:8px;padding:18px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.recent-events p{margin:0;white-space:pre-wrap}.recent-events a{color:var(--accent)}#recent-activity .section-title,#recent-activity .crm-actions{display:flex;flex-wrap:wrap;gap:12px}
+#crm-suggestions{padding:14px 20px;margin-bottom:20px;border-radius:18px}
+#crm-suggestions .section-title{gap:10px;margin-bottom:6px;flex-wrap:wrap}
+#crm-suggestions .section-title>div:first-child{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px}
+#crm-suggestions .eyebrow{font-size:8px;margin:0}
+#crm-suggestions h2{font-size:18px;line-height:1.2;margin:0}
+#crm-suggestions .suggestion-toolbar{display:flex;flex-wrap:wrap;gap:4px}
+#crm-suggestions .primary,#crm-suggestions .secondary,#crm-suggestions .quiet{font-size:11px;padding:5px 10px;min-height:28px;white-space:nowrap}
+#crm-suggestions .suggestion-list{display:grid;grid-template-columns:1fr;gap:0;margin:0}
+#crm-suggestions .crm-entry{display:grid;grid-template-columns:minmax(100px,.7fr) minmax(0,2fr) auto;align-items:center;gap:14px;padding:10px 0;margin:0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;min-width:0;font-size:12px;line-height:1.4}
+#crm-suggestions .suggestion-company{color:var(--accent);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#crm-suggestions .suggestion-content{min-width:0}
+#crm-suggestions h3{font-size:12px;font-weight:600;line-height:1.4;letter-spacing:0;margin:0}
+#crm-suggestions .suggestion-reason{font-size:11px;color:var(--muted);margin:2px 0 0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#crm-suggestions .suggestion-meta{font-size:11px;margin:2px 0 0}
+#crm-suggestions .actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:0}
+#crm-suggestions .crm-notes-control{margin:0}
+#crm-suggestions .suggestion-count,#crm-suggestions .suggestion-empty{font-size:11px;margin:6px 0 0}
+#crm-suggestions .suggestion-pagination{margin-top:6px}
+#crm-suggestions [role=alert]:empty{display:none}
+@media(max-width:1100px){#crm-suggestions .crm-entry{grid-template-columns:minmax(100px,.7fr) minmax(0,2fr)}#crm-suggestions .suggestion-actions{grid-column:2}}
+@media(max-width:700px){#crm-suggestions{padding:12px 14px}#crm-suggestions .section-title>div:first-child{display:block}#crm-suggestions .eyebrow{margin-bottom:3px}#crm-suggestions .suggestion-toolbar{gap:0}#crm-suggestions .suggestion-toolbar .quiet{padding:5px 6px}#crm-suggestions .crm-entry{grid-template-columns:minmax(0,1fr);gap:4px;padding:8px 0}#crm-suggestions .suggestion-actions{grid-column:1;gap:4px;margin-top:4px}#crm-suggestions .suggestion-reason{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}}
+#recent-activity{padding:14px 20px;margin-bottom:20px;border-radius:18px}
+#recent-activity .section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+#recent-activity .section-title>div{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px}
+#recent-activity .eyebrow{font-size:8px;margin:0}
+#recent-activity h2{font-size:18px;line-height:1.2;margin:0}
+#recent-activity .quiet{font-size:11px;padding:6px 8px}
+#recent-activity .recent-events{list-style:none;margin:0;padding:0}
+#recent-activity .recent-events li{display:grid;grid-template-columns:minmax(100px,.8fr) minmax(0,2fr) auto auto;align-items:center;gap:14px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px;line-height:1.4;min-height:42px}
+#recent-activity .recent-company{color:var(--accent);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#recent-activity .recent-event{min-width:0}
+#recent-activity .recent-event strong{font-size:12px;font-weight:600}
+#recent-activity .recent-event p{margin:2px 0 0;font-size:11px;color:var(--muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#recent-activity .recent-time{font-size:11px;color:var(--muted);white-space:nowrap}
+#recent-activity .crm-notes-control{margin:0}
+#recent-activity .crm-notes-button{font-size:11px;white-space:nowrap;padding:5px 10px;min-height:28px}
+#recent-activity .crm-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+@media(max-width:700px){#recent-activity{padding:12px 14px}#recent-activity .section-title>div{display:block}#recent-activity .eyebrow{margin-bottom:3px}#recent-activity .recent-events li{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'company notes' 'event notes' 'time notes';gap:2px 12px;padding:8px 0}#recent-activity .recent-company{grid-area:company}#recent-activity .recent-event{grid-area:event}#recent-activity .recent-time{grid-area:time}#recent-activity .crm-notes-control{grid-area:notes}}
 #action-followup-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}#action-center .crm-entry{padding:18px}#action-center .crm-entry h3,#action-center .followup-company{overflow-wrap:anywhere}#action-center .actions{flex-wrap:wrap}#action-center .followup-group{min-width:0;margin:12px 0}#action-center .crm-description{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}@media(max-width:850px){#action-followup-groups{grid-template-columns:1fr}#action-center .section-title{align-items:flex-start;flex-wrap:wrap;gap:16px}}
 .crm-source-report{margin-top:28px}.crm-report-scroll{max-width:100%;overflow-x:auto}.crm-source-report table{width:100%;border-collapse:collapse;font-size:13px}.crm-source-report th,.crm-source-report td{text-align:left;padding:14px;border-bottom:1px solid var(--line);white-space:nowrap}
+.crm-notes-control{margin-top:18px;min-width:0}
+.crm-notes-button{font-size:12px;padding:9px 15px}
+.crm-notes-button.has-notes{color:var(--accent);border-color:var(--accent);background:#d887391a}
+.crm-notes-button.has-notes::before{content:'';display:inline-block;width:6px;height:6px;margin-right:8px;border-radius:50%;background:currentColor;vertical-align:middle}
+.crm-note-preview{font-size:12px;line-height:1.6;color:var(--muted);margin:10px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.crm-note-preview[hidden]{display:none}
+.page-heading .crm-notes-control{margin:0}
+.crm-row:not(.crm-table-head){position:relative}
+.crm-row [data-lead]::after{content:'';position:absolute;inset:0}
+.crm-row-notes{grid-column:1/-1;margin-top:0;position:relative;z-index:1}
+#quick-note{width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow-y:auto}
+#quick-note [data-notes-list]{max-height:40dvh;overflow-y:auto;overscroll-behavior:contain}
+#quick-note .crm-entry{padding:16px 0}
+#quick-note .actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.recent-older{margin-top:4px}
+.recent-older>summary{width:fit-content;cursor:pointer;color:var(--accent);font-size:11px;padding:6px 0}
+.recent-older>summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:4px}
+.recent-older .recent-collapse,.recent-older[open] .recent-expand{display:none}
+.recent-older[open] .recent-collapse{display:inline}

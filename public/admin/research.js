@@ -6,6 +6,7 @@ import {createResearchRefresh,researchRefreshActions} from './research-refresh.j
 import {researchGuidance} from './research-guidance.js';
 import {createResearchSimilar} from './research-similar.js';
 import {createResearchContacts} from './research-contacts.js';
+import {notesButton} from './crm-quick-note.js';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g,c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const array = value => Array.isArray(value) ? value : [];
@@ -63,6 +64,7 @@ function card(candidate) {
     <div class="research-card-footer"><span>${escape(candidate.research_confidence ? label(candidate.research_confidence)+' confidence' : 'Confidence unknown')} · ${Number(candidate.source_count)||0} sources</span><span>${duplicate ? 'Possible duplicate' : candidate.duplicate_checked_at ? 'Duplicate check recorded' : 'Duplicates not checked'}</span></div>
     <a class="research-open" data-research-link href="/admin/ai-research/${encodeURIComponent(candidate.id)}">View research <span aria-hidden="true">↗</span></a>
     ${inLeads ? `<a class="research-lead-link" href="/admin/leads/${encodeURIComponent(candidate.approved_company_id)}">Open lead <span aria-hidden="true">↗</span></a>` : ''}
+    ${notesButton(candidate,{candidate:true})}
   </article>`;
 }
 
@@ -73,6 +75,7 @@ function detail(candidate,back,events = []) {
   return `<a class="research-back" data-research-link href="${escape(back)}">← Research inbox</a>${heading(candidate.company_name)}
     <div class="research-detail-meta">${tag(RESEARCH_STATUSES[candidate.research_status] || 'Unknown')}${fit(candidate.fit)}${tag(candidate.research_confidence ? label(candidate.research_confidence)+' research confidence' : 'Research confidence unknown')}<span class="fine">Last researched: ${escape(date(candidate.last_researched_at))}</span></div>
     ${researchReviewActions(candidate)}
+    ${notesButton(candidate,{candidate:true})}
     ${researchRefreshActions(candidate)}
     <div class="actions research-similar-actions"><button class="secondary" data-research-similar>Find similar companies</button><button class="secondary" data-research-contacts>Find contacts</button></div>
     <p class="research-intro">${escape(candidate.short_description || 'No company description recorded.')}</p>

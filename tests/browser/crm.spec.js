@@ -52,17 +52,17 @@ test('Leads create, edit, refresh, archive, restore and history navigation on de
   await expect(page.getByText('No leads here yet.')).toBeVisible();
   await page.getByText('Filters & sorting',{exact:true}).click();
   await page.getByRole('combobox',{name:'Show',exact:true}).selectOption('archived');
-  await page.locator('a.crm-row').click();
+  await page.locator('.crm-row [data-lead]').click();
   await page.getByRole('button',{name:'Restore lead'}).click();
   await expect(page.getByRole('button',{name:'Archive lead',exact:true})).toBeVisible();
   await page.getByRole('link',{name:'Leads',exact:true}).click();
   await page.setViewportSize({width:390,height:844});
-  await expect(page.locator('a.crm-row')).toBeVisible();
+  await expect(page.locator('.crm-row:not(.crm-table-head)')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
   await page.screenshot({path:'.cache/crm-list-mobile.png',fullPage:true});
-  await page.locator('a.crm-row').click();await page.goBack();await expect(page.locator('a.crm-row')).toBeVisible();
+  await page.locator('.crm-row [data-lead]').click();await page.goBack();await expect(page.locator('.crm-row:not(.crm-table-head)')).toBeVisible();
   await page.locator('[data-view=all]').click();await expect(page.locator('#crm')).toBeHidden();await expect(page.locator('#projects')).toBeHidden();await expect(page.locator('#business-overview')).toBeVisible();
-  await page.goBack();await expect(page.locator('a.crm-row')).toBeVisible();expect(errors).toEqual([]);
+  await page.goBack();await expect(page.locator('.crm-row:not(.crm-table-head)')).toBeVisible();expect(errors).toEqual([]);
 });
 test('deep-link login returns to Leads and styles/scripts are served as assets',async({page})=>{
   await mock(page,{signedIn:false});await page.goto('/admin/leads');
@@ -84,12 +84,12 @@ test('Leads reports read failures, retries, paginates and preserves filters',asy
   await page.goto('/admin/leads?country_category=SK&priority=HIGH');
   await expect(page.getByRole('alert')).toContainText('Temporarily unavailable');
   fail=false;await page.getByRole('button',{name:'Try again'}).click();
-  await expect(page.locator('a.crm-row')).toContainText('Example 1');
+  await expect(page.locator('.crm-row:not(.crm-table-head)')).toContainText('Example 1');
   await page.getByRole('button',{name:'Next',exact:true}).click();
-  await expect(page.locator('a.crm-row')).toContainText('Example 2');
+  await expect(page.locator('.crm-row:not(.crm-table-head)')).toContainText('Example 2');
   expect(new URL(page.url()).searchParams.get('country_category')).toBe('SK');
   expect(new URL(page.url()).searchParams.get('priority')).toBe('HIGH');
-  await page.reload();await expect(page.locator('a.crm-row')).toContainText('Example 2');
+  await page.reload();await expect(page.locator('.crm-row:not(.crm-table-head)')).toContainText('Example 2');
   await page.setViewportSize({width:320,height:800});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
 });

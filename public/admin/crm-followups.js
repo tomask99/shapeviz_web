@@ -1,3 +1,4 @@
+import {notesButton} from './crm-quick-note.js';
 import {localDayBounds,localInput,localInstant,displayDate} from './crm-dates.js';
 import {label} from './crm-options.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -11,9 +12,9 @@ export function createFollowups({root,api,notify,todayOnly=false,onChanged=()=>{
   const query=()=>({...bounds,...(companyId()?{companyId:companyId()}:{})});
   function render() {
     root.querySelector(`#${prefix}followup-groups`).innerHTML=groups.map(g=>`<section class="followup-group" aria-label="${groupNames[g.key]}"><header><h2>${groupNames[g.key]}</h2><span class="badge">${g.total}</span></header>${g.items.map(f=>`<article class="crm-entry" data-followup="${esc(f.id)}">
-      <a href="/admin/leads/${encodeURIComponent(f.company_id)}" data-lead class="followup-company">${esc(f.company_name)}</a><button class="quiet" data-quick-note="${esc(f.company_id)}" data-company-name="${esc(f.company_name)}">+ Note</button><p class="fine">${esc(label(f.pipeline_status))}${f.contact_name?' · '+esc(f.contact_name):''}</p>
+      <a href="/admin/leads/${encodeURIComponent(f.company_id)}" data-lead class="followup-company">${esc(f.company_name)}</a><p class="fine">${esc(label(f.pipeline_status))}${f.contact_name?' · '+esc(f.contact_name):''}</p>
       <h3>${esc(f.title)}</h3><p class="fine"><time datetime="${esc(f.due_at)}">${esc(displayDate(f.due_at))}</time>${f.completed_at?' · Completed '+esc(displayDate(f.completed_at)):''}</p>
-      ${f.description?`<p class="crm-description">${esc(f.description)}</p>`:''}${!f.completed_at?`<div class="actions"><button class="primary" data-followup-complete="${esc(f.id)}">Mark complete</button><button class="secondary" data-followup-edit="${esc(f.id)}">Edit / reschedule</button></div>`:''}</article>`).join('')||`<p class="empty">No ${g.key==='completed'?'completed follow-ups':g.key==='today'?'follow-ups today':g.key+' follow-ups'}.</p>`}
+      ${f.description?`<p class="crm-description">${esc(f.description)}</p>`:''}${!f.completed_at?`<div class="actions"><button class="primary" data-followup-complete="${esc(f.id)}">Mark complete</button><button class="secondary" data-followup-edit="${esc(f.id)}">Edit / reschedule</button></div>`:''}${notesButton(f)}</article>`).join('')||`<p class="empty">No ${g.key==='completed'?'completed follow-ups':g.key==='today'?'follow-ups today':g.key+' follow-ups'}.</p>`}
       ${g.total>g.pageSize||g.page>1?`<div class="actions crm-pagination"><button class="secondary" data-followup-page="${g.page-1}" data-group="${g.key}" ${g.page<=1?'disabled':''}>Previous</button><span class="fine">Page ${g.page} / ${Math.max(1,Math.ceil(g.total/g.pageSize))}</span><button class="secondary" data-followup-page="${g.page+1}" data-group="${g.key}" ${g.page*g.pageSize>=g.total?'disabled':''}>Next</button></div>`:''}</section>`).join('');
   }
   async function load(group=null,page=1) {

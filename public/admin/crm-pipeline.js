@@ -1,6 +1,7 @@
 import {STATUSES,PRIORITIES,label} from './crm-options.js';
 import {nextActionText} from './crm-dates.js';
 import {signalSummary} from './crm-signals.js';
+import {notesButton} from './crm-quick-note.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const options=values=>values.map(v=>`<option value="${esc(v)}">${esc(label(v))}</option>`).join('');
 
@@ -16,11 +17,11 @@ export function createPipeline({root,api,notify}) {
         <a href="/admin/leads/${encodeURIComponent(c.id)}" data-lead><h3>${esc(c.company_name)}</h3></a>
         <p class="fine">${esc(c.country||'INT')} · ${esc(c.industry||'Industry not set')}</p>
         <span class="badge">${esc(label(c.priority))} priority</span>
-        <button class="quiet" data-quick-note="${esc(c.id)}" data-company-name="${esc(c.company_name)}">+ Note</button>
         <p class="fine">${signalSummary(c)}</p>
         <p class="fine crm-next-action">${esc(nextActionText(c.next_action))}</p>
         <button class="secondary" data-prepare-presentation="${esc(c.id)}" ${saving||loading?'disabled':''}>Prepare presentation</button>
         <label>Move to<select data-move="${esc(c.id)}" aria-label="Status for ${esc(c.company_name)}" ${saving||loading?'disabled':''}>${STATUSES.map(s=>`<option value="${s}" ${s===c.pipeline_status?'selected':''}>${esc(label(s))}</option>`).join('')}</select></label>
+        ${notesButton(c)}
       </article>`).join('')||'<p class="fine pipeline-empty">No leads in this stage.</p>'}</div>
       <p class="fine">${col.companies.length} of ${col.total} shown</p>
       ${col.companies.length<col.total?`<button class="secondary" data-stage-more="${col.status}" ${saving||loading?'disabled':''}>Load more</button>`:''}

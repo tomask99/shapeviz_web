@@ -2,6 +2,7 @@ import {STATUSES, SERVICES, SOURCES, PRIORITIES} from '../../public/admin/crm-op
 
 import {fail,uuid,string,choice,link} from './validation.js';
 import {handleRelations,relationActions,contactInput} from './relations.js';
+import {handleNotes,noteActions} from './notes.js';
 import {outcomeInput} from './outcome.js';
 import {handleFollowups,followupActions,withNextActions} from './followups.js';
 import {handlePresentations,presentationActions} from './presentations.js';
@@ -54,6 +55,7 @@ export async function handleCrm({action, body, url, user, token, call, signingKe
   if(['crm-suggestions','crm-suggestion-state'].includes(action))return handleSuggestions({action,body,url,request});
   if(action==='crm-recent-activity')return recentActivityPage(await request(recentActivityQuery(url.searchParams,user.id)));
   const owner = `owner_id=eq.${encodeURIComponent(user.id)}`;
+  if(noteActions.includes(action))return handleNotes({action,body,url,user,request,owner});
   if(operationActions.includes(action))return handleOperations({action,body,url,request,validateCompany:companyInput});
   if(clientActions.includes(action))return handleClients({action,body,url,user,request,owner});
   if(action==='crm-website-metadata')return {data:await websiteMetadata(string(body.website,2048,'website'))};

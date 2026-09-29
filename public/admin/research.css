@@ -8,7 +8,10 @@
 .research-card{display:flex;flex-direction:column}.research-card h2{font-size:26px;margin:22px 0 12px;line-height:1.15}.research-card h2 a:hover{color:var(--accent)}
 .research-card{position:relative;cursor:pointer;box-shadow:0 22px 48px #0000002e;transform:translateY(0) rotate(0) scale(1);transform-origin:center;transition:transform 400ms ease-out,box-shadow 400ms ease-out}
 .research-card-link::after{content:"";position:absolute;inset:0;border-radius:inherit}
-.research-card :is(.research-open,.research-lead-link){position:relative;z-index:1}
+.research-card :is(.research-open,.research-lead-link,.crm-notes-control){position:relative;z-index:1}
+.research-card-in-leads .crm-notes-button{color:#26190d;border-color:#26190d80}
+.research-card-in-leads .crm-notes-button.has-notes{color:#fff5e8;background:#26190d;border-color:#26190d}
+.research-card-in-leads .crm-note-preview{color:#26190d}
 .research-card:has(a:focus-visible){outline:2px solid var(--accent);outline-offset:5px}
 @media(hover:hover) and (pointer:fine){.research-card:hover{transform:translateY(-8px) rotate(-2deg) scale(1.012);box-shadow:0 28px 70px #00000047;z-index:2}}
 @media(prefers-reduced-motion:reduce){.research-card,.research-card:hover{transform:none;transition:none;box-shadow:0 22px 48px #0000002e}}

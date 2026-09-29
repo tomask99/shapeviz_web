@@ -112,6 +112,7 @@ export function mountRelations({root,company,api,notify,onCompanyChanged}) {
       if(kind==='contact')data.primary_contact=form.elements.primary_contact.checked;
       try{
         await api(kind==='activity'?'crm-activity-add':`crm-${kind}-save`,{...data,companyId:company.id,...(record?{id:record.id,version:record.version}:{})});
+        if(kind==='note')document.dispatchEvent(new CustomEvent('crm-note-saved',{detail:{companyId:company.id,relations:true}}));
         if(disposed)return;dialog.close();notify(`${kind[0].toUpperCase()+kind.slice(1)} saved.`);page=1;render();
       }catch(error){if(!disposed)form.querySelector('[data-error]').textContent=error.message;}
       finally{pending=false;controls.forEach(b=>b.disabled=false);}
@@ -132,12 +133,12 @@ export function mountRelations({root,company,api,notify,onCompanyChanged}) {
       const item=items.find(i=>i.id===b.dataset.deleteRecord),kind=tab==='contacts'?'contact':'note';
       if(!item||!confirm(`Delete this ${kind}? The company and activity history will stay. This cannot be undone.`))return;
       b.disabled=true;
-      try{await api(`crm-${kind}-delete`,{companyId:company.id,id:item.id,version:item.version,confirm:'delete'});if(!disposed){notify(`${kind} deleted.`);render();}}
+      try{await api(`crm-${kind}-delete`,{companyId:company.id,id:item.id,version:item.version,confirm:'delete'});if(kind==='note')document.dispatchEvent(new CustomEvent('crm-note-saved',{detail:{companyId:company.id,relations:true}}));if(!disposed){notify(`${kind} deleted.`);render();}}
       catch(error){if(!disposed)notify(error.message);}finally{b.disabled=false;}
     }
   }
   panel.addEventListener('click',click);summary.addEventListener('click',click);
-  const noteSaved=e=>{if(e.detail.companyId===company.id&&!disposed&&['overview','notes','activity'].includes(tab)){page=1;render();}};
+  const noteSaved=e=>{if(!e.detail.relations&&e.detail.companyId===company.id&&!disposed&&['overview','notes','activity'].includes(tab)){page=1;render();}};
   document.addEventListener('crm-note-saved',noteSaved);
   select(new URLSearchParams(location.search).get('tab')||'overview',false);
   return ()=>{disposed=true;seq++;document.removeEventListener('crm-note-saved',noteSaved);replies.dispose();similar.close();researchTools.close();contactsResearch.close();enrichment.close();cleanupInsight?.();cleanupPresentations?.();cleanupEngagement?.();dialog.close();dialog.remove();};

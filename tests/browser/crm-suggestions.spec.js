@@ -21,7 +21,8 @@ async function fixture(page){
 }
 test('suggestions snooze, restore, dismiss and create an editable follow-up on mobile',async({page})=>{
  const s=await fixture(page),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/admin');const root=page.locator('#crm-suggestions');await expect(root).toContainText('Nario <studio>');await expect(root.getByRole('link')).toHaveAttribute('href','/admin/leads/'+id);
- await page.setViewportSize({width:390,height:844});await root.screenshot({path:'.cache/suggestions-mobile.png'});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ await page.setViewportSize({width:1600,height:1000});await root.screenshot({path:'.cache/suggestions-compact-desktop.png'});expect((await root.boundingBox()).height).toBeLessThan(200);
+ await page.setViewportSize({width:390,height:844});await root.screenshot({path:'.cache/suggestions-mobile.png'});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);expect((await root.boundingBox()).height).toBeLessThan(320);
  await root.getByRole('button',{name:'Snooze 24h'}).click();await expect(root).toContainText('No suggestions right now');await page.reload();await expect(root).toContainText('No suggestions right now');
  await root.getByRole('button',{name:'Show snoozed / dismissed'}).click();await root.getByRole('button',{name:'Restore suggestion'}).click();await root.getByRole('button',{name:'Show active suggestions'}).click();await expect(root).toContainText('Nario <studio>');
  await root.getByRole('button',{name:'Dismiss',exact:true}).click();await root.getByRole('button',{name:'Show snoozed / dismissed'}).click();await expect(root).toContainText('Dismissed until restored');await root.getByRole('button',{name:'Restore suggestion'}).click();await root.getByRole('button',{name:'Show active suggestions'}).click();
