@@ -6,6 +6,7 @@ import { getPresentationProject, getPrivatePresentationSource, hasSupabase, slug
 import { requestOrigin } from '../http.js';
 import {normalizePresentationCtaArrows} from './cta-arrows.js';
 import {deferPresentationMedia} from './deferred-media.js';
+import {getBundledPresentationSource} from './bundled.js';
 import {trackingClassification,signTracking} from './tracking-proof.js';
 import {recipientParam,recipientHash,resolveRecipient} from './recipient-token.js';
 
@@ -51,7 +52,7 @@ function requestedSlug(req) {
   catch { return null; }
 }
 
-export function createPresentationPageHandler({ env = process.env, send = fetch, templatesRoot = defaultTemplatesRoot } = {}) {
+export function createPresentationPageHandler({ env = process.env, send = fetch, templatesRoot = defaultTemplatesRoot, bundlesRoot } = {}) {
   return async function presentationPage(req, res) {
     if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405, { Allow: 'GET, HEAD' }).end(); return; }
     const slug = requestedSlug(req);
@@ -74,9 +75,10 @@ export function createPresentationPageHandler({ env = process.env, send = fetch,
         const gate=`/api/admin?action=tracking-gate&slug=${encodeURIComponent(slug)}${recipient?'&r='+encodeURIComponent(recipient):''}`;
         res.writeHead(200,{'Cache-Control':'private, no-store','Content-Type':'text/html; charset=utf-8','X-Robots-Tag':'noindex, nofollow','Referrer-Policy':'no-referrer'}).end(`<!doctype html><title>Opening presentation</title><script>location.replace(${JSON.stringify(gate)})</script><noscript><a href="${gate.replaceAll('&','&amp;')}">Open presentation</a></noscript>`);return;
       }
-      const source = project.source_type === 'template'
+      const bundledSource=await getBundledPresentationSource(project,{bundlesRoot});
+      const source = bundledSource ?? (project.source_type === 'template'
         ? await renderPresentationTemplate(project, { templatesRoot })
-        : await getPrivatePresentationSource(project, { env, send });
+        : await getPrivatePresentationSource(project, { env, send }));
       // Also repair already uploaded decks without rewriting their stored source.
       const session=hash?randomUUID():null;
       const proof=classification?.exclude===false?signTracking({kind:'visit',deck:slug,exp:Date.now()+3600000,...(hash?{recipient:hash,session}:{})},env.SUPABASE_SECRET_KEY):'';
@@ -94,6 +96,7 @@ export function createPresentationPageHandler({ env = process.env, send = fetch,
         .replace("style-src 'self'", `style-src 'self' ${new URL(env.SUPABASE_URL).origin}`);
       const headers = {
         'Content-Type': 'text/html; charset=utf-8',
+        'X-Presentation-Storage': bundledSource===null?'supabase':'vercel',
         'Content-Length': Buffer.byteLength(html),
         'Cache-Control': 'private, no-store',
         'Content-Security-Policy': "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox; " + pageCsp,
