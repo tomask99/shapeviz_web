@@ -24,9 +24,14 @@ export function parseTrackingLink(input,origin) {
 export async function handleFileTracking({action,body,url,user,companyId,request,call,loadFolder,archived}) {
   const scope=`company_id=eq.${companyId}&owner_id=eq.${user.id}`;
   if(action==='client-file-tracking') {
-    const items=await request(`/rest/v1/client_file_trackers?${scope}&select=${fields}&order=created_at,id&limit=100`);
-    const portals=await request(`/rest/v1/client_file_shares?${scope}&select=id,source_version,active`);
-    return {items:items.map(item=>({...item,connected:portals.some(p=>p.id===item.portal_id&&p.source_version===item.source_version),portal_active:portals.some(p=>p.id===item.portal_id&&p.source_version===item.source_version&&p.active)}))};
+    // Bound each embedded ranking independently. Both relations retain the
+    // caller's JWT/RLS; old trackers with a deleted portal remain visible.
+    const select=`${fields},portal:client_file_shares(id,source_version,active),downloads:client_file_download_counts(file_name,download_count)`;
+    const items=await request(`/rest/v1/client_file_trackers?${scope}&select=${select}&order=created_at,id&limit=100&downloads.order=download_count.desc,mega_node_id&downloads.limit=51`);
+    return {items:items.map(({portal,downloads=[],...item})=>{
+      const connected=!!portal&&portal.id===item.portal_id&&portal.source_version===item.source_version;
+      return {...item,connected,portal_active:connected&&portal.active,stats:{items:downloads.slice(0,50),page:1,hasMore:downloads.length>50}};
+    })};
   }
   if(action==='client-file-download-stats') {
     const id=url.searchParams.get('trackerId'),page=Number(url.searchParams.get('page')||1);

@@ -51,13 +51,14 @@ test('fresh MEGA loads see additions, renames, moves and removals beyond a stale
   }
   const parent=node('rootroot',undefined,'Models'),original=node('folder01','rootroot','Architects');
   const snapshot=[parent,original,node('model001','folder01','Original.fbx',false)];
-  let current=snapshot,calls=0;
+  let current=snapshot,calls=0,unavailable=false;
   const load=createFolderLoader({send:async(url,options)=>{
     calls++;assert.equal(new URL(url).searchParams.get('n'),'abcdefgh');
     const [request]=JSON.parse(options.body);assert.equal(request.a,'f');
-    return Response.json([{f:request.ca?snapshot:current}]);
+    return Response.json(unavailable?[-9]:[{f:request.ca?snapshot:current}]);
   }});
-  const first=await load(mega);
+  const [first,...simultaneous]=await Promise.all(Array.from({length:4},()=>load(mega,{fresh:true})));
+  assert.equal(calls,1);assert.ok(simultaneous.every(tree=>tree===first));
   assert.equal(first.nodes.size,3);assert.equal(first.nodes.get('model001').name,'Original.fbx');
   current=[parent,original,node('renders1','rootroot','02_RENDERS'),node('model001','renders1','Renamed.fbx',false)];
   assert.equal(await load(mega),first);assert.equal(calls,1);
@@ -70,6 +71,11 @@ test('fresh MEGA loads see additions, renames, moves and removals beyond a stale
   assert.equal(removed.nodes.size,2);assert.equal(removed.nodes.get('renders1').name,'Final renders');
   assert.equal(removed.nodes.has('folder01'),false);assert.equal(removed.nodes.has('model001'),false);
   assert.equal(calls,3);
+  unavailable=true;
+  const failed=await Promise.allSettled([load(mega,{fresh:true}),load(mega,{fresh:true})]);
+  assert.equal(calls,4);assert.ok(failed.every(result=>result.status==='rejected'&&result.reason.status===502));
+  unavailable=false;
+  assert.equal((await load(mega)).nodes.size,2);assert.equal(calls,5);
 });
 test('admin verifies ownership, validates MEGA before creating and retries idempotently',async()=>{
   const {run,calls}=fixture();const result=await run('client-files-save',{title:' Sofa models ',slug:'sofas',description:'Download files.',megaUrl:mega,requestId:id,owner_id:id});

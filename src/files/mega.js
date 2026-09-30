@@ -41,7 +41,9 @@ export function createFolderLoader({ send = fetch, ttl = 60_000, now = Date.now 
   return async function loadFolder(input, { fresh = false } = {}) {
     const url = normalizeMegaFolder(input);
     const cached = cache.get(url);
-    if (!fresh && cached && cached.expires > now()) return cached.promise;
+    // Share work already in flight, including thumbnail requests. A subsequent
+    // fresh request must still read MEGA again, never a completed cached tree.
+    if (cached && (cached.pending || (!fresh && cached.expires > now()))) return cached.promise;
     if (cache.size >= 12) cache.delete(cache.keys().next().value);
     const signal = AbortSignal.timeout(20_000);
     const api = new API(false);
@@ -55,7 +57,9 @@ export function createFolderLoader({ send = fetch, ttl = 60_000, now = Date.now 
       return request(body, callback, retry);
     };
     api.fetch = (target, options = {}) => send(target, { ...options, signal });
-    const promise = (async () => {
+    const entry = { pending: true, expires: 0, promise: null };
+    cache.set(url, entry);
+    entry.promise = (async () => {
       let aborted;
       try {
         const folder = File.fromURL(url, { api });
@@ -65,13 +69,15 @@ export function createFolderLoader({ send = fetch, ttl = 60_000, now = Date.now 
         })]);
         return indexFolder(folder);
       } catch (error) {
-        cache.delete(url);
+        if (cache.get(url) === entry) cache.delete(url);
         if (error.status) throw error;
         throw fail(502, 'MEGA could not open this folder. Check that the link is still shared and includes the correct key, then retry.');
-      } finally { signal.removeEventListener('abort',aborted); api.close(); }
+      } finally {
+        entry.pending = false; entry.expires = now() + ttl;
+        signal.removeEventListener('abort',aborted); api.close();
+      }
     })();
-    cache.set(url, { expires: now() + ttl, promise });
-    return promise;
+    return entry.promise;
   };
 }
 

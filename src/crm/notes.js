@@ -25,8 +25,9 @@ export async function handleNotes({action,body,url,user,request,owner}) {
   if(reading){
     const page=Number(input.page||1);
     if(!Number.isInteger(page)||page<1||page>10000)throw fail(400,'Invalid page.');
-    const rows=await request(`/rest/v1/crm_all_notes?${scope}&select=*&order=created_at.desc,id&limit=31&offset=${(page-1)*30}`);
-    return {items:rows.slice(0,30),hasMore:rows.length>30,page};
+    const pageSize=input.summary==='true'?1:30;
+    const rows=await request(`/rest/v1/crm_all_notes?${scope}&select=*&order=created_at.desc,id&limit=${pageSize+1}&offset=${(page-1)*pageSize}`);
+    return {items:rows.slice(0,pageSize),hasMore:rows.length>pageSize,page};
   }
   const deleting=action==='crm-note-delete',id=body.id||null;
   if((id&&!uuid(id))||(deleting&&!id))throw fail(400,'Invalid record.');

@@ -3,10 +3,12 @@ const companyId='22222222-2222-4222-8222-222222222222';
 const company={id:companyId,version:1,company_name:'Nario',country:'SK',city:'',industry:'Furniture',website:'',instagram:'',linkedin:'',short_description:'',services:['Product CGI'],priority:'HIGH',lead_source:'Instagram',pipeline_status:'NEW_LEAD',created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
 
 async function fixture(page) {
+  const reads=[];
   let contacts=[],notes=[],events=[],counter=0;
   const create=data=>({...data,id:'fixture-'+(++counter),version:1,created_at:new Date().toISOString()});
   await page.route('**/api/admin?*',async route=>{
     const p=new URL(route.request().url()).searchParams,action=p.get('action'),body=route.request().postDataJSON();
+    if(['crm-contacts','crm-notes','crm-activity'].includes(action))reads.push({action,summary:p.get('summary')});
     let data={};
     if(action==='me')data={email:'owner@example.com'};
     if(action==='crm-detail')data={company};
@@ -28,15 +30,19 @@ async function fixture(page) {
     if(action==='crm-contacts')data={items:[...contacts].sort((a,b)=>Number(b.primary_contact)-Number(a.primary_contact)),page:1,hasMore:false};
     if(action==='crm-notes')data={items:notes,page:1,hasMore:false};
     if(action==='crm-activity')data={items:events,page:1,hasMore:false};
+    if(p.get('summary')==='true'&&data.items)data.items=data.items.slice(0,1);
     await route.fulfill({json:data});
   });
+  return reads;
 }
 
 test('company contacts, primary choice, notes and manual activity persist across tabs and reload',async({page})=>{
-  await fixture(page);const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
+  const reads=await fixture(page);const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
   await page.goto('/admin/leads/'+companyId);
+  await expect.poll(()=>reads.filter(r=>r.summary==='true').length).toBe(3);
   await page.getByRole('tab',{name:'Contacts',exact:true}).click();
   await expect(page.getByRole('tabpanel',{name:'Contacts',exact:true}).getByText('No contacts yet.',{exact:true})).toBeVisible();
+  expect(reads.filter(r=>r.action==='crm-contacts').at(-1).summary).toBe(null);
   await page.getByRole('button',{name:'Add contact',exact:true}).click();
   let dialog=page.locator('.crm-record-dialog[open]');
   await dialog.getByLabel('Full name').fill('Jane <marketing>');

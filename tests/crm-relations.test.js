@@ -40,3 +40,14 @@ test('notes and manual activity reject blank content, spoofing, missing confirma
   await assert.rejects(()=>handleCrm({...base,action:'crm-contact-delete',body:{companyId,id,version:1},call}),{status:400});
   await assert.rejects(()=>handleCrm({...base,token:null,action:'crm-notes',body:{},call}),{status:401});
 });
+
+test('company overview requests only the first relation while full tabs retain thirty-row pagination',async()=>{
+  for(const action of ['crm-contacts','crm-notes','crm-activity'])for(const summary of [true,false]){
+    const size=summary?1:30,calls=[];
+    const result=await handleCrm({...base,action,body:{},url:new URL(base.url+'&page=2&summary='+summary),call:async(path,options)=>{
+      calls.push(path);assert.equal(options.token,'user-jwt');assert.ok(path.includes('owner_id=eq.'+user.id));
+      return path.includes('crm_companies?')?[{id:companyId}]:Array.from({length:size+1},(_,i)=>({id:i}));
+    }});
+    assert.ok(calls[1].includes(`limit=${size+1}&offset=${size}`));assert.equal(result.items.length,size);assert.equal(result.hasMore,true);assert.equal(result.page,2);
+  }
+});

@@ -86,11 +86,8 @@ export async function handleCrm({action, body, url, user, token, call, signingKe
     let filters;try{filters=filterConfig(Object.fromEntries([...p].filter(([key])=>['q','industry',...Object.keys(FILTER_CHOICES)].includes(key))));}catch(e){throw fail(400,e.message);}
     if(action==='crm-pipeline') {
       const mode=choice(p.get('mode')||'active',['active','lost'],'pipeline view');
-      const stages=mode==='lost'?['LOST']:STATUSES.filter(status=>status!=='LOST');
-      const columns=await Promise.all(stages.map(async status=>({
-        status,...await request('/rest/v1/rpc/crm_list_companies',{method:'POST',body:{p_filters:{...filters,archived:'active',pipeline_status:status,sort:'updated'},p_page:1}})
-      })));
-      return withNextActions({columns},request);
+      const data=await request('/rest/v1/rpc/crm_pipeline',{method:'POST',body:{p_filters:filters,p_mode:mode}});
+      return withNextActions(data,request);
     }
     return withNextActions(await request('/rest/v1/rpc/crm_list_companies', {method:'POST', body:{p_filters:filters, p_page:page}}),request);
   }

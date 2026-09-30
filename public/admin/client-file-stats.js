@@ -6,12 +6,12 @@ export function mountFileStats({root,api,notify,company}) {
   root.className='file-download-stats';
   root.innerHTML=`<div class="file-stats-heading"><h2>Downloads</h2><button class="file-stats-action" data-refresh-stats>Refresh</button></div><form class="file-tracking-form"><label class="sr-only" for="tracking-folder-link">Folder link</label><input id="tracking-folder-link" type="url" name="link" placeholder="Paste a Shapeviz folder link" required maxlength="1000" autocomplete="off" spellcheck="false" ${company.archived_at?'disabled':''}><button class="file-stats-action" ${company.archived_at?'disabled':''}>Track folder</button><p role="alert"></p></form><div data-tracked-folders aria-live="polite"></div>`;
   const list=root.querySelector('[data-tracked-folders]'),form=root.querySelector('form');
-  async function renderStats(card,id,page=1){
+  async function renderStats(card,id,page=1,initial=null){
     const version=Number(card.dataset.statsVersion||0)+1;card.dataset.statsVersion=String(version);
     const target=card.querySelector('[data-download-ranking]');
     target.innerHTML='<p class="fine" role="status">Loading downloads...</p>';
     try{
-      const data=await api('client-file-download-stats',null,{companyId:company.id,trackerId:id,page});
+      const data=initial||await api('client-file-download-stats',null,{companyId:company.id,trackerId:id,page});
       if(disposed||!card.isConnected||Number(card.dataset.statsVersion)!==version)return;
       pages.set(id,data.page);
       target.innerHTML=data.items.length?`<ul class="file-download-list" aria-label="File download counts">${data.items.map(item=>`<li><span class="download-name">${esc(item.file_name)}</span><span class="download-count" aria-label="${number(item.download_count)} downloads">${number(item.download_count)}</span></li>`).join('')}</ul>${data.page>1||data.hasMore?`<div class="file-stats-pagination"><button class="file-stats-action" data-stats-page="${data.page-1}" ${data.page===1?'disabled':''}>Previous files</button><span>Page ${data.page}</span><button class="file-stats-action" data-stats-page="${data.page+1}" ${data.hasMore?'':'disabled'}>Next files</button></div>`:''}`:'<p class="fine">No downloads yet.</p>';
@@ -24,8 +24,9 @@ export function mountFileStats({root,api,notify,company}) {
       const data=await api('client-file-tracking',null,{companyId:company.id});
       if(disposed||version!==generation)return;
       list.innerHTML=data.items.map(item=>`<div class="tracked-folder" data-tracker="${esc(item.id)}"><div class="tracked-folder-caption"><span>${esc(item.folder_name)}${!item.connected?' / History':!item.portal_active?' / Portal disabled':!item.active?' / Paused':''}</span>${item.connected?`<button class="file-stats-action" data-tracking-active="${!item.active}" ${company.archived_at?'disabled':''}>${item.active?'Pause tracking':'Resume tracking'}</button>`:''}</div><div data-download-ranking></div><p role="alert" data-tracker-error></p></div>`).join('')||'<p class="fine">Paste a folder link to start tracking.</p>';
-      // Avoid a request burst when many folders have been added.
-      for(const item of data.items){if(disposed||version!==generation)return;const card=[...list.querySelectorAll('[data-tracker]')].find(el=>el.dataset.tracker===item.id);await renderStats(card,item.id,pages.get(item.id)||1);}
+      // First pages arrive with the folder list; fetch only later pages. Keep
+      // the fallback for an older API response during a rolling deployment.
+      for(const item of data.items){if(disposed||version!==generation)return;const card=[...list.querySelectorAll('[data-tracker]')].find(el=>el.dataset.tracker===item.id),page=pages.get(item.id)||1;await renderStats(card,item.id,page,page===1?item.stats:null);}
     }catch(error){if(!disposed&&version===generation)list.innerHTML=`<p role="alert">${esc(error.message)}</p>`;}
   }
   form.onsubmit=async event=>{

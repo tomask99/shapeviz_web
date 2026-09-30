@@ -7,14 +7,14 @@ const base={user,token:'user-jwt',body:{}};
 
 test('pipeline reads fixed bounded stages using user JWT and excludes archived leads',async()=>{
   const calls=[];
-  const data=await handleCrm({...base,action:'crm-pipeline',url:new URL('https://example.test/?archived=all&country_category=SK&q=chair'),call:async(path,opts)=>{calls.push({path,opts});return {companies:[],total:0,page:1,pageSize:25};}});
+  const data=await handleCrm({...base,action:'crm-pipeline',url:new URL('https://example.test/?archived=all&country_category=SK&q=chair'),call:async(path,opts)=>{calls.push({path,opts});return {columns:STATUSES.filter(s=>s!=='LOST').map(status=>({status,companies:[],total:0,page:1,pageSize:25}))};}});
   assert.deepEqual(data.columns.map(c=>c.status),STATUSES.filter(s=>s!=='LOST'));
-  assert.equal(calls.length,8);
-  for(const {path,opts}of calls){assert.equal(path,'/rest/v1/rpc/crm_list_companies');assert.equal(opts.token,'user-jwt');assert.equal(opts.body.p_filters.archived,'active');assert.equal(opts.body.p_filters.country_category,'SK');assert.equal(opts.body.p_filters.q,'chair');assert.equal(opts.body.p_page,1);}
+  assert.equal(calls.length,1);
+  const {path,opts}=calls[0];assert.equal(path,'/rest/v1/rpc/crm_pipeline');assert.equal(opts.token,'user-jwt');assert.equal(opts.body.p_mode,'active');assert.equal(opts.body.p_filters.country_category,'SK');assert.equal(opts.body.p_filters.q,'chair');
 });
 test('lost view is explicit and invalid pipeline mode is rejected',async()=>{
   let count=0;
-  const data=await handleCrm({...base,action:'crm-pipeline',url:new URL('https://example.test/?mode=lost'),call:async(path,opts)=>{count++;assert.equal(opts.body.p_filters.pipeline_status,'LOST');return {companies:[],total:0,page:1};}});
+  const data=await handleCrm({...base,action:'crm-pipeline',url:new URL('https://example.test/?mode=lost'),call:async(path,opts)=>{count++;assert.equal(opts.body.p_mode,'lost');return {columns:[{status:'LOST',companies:[],total:0,page:1}]};}});
   assert.equal(count,1);assert.equal(data.columns[0].status,'LOST');
   await assert.rejects(()=>handleCrm({...base,action:'crm-pipeline',url:new URL('https://example.test/?mode=all'),call:async()=>{throw new Error('should not call');}}),{status:400});
 });

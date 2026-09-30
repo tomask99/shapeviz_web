@@ -86,6 +86,22 @@ test('admin validates client ownership, folder type and idempotent tracking with
   const again=await run();assert.equal(again.existing,true);assert.equal(again.item.total_downloads,7);
 });
 
+test('admin batches bounded rankings with owner JWT and preserves disconnected history',async()=>{
+  const calls=[],downloads=Array.from({length:51},(_,i)=>({file_name:`Sofa ${i}.fbx`,download_count:51-i}));
+  const result=await handleClientFiles({action:'client-file-tracking',body:{},url:new URL(origin+'/api/admin?companyId='+company),user:{id:owner},token:'owner-jwt',call:async(path,options)=>{
+    calls.push(path);assert.equal(options.token,'owner-jwt');
+    if(path.includes('crm_clients'))return [{company_id:company,crm_companies:{}}];
+    assert.match(path,/company_id=eq\./);assert.ok(path.includes('owner_id=eq.'+owner));
+    assert.match(path,/downloads\.limit=51/);assert.match(path,/downloads\.order=download_count.desc,mega_node_id/);
+    assert.ok(!path.includes('mega_url')&&!path.includes('file_path'));
+    return [{id:trackerId,portal_id:portalId,source_version:1,portal:{id:portalId,source_version:1,active:true},downloads},
+      {id:company,portal_id:null,source_version:1,portal:null,downloads:[{file_name:'History.3ds',download_count:8}]}];
+  }});
+  assert.equal(calls.length,2);assert.equal(result.items[0].stats.items.length,50);assert.equal(result.items[0].stats.hasMore,true);
+  assert.equal(result.items[0].connected,true);assert.equal(result.items[0].portal_active,true);assert.equal(result.items[0].portal,undefined);
+  assert.equal(result.items[1].connected,false);assert.equal(result.items[1].stats.items[0].download_count,8);
+});
+
 test('Postgres lifetime totals are atomic, owner-only and survive renames, pause, source replacement and portal deletion',async()=>{
   const db=new PGlite();
   try{

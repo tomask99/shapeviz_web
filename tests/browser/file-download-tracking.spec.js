@@ -24,7 +24,22 @@ test('owner adds a folder below Cloud storage, sees lifetime rankings, retries, 
   await page.setViewportSize({width:390,height:844});await page.screenshot({path:'.cache/download-stats-mobile.png',fullPage:true});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await expect(page.getByRole('button',{name:'Track folder',exact:true})).toBeVisible();
-  expect(fixture.calls.some(c=>c.action==='client-file-tracking-add')).toBe(true);expect(errors).toEqual([]);
+  expect(fixture.calls.some(c=>c.action==='client-file-tracking-add')).toBe(true);
+  expect(fixture.calls.filter(c=>c.action==='client-file-download-stats')).toHaveLength(0);expect(errors).toEqual([]);
+});
+
+test('rankings use the embedded first page, fetch later pages and retain pagination on refresh',async({page})=>{
+  const fixture=await mockTrackingAdmin(page,{many:true,trackedInitially:true});
+  await page.goto('/admin/clients/'+companyId+'?tab=files');
+  await expect(page.locator('.file-download-list li')).toHaveCount(50);
+  const reads=()=>fixture.calls.filter(c=>c.action==='client-file-download-stats');
+  expect(reads()).toHaveLength(0);
+  await page.getByRole('button',{name:'Next files',exact:true}).click();
+  await expect(page.locator('.file-download-list li')).toHaveCount(1);expect(reads()).toHaveLength(1);expect(reads()[0].page).toBe('2');
+  await page.getByRole('button',{name:'Refresh',exact:true}).click();
+  await expect(page.locator('.file-stats-pagination')).toContainText('Page 2');expect(reads()).toHaveLength(2);
+  await page.getByRole('button',{name:'Previous files',exact:true}).click();
+  await expect(page.locator('.file-download-list li')).toHaveCount(50);
 });
 
 for(const outcome of ['success','integrity-error','cancel'])test('download receipt is sent only after a completed transfer: '+outcome,async({page})=>{

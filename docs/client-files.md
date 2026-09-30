@@ -177,6 +177,25 @@ file metadata/counters use the database. MEGA file bytes never use Supabase Stor
 
 ## Configuration and verification
 
+### Request efficiency
+
+Simultaneous metadata reads for the same MEGA share reuse the same pending
+promise within one server instance. Completed trees are never reused by a
+`fresh` read: refresh/navigation still sees current MEGA additions, moves,
+renames and removals. Failures are evicted so retries can recover. The bounded
+metadata cache contains no file bytes; every public request still validates
+portal/link status and live ancestry before releasing file access.
+
+The admin tracking list now embeds portal status and each tracker's first 50
+filename/count pairs in one JWT/RLS-protected REST query. Each embedded ranking
+is ordered by count and stable node ID, and limited independently to 51 rows
+to detect another page. Later pages load only on demand. Refresh preserves the
+selected page; detached trackers retain their history. The UI remains a simple
+list of filenames (including their extensions) and lifetime download counts.
+See [PostgREST embedded filters](https://docs.postgrest.org/en/v13/references/api/resource_embedding.html#embedded-filters).
+
+### Setup
+
 The existing `SUPABASE_URL` and `SUPABASE_SECRET_KEY` variables are used. Migrations
 `20260930121806_client_file_shares.sql` and
 `20260930125222_client_file_portals_scoped_links.sql` create portal settings and

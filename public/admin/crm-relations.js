@@ -39,14 +39,14 @@ export function mountRelations({root,company,api,notify,onCompanyChanged}) {
   const enrichment=createResearchEnrich({api,onChanged:()=>{if(!disposed){api.invalidate?.();notify('AI Insight saved.');onCompanyChanged?.();}}});
   similarPanel.addEventListener('click',event=>{if(event.target.closest('[data-company-similar]')&&!disposed)similar.open({type:'company',id:company.id,name:company.company_name,country:company.country,status:company.archived_at?'ARCHIVED':company.pipeline_status});});
   const replies=createReplyRecorder({company,api,notify,onSaved:()=>{page=1;render();}});
-  const read=async(kind,p=1)=>api('crm-'+kind,null,{companyId:company.id,page:p});
+  const read=async(kind,p=1,summary=false)=>api('crm-'+kind,null,{companyId:company.id,page:p,...summary?{summary:true}:{}});
   function detailsContact(c) {
     return `<h3>${esc(c.full_name)}</h3>${c.primary_contact?'<span class="badge">Primary contact</span>':''}<p class="fine">${esc(c.job_title)}</p><div class="crm-contact-links">${c.email?`<a href="mailto:${encodeURIComponent(c.email)}">${esc(c.email)}</a>`:''}${c.phone?`<span>${esc(c.phone)}</span>`:''}${['linkedin','instagram'].filter(k=>/^https?:\/\//i.test(c[k])).map(k=>`<a href="${esc(c[k])}" target="_blank" rel="noopener noreferrer">${k==='linkedin'?'LinkedIn':'Instagram'}</a>`).join('')}</div>${c.notes?`<p class="crm-description">${esc(c.notes)}</p>`:''}${contactResearchSnapshot(c.research_evidence)}`;
   }
   async function loadSummary(ticket) {
     summary.innerHTML='<p class="fine">Loading company summary…</p>';
     try {
-      const [contacts,notes,history,reply]=await Promise.all([read('contacts'),read('notes'),read('activity'),api('crm-reply-summary',null,{companyId:company.id})]);
+      const [contacts,notes,history,reply]=await Promise.all([read('contacts',1,true),read('notes',1,true),read('activity',1,true),api('crm-reply-summary',null,{companyId:company.id})]);
       if(disposed||ticket!==seq)return;
       summary.innerHTML=`<p class="eyebrow">AT A GLANCE</p><div class="crm-summary-grid"><div><h3>Contact summary</h3>${contacts.items?.[0]?detailsContact(contacts.items[0]):'<p class="fine">No contacts yet.</p>'}<button class="quiet" data-open="contacts">View contacts</button></div><div><h3>Latest note</h3><p class="crm-description">${esc(notes.items?.[0]?.content?.slice(0,300)||'No notes yet.')}</p><button class="quiet" data-open="notes">View notes</button></div><div><h3>Latest activity</h3>${history.items?.[0]?activity(history.items[0]):'<p class="fine">No activity yet.</p>'}<button class="quiet" data-open="activity">View activity</button></div></div>`;
       summary.querySelector('.crm-summary-grid').insertAdjacentHTML('beforeend',`<div><h3>Latest client reply</h3>${reply.item?`<p class="fine">Received: ${esc(date(reply.item.metadata.received_at))}${reply.item.metadata.contact_name?` · ${esc(reply.item.metadata.contact_name)}`:''}</p><p class="crm-description">${esc(reply.item.metadata.content.slice(0,300))}</p>`:'<p class="fine">No reply recorded yet.</p>'}<button class="quiet" data-record-reply ${company.archived_at?'disabled':''}>Record reply</button></div>`);

@@ -24,8 +24,9 @@ export async function handleRelations({action,body,url,user,request,owner}) {
     if(!Number.isInteger(page)||page<1||page>10000)throw fail(400,'Invalid page.');
     const table={'crm-contacts':'crm_contacts','crm-activity':'crm_activities'}[action];
     const order=action==='crm-contacts'?'primary_contact.desc,created_at.desc,id':'created_at.desc,id';
-    const rows=await request(`/rest/v1/${table}?${scope}&select=*&order=${order}&limit=31&offset=${(page-1)*30}`);
-    return {items:rows.slice(0,30),hasMore:rows.length>30,page};
+    const pageSize=url.searchParams.get('summary')==='true'?1:30;
+    const rows=await request(`/rest/v1/${table}?${scope}&select=*&order=${order}&limit=${pageSize+1}&offset=${(page-1)*pageSize}`);
+    return {items:rows.slice(0,pageSize),hasMore:rows.length>pageSize,page};
   }
   if(action==='crm-activity-add'){
     const rows=await request('/rest/v1/crm_activities',{method:'POST',body:{company_id:companyId,owner_id:user.id,event_type:'manual_activity',metadata:{content:content(body.content)}},headers:{Prefer:'return=representation'}});
