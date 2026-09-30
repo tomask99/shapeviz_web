@@ -92,3 +92,16 @@ export async function notifyWebsiteOpened({env, send=fetch, headers={}}) {
     if(!response.ok || !(await response.json()).ok)throw new Error('delivery failed');
   } catch { console.warn('Telegram website notification failed'); }
 }
+
+export async function notifyCloudWebsiteClicked({company,title,source},{env,send=fetch,headers={}}) {
+  if(!env.TELEGRAM_BOT_TOKEN||!env.TELEGRAM_CHAT_ID)return false;
+  try {
+    const text=`Niekto sa preklikol na shapeviz.com z Cloud storage.\n\nFirma: ${singleLine(company,160)}\nCloud storage: ${singleLine(title,160)}\nOdkaz: ${source==='logo'?'Logo Shapeviz':'Visual studio'}\nZariadenie: ${deviceLabel(headers)}\nPribližná poloha: ${locationLabel(headers,env)}`;
+    const response=await send(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN.trim()}/sendMessage`,{
+      method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(8000),
+      body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID.trim(),text,link_preview_options:{is_disabled:true}})
+    });
+    if(!response.ok||!(await response.json()).ok)throw new Error('delivery failed');
+    return true;
+  }catch{console.warn('Telegram Cloud storage click notification failed');return false;}
+}

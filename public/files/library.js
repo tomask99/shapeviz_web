@@ -1,10 +1,12 @@
 import '../admin/cursor.js';
 import { previewType } from './preview-types.js';
+import { mountStudioLinks } from './studio-links.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const share = /^\/files\/share\/([\w-]{32})\/?$/.exec(location.pathname)?.[1];
 const portal = !share && /^\/files\/([a-z0-9-]{1,80})\/?$/.exec(location.pathname)?.[1];
 const access = portal ? new URLSearchParams(location.hash.slice(1)).get('access') : null;
 const basePath = share ? `/files/share/${share}` : `/files/${portal}`;
+mountStudioLinks({share,portal,access});
 const content = document.querySelector('#content');
 let view, loading, generation = 0, downloading = false, stopDownload, noticeTimer;
 let previewSize=160;
@@ -50,7 +52,7 @@ async function load() {
     const data = await api({ node:params.get('node')||'', page:params.get('page')||'1', q:params.get('q')||'' }, AbortSignal.any([loading.signal,AbortSignal.timeout(30_000)]));
     if (ticket !== generation) return;
     view = data;
-    document.title = `${data.current.directory?data.collection.title:data.current.name} · Shapeviz`;
+    document.title = `${data.current.directory?data.collection.title:data.current.name} · Cloud storage · Shapeviz`;
     document.querySelector('#collection-title').textContent = data.collection.title;
     document.querySelector('#breadcrumbs').innerHTML = data.breadcrumbs.map((item,i) => `${i?'<span class="crumb-sep" aria-hidden="true">/</span>':''}${i===data.breadcrumbs.length-1?`<span aria-current="page">${esc(i===0&&!data.restricted?'All files':item.name)}</span>`:`<a data-browse href="${href(item.id)}">${esc(i===0&&!data.restricted?'All files':item.name)}</a>`}`).join('');
     const copyPage = document.querySelector('#copy-page'); copyPage.hidden = false;

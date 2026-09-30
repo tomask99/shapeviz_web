@@ -2,9 +2,11 @@ import { randomBytes } from 'node:crypto';
 import { createFolderLoader, fail } from './mega.js';
 import { createFileStore, resolveAccess } from './access.js';
 import { previewType } from '../../public/files/preview-types.js';
+import { createCloudClickTracker } from './website-click.js';
 
 export function createFilesHandler({ env = process.env, send = fetch, loadFolder = createFolderLoader({ send }) } = {}) {
   const store=createFileStore({env,send});
+  const trackCloudClick=createCloudClickTracker({env,send,store});
   return async function files(req, res) {
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
@@ -14,14 +16,19 @@ export function createFilesHandler({ env = process.env, send = fetch, loadFolder
     try {
       const params = new URL(req.url, 'http://localhost').searchParams;
       const action=params.get('action') || 'browse';
-      if (!['browse','download','share','preview'].includes(action)) throw fail(400,'Invalid file action.');
-      if (req.method!==(action==='share'?'POST':'GET')) { res.setHeader('Allow',action==='share'?'POST':'GET');throw fail(405,'Invalid request method.'); }
-      if (action==='share') {
+      if (!['browse','download','share','preview','website-click'].includes(action)) throw fail(400,'Invalid file action.');
+      const writing=action==='share'||action==='website-click';
+      if (req.method!==(writing?'POST':'GET')) { res.setHeader('Allow',writing?'POST':'GET');throw fail(405,'Invalid request method.'); }
+      if (writing) {
         if (req.headers['sec-fetch-site']==='cross-site') throw fail(403,'Open this file on Shapeviz to share it.');
         if (req.headers.origin) {
           const host=req.headers['x-forwarded-host'] || req.headers.host;
           if (new URL(req.headers.origin).host!==host) throw fail(403,'Open this file on Shapeviz to share it.');
         }
+      }
+      if(action==='website-click'){
+        const status=await trackCloudClick(req,params);
+        res.writeHead(204,{'X-Cloud-Click-Status':status}).end();return;
       }
       const page=Number(params.get('page') || 1),query=(params.get('q') || '').trim();
       if (!Number.isSafeInteger(page) || page<1 || page>200 || query.length>160) throw fail(400,'Invalid file search.');
@@ -56,6 +63,6 @@ export function createFilesHandler({ env = process.env, send = fetch, loadFolder
       for (let item=current;item;item=folder.nodes.get(item.parent)) { breadcrumbs.unshift(safeNode(item));if (item.id===root.id) break; }
       const children=current.directory?[...folder.nodes.values()].filter(item=>item.parent===current.id && (!query || item.name.toLocaleLowerCase().includes(query.toLocaleLowerCase()))).sort((a,b)=>Number(b.directory)-Number(a.directory)||a.name.localeCompare(b.name,'en',{numeric:true})||a.id.localeCompare(b.id)):[];
       reply(200,{collection:{title:portal.title,description:portal.description},restricted:!!link,current:safeNode(current),breadcrumbs,items:children.slice((page-1)*100,page*100).map(safeNode),page,total:children.length,hasMore:children.length>page*100});
-    } catch (error) { reply(error.status || 502,{error:error.status?error.message:'The file library could not be loaded. Please try again.'}); }
+    } catch (error) { if(error.status===429)res.setHeader('Retry-After','60');reply(error.status || 502,{error:error.status?error.message:'The file library could not be loaded. Please try again.'}); }
   };
 }

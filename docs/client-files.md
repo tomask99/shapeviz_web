@@ -1,4 +1,31 @@
-# Client files through MEGA
+# Cloud storage through MEGA
+
+The public panel is named **Cloud storage**, shown above the company name and
+in the browser title. Its header logo and **visual studio** link both navigate
+to `https://shapeviz.com/`. The lower promotional footer is omitted.
+
+## Studio click notifications
+
+An actual logo/studio click sends a small same-origin `keepalive` POST while
+native navigation continues immediately, including keyboard and new-tab clicks.
+`/api/files?action=website-click` verifies the portal/share capability, active
+portal, source version and ancestor revocation. It reads the company and cloud
+title from the database, never from client-supplied names. Notifications do not
+depend on MEGA availability or transfer file bytes.
+
+With the existing `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` configured, the bot
+reports the source **Cloud storage**, company name, cloud title and clicked link.
+DNT/GPC and bot requests are excluded. A service-only `client_file_website_clicks`
+ledger atomically claims each event ID so concurrent retries cannot duplicate
+the notification. It stores only event ID, portal ID, link type and timestamp;
+deleting the portal cascades to these records. Telegram errors never block
+navigation, and uncertain deliveries are not retried automatically.
+
+The ledger deliberately has no client RLS policies and revokes all client grants.
+Supabase's informational [RLS-without-policy advisory](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)
+is expected for this server-only table; PostgreSQL tests verify client access is denied.
+
+## Connecting a client
 
 In **Clients → Client → Files**, connect one dedicated MEGA folder. Set the
 public client name, **Files URL slug**, optional description and complete MEGA
@@ -27,7 +54,7 @@ behavior used by [MEGA's SDK](https://github.com/meganz/sdk/blob/master/src/comm
 
 **Copy link** creates or reuses `/files/share/{random-token}` for exactly the
 selected file or folder subtree. The share page has Shapeviz branding and a
-studio/contact link, without a link back to the entire client portal.
+visual studio link, without a link back to the entire client portal.
 Its root breadcrumb has no parent. Server checks also reject attempts to read,
 download or share a sibling/parent node by manually changing request parameters.
 
@@ -69,7 +96,7 @@ Vercel. Navigating away aborts unfinished previews and releases their Blob URLs.
 Animated images use a still preview; download the original for the full image.
 
 All models, ZIPs and other file bytes remain in MEGA. Supabase stores only portal
-settings and share-link records; its Storage service is not used by this feature.
+settings, share-link records and small click records; its Storage service is not used by this feature.
 The Vercel API reads folder metadata and checks access. File downloads travel
 directly from MEGA to the browser, without a Vercel download proxy.
 

@@ -19,7 +19,7 @@ for(const mobile of [false,true])test(`file portal keeps SVG icons after navigat
     await page.goto('http://127.0.0.1:4173/files/icons#access='+'a'.repeat(32));
     const open=page.getByRole('link',{name:'Open '+folder.name,exact:true});
     await expect(open).toBeVisible();
-    for(const control of [page.getByRole('link',{name:/create together/}),page.getByRole('button',{name:'Copy folder link',exact:true}),open]){
+    for(const control of [page.getByRole('link',{name:'visual studio'}),page.getByRole('button',{name:'Copy folder link',exact:true}),open]){
       const icon=control.locator('svg');await expect(icon).toBeVisible();
       expect(await icon.evaluate(node=>node.namespaceURI)).toBe('http://www.w3.org/2000/svg');
       await expect(icon).toHaveAttribute('aria-hidden','true');

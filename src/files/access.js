@@ -17,9 +17,8 @@ export function within(folder, item, root) {
   return false;
 }
 
-// Check live node ancestry, not saved filenames or paths. Derived shares retain
-// their parent capability so revocation and moves also apply to forwarded links.
-export async function resolveAccess({ req, params, store, loadFolder }) {
+// Resolve only the portal identity and capability, without fetching MEGA data.
+export async function resolvePortalAccess({ req, params, store }) {
   const share=params.get('share'),slug=params.get('portal'),access=req.headers['x-files-access'];
   if (share ? !sharePattern.test(share) || slug || access : !validSlug(slug) || !sharePattern.test(access || '')) throw unavailable();
   let link,portal,ancestors=[];
@@ -36,6 +35,13 @@ export async function resolveAccess({ req, params, store, loadFolder }) {
     [portal]=await store(`client_file_shares?slug=eq.${slug}&public_token=eq.${access}&active=eq.true&select=*&limit=1`);
     if (!portal) throw unavailable();
   }
+  return {portal,link,ancestors};
+}
+
+// Check live node ancestry, not saved filenames or paths. Derived shares retain
+// their parent capability so revocation and moves also apply to forwarded links.
+export async function resolveAccess({ req, params, store, loadFolder }) {
+  const {portal,link,ancestors}=await resolvePortalAccess({req,params,store});
   const folder=await loadFolder(portal.mega_url,{fresh:true});
   const root=folder.nodes.get(link?.mega_node_id || folder.rootId);
   if (!root || (link && root.directory!==(link.type==='folder'))) throw unavailable();
