@@ -10,7 +10,7 @@ export function createRecipientSharing({company,api,notify}){
   const alive=()=>!disposed&&epoch===life&&dialog.open;
   const writable=!company.archived_at&&item.project?.status==='published'&&!item.project?.is_template;
   const read=(action,params={})=>api(action,null,{companyId:company.id,...params});
-  dialog.innerHTML=`<div class="dialog-head"><h2 id="crm-share-title">Share / recipients.</h2><button type="button" data-close aria-label="Close">×</button></div><p>${esc(item.project?.title||item.deck_slug)}</p>
+  dialog.innerHTML=`<div class="dialog-head"><h2 id="crm-share-title">Share / recipients.</h2><button type="button" data-close aria-label="Close"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><p>${esc(item.project?.title||item.deck_slug)}</p>
    <p class="fine">No email is sent here. Activity belongs to a link, not a verified person; forwarded links keep the original attribution.</p>
    <label>General presentation link<input readonly data-general></label><button class="secondary" data-copy-general>Copy general link</button>
    <form data-create><h3>Create recipient link</h3><label>Recipient type<select name="mode"><option value="contact">Existing contact</option><option value="adhoc">Ad-hoc recipient</option></select></label>

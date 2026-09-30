@@ -7,7 +7,7 @@ export function projectPrice(p){
 }
 export function createProjectEditor({api,notify,companyId,onSaved}){
  const dialog=document.createElement('dialog');dialog.id='project-editor';dialog.className='crm-record-dialog client-editor';dialog.setAttribute('aria-labelledby','project-editor-title');
- dialog.innerHTML=`<form><div class="dialog-head"><h2 id="project-editor-title">New project.</h2><button type="button" data-close aria-label="Close">×</button></div>
+ dialog.innerHTML=`<form><div class="dialog-head"><h2 id="project-editor-title">New project.</h2><button type="button" data-close aria-label="Close"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <label>Project name<input name="name" required maxlength="160"></label>
   <div class="two-columns"><label>Billing<select name="billing_type" aria-label="Billing"><option value="ONE_TIME">One-time</option><option value="MONTHLY">Monthly</option><option value="MIXED" hidden>One-time + monthly (existing)</option></select></label><label>Price (EUR)<input name="amount" required inputmode="decimal" maxlength="12" placeholder="e.g. 1500"></label></div>
   <label data-legacy-monthly hidden>Monthly price (EUR)<input name="monthly_value" inputmode="decimal" maxlength="12"></label>

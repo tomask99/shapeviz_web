@@ -75,7 +75,7 @@ test('Add client uses a small mobile form and opens the new client directly, wit
  await dialog.getByRole('button',{name:'Add client',exact:true}).click();await expect(dialog).toContainText('Client save failed');await expect(dialog.getByLabel('Company name',{exact:true})).toHaveValue('Manual client');await dialog.getByRole('button',{name:'Add client',exact:true}).click();
  await expect(page).toHaveURL('/admin/clients/'+id);await expect(page.locator('#crm .page-heading h1')).toContainText('Manual client');await expect(page.getByRole('heading',{name:'Task list.'})).toBeVisible();await expect(page.locator('#client-editor[open]')).toHaveCount(0);
  const creates=calls.filter(c=>c.action==='crm-client-create');expect(creates).toHaveLength(2);expect(creates[0].body.requestId).toBe(creates[1].body.requestId);expect(calls.some(c=>['crm-create','crm-status','crm-client-convert'].includes(c.action))).toBe(false);
- await page.getByRole('link',{name:'← All clients',exact:true}).click();await expect(page.locator('.client-card')).toContainText('Manual client');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ await page.getByRole('link',{name:'All clients',exact:true}).click();await expect(page.locator('.client-card')).toContainText('Manual client');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
 });
 test('A late clients response cannot overwrite another page',async({page})=>{
  await fixture(page,{delay:500});await page.goto('/admin/clients');await page.locator('#nav-research').click();await expect(page).toHaveURL('/admin/ai-research');await page.waitForTimeout(600);await expect(page.locator('.client-card')).toHaveCount(0);

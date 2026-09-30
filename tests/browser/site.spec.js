@@ -72,8 +72,10 @@ test('video autoplays muted, accepts pause and sound controls, and pauses offscr
   expect(await video.evaluate(v => v.muted && v.loop && v.playsInline)).toBe(true);
   await page.getByRole('button', { name: 'Pause video', exact: true }).click();
   await expect.poll(() => video.evaluate(v => v.paused)).toBe(true);
+  await expect(page.getByRole('button', { name: 'Play video', exact: true }).locator('svg path')).toHaveAttribute('d','m8 5 11 7-11 7Z');
   await page.getByRole('button', { name: 'Play video', exact: true }).click();
   await expect.poll(() => video.evaluate(v => v.paused)).toBe(false);
+  await expect(page.getByRole('button', { name: 'Pause video', exact: true }).locator('svg path')).toHaveAttribute('d','M8 5v14M16 5v14');
   await page.getByRole('button', { name: 'Unmute video', exact: true }).click();
   expect(await video.evaluate(v => v.muted)).toBe(false);
   await page.locator('#project-form').scrollIntoViewIfNeeded();

@@ -8,7 +8,7 @@ export function createPreparePresentation({api,notify,onPrepared}) {
     if(busy)return;
     const ticket=++generation;
     dialog.setAttribute('aria-labelledby','prepare-title');
-    dialog.innerHTML='<div class="dialog-head"><h2 id="prepare-title">Prepare presentation</h2><button type="button" data-close aria-label="Close">×</button></div><p role="status">Loading company and templates…</p><p role="alert" data-error></p>';
+    dialog.innerHTML='<div class="dialog-head"><h2 id="prepare-title">Prepare presentation</h2><button type="button" data-close aria-label="Close"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><p role="status">Loading company and templates…</p><p role="alert" data-error></p>';
     dialog.querySelector('[data-close]').onclick=()=>dialog.close();if(!dialog.open)dialog.showModal();
     const alive=()=>ticket===generation&&dialog.open;
     try{
@@ -17,7 +17,7 @@ export function createPreparePresentation({api,notify,onPrepared}) {
       if(company.archived_at)throw new Error('Restore this company first.');
       const templates=projects.filter(p=>(p.is_template||p.source_type==='template')&&p.status!=='archived');
       const previous=attempts.get(companyId);
-      dialog.innerHTML=`<form><div class="dialog-head"><h2 id="prepare-title">Prepare presentation</h2><button type="button" data-close aria-label="Close">×</button></div>
+      dialog.innerHTML=`<form><div class="dialog-head"><h2 id="prepare-title">Prepare presentation</h2><button type="button" data-close aria-label="Close"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
         <label>Company<input value="${esc(company.company_name)}" readonly></label>
         <label>Template<select name="template" aria-label="Template" required><option value="">Select a template…</option>${templates.map(p=>`<option value="${esc(p.deck_slug)}">${esc(p.client)} — ${esc(p.title)}</option>`).join('')}</select></label>
         <p class="fine">The company name will be filled in automatically. The presentation will be published, linked to this company and the lead moved to Presentation ready.</p>

@@ -30,7 +30,7 @@ test('save multiple templates first, then choose one to create a client presenta
  await page.locator('#upload-dialog [data-close]').click();
  await expect(page.locator('#metrics')).toBeHidden();
  for(const name of ['Monthly pitch','Product launch']){
-  await page.getByRole('button',{name:'Upload template ＋',exact:true}).click();
+  await page.locator('#upload-top').click();
   await expect(page.locator('#upload-name-label')).toHaveText('Template name');
   await expect(page.locator('#publish-label')).toBeHidden();
   await page.locator('#html-file').setInputFiles({name:'template.html',mimeType:'text/html',buffer:Buffer.from('<h1 data-embed="client-name">&lt;embed text&gt;</h1><script>window.setShapevizClientName=function(name){document.querySelector("h1").textContent=name}</script>')});

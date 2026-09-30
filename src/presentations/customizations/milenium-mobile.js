@@ -5,7 +5,7 @@
   const originalHint = hint?.textContent;
   const originalShowSlide = showSlide;
   const sync = () => {
-    if (hint) hint.textContent = compact.matches ? 'ŤUKNITE MIMO NÁHĽADU ALEBO NA × PRE ZATVORENIE' : originalHint;
+    if (hint) hint.textContent = compact.matches ? 'ŤUKNITE MIMO NÁHĽADU ALEBO NA TLAČIDLO ZAVRIEŤ' : originalHint;
     if (compact.matches) slides[current]?.scrollTo(0, 0);
   };
   showSlide = function(index) {

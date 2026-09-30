@@ -5,7 +5,7 @@ const stylesheet=document.createElement('link');stylesheet.rel='stylesheet';styl
 function enhance(dialog){
   if(dialog.querySelector(closeSelector))return;
   const bar=document.createElement('div');bar.className='dialog-dismiss-bar';
-  const button=document.createElement('button');button.type='button';button.dataset.dialogDismiss='';button.setAttribute('aria-label','Close dialog');button.title='Close';button.textContent='×';
+  const button=document.createElement('button');button.type='button';button.dataset.dialogDismiss='';button.setAttribute('aria-label','Close dialog');button.title='Close';button.innerHTML='<svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   bar.append(button);dialog.prepend(bar);dialog.classList.add('has-dialog-dismiss');
 }
 function dismiss(dialog){

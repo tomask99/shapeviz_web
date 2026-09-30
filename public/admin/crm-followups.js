@@ -38,7 +38,7 @@ export function createFollowups({root,api,notify,todayOnly=false,onChanged=()=>{
   async function edit(record=null,prefill=null) {
     if(pending)return;
     const life=epoch,ticket=++dialogSequence;
-    dialog.innerHTML=`<form><div class="dialog-head"><h2 id="${prefix}followup-title">${record?'Reschedule':'Schedule'} follow-up.</h2><button type="button" data-cancel aria-label="Close">×</button></div>
+    dialog.innerHTML=`<form><div class="dialog-head"><h2 id="${prefix}followup-title">${record?'Reschedule':'Schedule'} follow-up.</h2><button type="button" data-cancel aria-label="Close"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
       ${record||company||prefill?`<p class="fine">${esc(record?.company_name||company?.company_name||prefill.company_name)}</p>`:`<label>Find company<input name="company_search" type="search" maxlength="160" placeholder="Search name or website"></label><button type="button" class="secondary" data-find-company>Search companies</button><label>Company *<select name="company_id" required><option value="">Choose a company…</option></select></label><p class="fine" data-company-hint></p>`}
       <label>Title *<input name="title" maxlength="160" required></label><label>Due date and time *<input name="due" type="datetime-local" required></label>
       <p class="fine">Local time: ${esc(Intl.DateTimeFormat().resolvedOptions().timeZone)}. At the autumn clock change, repeated times use the first occurrence.</p>

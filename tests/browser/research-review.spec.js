@@ -74,7 +74,8 @@ test('Candidate editing retains rejected input, sends full proposal, and records
   await dialog.getByRole('button',{name:'Save candidate'}).click();
   await expect(page.getByRole('heading',{name:'Corrected Furniture.'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Shapeviz Fit'}).locator('..')).toContainText('Manually reviewed');
-  await expect(page.locator('.research-history')).toContainText('Fit: High → Medium');
+  await expect(page.locator('.research-history')).toContainText('Fit: High Medium');
+  await expect(page.locator('.research-history svg')).toBeVisible();
 });
 
 test('Ambiguous candidate save retries preserve the exact operation and draft across dialog reopening',async({page})=>{

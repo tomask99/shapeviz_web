@@ -1,3 +1,4 @@
+import {svgIcon} from './ui/icons.js';
 import './gallery.js';
 import './dialog-dismiss.js';
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -102,7 +103,7 @@ function updateVideoControls(video) {
   const controls = video.parentElement.querySelector('.video-controls');
   const play = controls.querySelector('.video-play');
   play.setAttribute('aria-label', video.paused ? 'Play video' : 'Pause video');
-  play.firstElementChild.textContent = video.paused ? '▶' : 'Ⅱ';
+  play.firstElementChild.innerHTML = svgIcon(video.paused ? 'play' : 'pause');
   const sound = controls.querySelector('.video-sound');
   sound.setAttribute('aria-label', video.muted ? 'Unmute video' : 'Mute video');
   sound.setAttribute('aria-pressed', String(!video.muted));

@@ -10,7 +10,7 @@ test('Recent activity uses bounded owner and archived filters, preserving cursor
 });
 test('Recent activity page returns minimal bounded data and next cursor',()=>{
  const row={id,company_id:id,created_at:at,company:{company_name:'Example'},event_type:'status_changed',metadata:{from_status:'NEW',to_status:'WON',secret:'hidden'},owner_id:id};
- const page=recentActivityPage(Array(21).fill(row));assert.equal(page.items.length,20);assert.deepEqual(page.next,{beforeAt:at,beforeId:id});assert.equal(page.items[0].detail,'NEW → WON');assert.equal(page.items[0].metadata,undefined);assert.equal(page.items[0].owner_id,undefined);assert.equal(recentActivityPage([row]).next,null);assert.deepEqual(recentActivityPage([]),{items:[],next:null});assert.equal(recentActivityPage([{...row,event_type:'manual_activity',metadata:{content:'a'.repeat(900)}}]).items[0].detail.length,300);
+ const page=recentActivityPage(Array(21).fill(row));assert.equal(page.items.length,20);assert.deepEqual(page.next,{beforeAt:at,beforeId:id});assert.equal(page.items[0].detail,'NEW to WON');assert.equal(page.items[0].metadata,undefined);assert.equal(page.items[0].owner_id,undefined);assert.equal(recentActivityPage([row]).next,null);assert.deepEqual(recentActivityPage([]),{items:[],next:null});assert.equal(recentActivityPage([{...row,event_type:'manual_activity',metadata:{content:'a'.repeat(900)}}]).items[0].detail.length,300);
 });
 test('Recent activity forwards user JWT and rejects unauthenticated calls',async()=>{
  const context={action:'crm-recent-activity',body:{},user:{id},token:'user-jwt',url:new URL('https://example.test'),call:async(path,options)=>{assert.equal(options.token,'user-jwt');assert.match(path,/crm_activities/);return [];}};

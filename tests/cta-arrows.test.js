@@ -4,6 +4,17 @@ import {normalizePresentationCtaArrows} from '../src/presentations/cta-arrows.js
 import {transformDeck} from '../src/admin/html.js';
 import {preparePublishedHtml} from '../src/presentations/publish-html.js';
 
+test('legacy controls normalize every supported icon and keep ordinary button labels',()=>{
+ for(const point of [0x2197,0x2192,0x2190,0x2193,0x2191,0x21bb,0x25a4,0xff0b,0x25b6,0x2161,0xd7]){
+  const glyph=String.fromCodePoint(point);
+  const result=normalizePresentationCtaArrows(`<button aria-label="Open">Open ${glyph}\uFE0F</button>`);
+  assert.match(result,/<button aria-label="Open">Open <svg class="shapeviz-cta-arrow"/);
+  assert.ok(!result.includes(glyph));
+  assert.doesNotMatch(result,/[\uFE0E\uFE0F]/);
+  assert.equal(normalizePresentationCtaArrows(result),result);
+ }
+});
+
 test('CTA arrows use SVG for literal, entity and emoji variants, preserving links and icon wrappers',()=>{
  for(const arrow of ['↗','↗\uFE0F','↗\uFE0E','&#8599;','&#x2197;','&nearr;']){
   const result=normalizePresentationCtaArrows(`<a href="https://shapevizweb.vercel.app/" target="_blank" aria-label="Visit ↗">Visit &amp; explore <span class="final-brand-cta-icon">${arrow}</span></a>`);

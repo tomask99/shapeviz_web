@@ -1,5 +1,10 @@
 # SHAPEVIZ — Brand & Design System
 
+**Záväzné pravidlo ikon:** V celom Shapeviz rozhraní používame SVG ikony,
+nie emoji ani textové znaky ako náhradu ikon. Platí to aj pre šípky, prehrávanie,
+krížiky a dynamicky vytvárané prvky. Podrobnosti a automatická kontrola:
+[AGENTS.md](../AGENTS.md), [SVG icon policy](../docs/ui-icons.md).
+
 **Verzia:** 1.0 · 19. 9. 2026  
 **Referenčný dizajn:** Milenium HTML deck v28 — Designed to be desired.  
 **Použitie:** budúce prezentácie Shapeviz, portfólio, nový web a digitálne prezentačné materiály.

@@ -1,5 +1,9 @@
 # Shapeviz Web
 
+Global UI rule: all icons must be SVG, never emoji or Unicode icon glyphs.
+See [AGENTS.md](AGENTS.md) and [docs/ui-icons.md](docs/ui-icons.md).
+Run `npm.cmd run icons:validate`; the production build enforces the same rule.
+
 The private presentation studio is at `/adminlogin`. See
 [`docs/admin-studio.md`](docs/admin-studio.md) for account setup, HTML uploads,
 company variants and analytics.

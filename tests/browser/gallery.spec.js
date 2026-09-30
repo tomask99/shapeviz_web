@@ -9,6 +9,7 @@ test('curated mosaic has exactly nine images and two uncropped films, without ta
   await page.locator('#gallery-toggle').scrollIntoViewIfNeeded();
   expect(requests).toEqual([]);
   await page.locator('#gallery-toggle').click();
+  await expect(page.locator('.gallery-film .video-play svg')).toHaveCount(2);
   await expect(page.locator('#expanded-gallery .gallery-grid')).toHaveCount(1);
   await expect(page.getByRole('tab')).toHaveCount(0);
   await expect(page.locator('.gallery-item')).toHaveCount(11);

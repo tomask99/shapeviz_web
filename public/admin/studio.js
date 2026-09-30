@@ -120,7 +120,7 @@ function setView(next,push=true) {
  $('.workspace > .library').hidden=view==='all';
  $('#website-analytics').hidden=view!=='all';
  $('#search').placeholder=view==='templates'?'Search templates…':'Search a company or presentation…';
- $('#upload-top').textContent=view==='templates'?'Upload template ＋':'New presentation ＋';renderProjects();
+ $('#upload-top').innerHTML=view==='templates'?'Upload template <svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>':'New presentation <svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>';renderProjects();
  return refresh().catch(error=>notify(error.message));
 }
 $('#open-upload').onclick=()=>openUpload();
@@ -142,7 +142,7 @@ $('#upload-form').onsubmit=e=>{e.preventDefault();busy(e.currentTarget,async()=>
   if(!pendingUpload)pendingUpload=await uploadPresentation($('#html-file').files[0],[...$('#asset-files').files],api,message=>$('#upload-progress').textContent=message);
   $('#upload-progress').textContent='Files uploaded. Saving…';return api('finalize',{...data,object:pendingUpload.object});
  },{slug:form.elements.slug.value,isTemplate:data.isTemplate});
- pendingUpload=null;$('#upload-dialog').close();$('#search').value='';await setView(data.isTemplate?'templates':'presentations');notify(data.isTemplate?'Template saved to your library. Use it later from New presentation → From template.':`Presentation saved at ${result.url}`);
+ pendingUpload=null;$('#upload-dialog').close();$('#search').value='';await setView(data.isTemplate?'templates':'presentations');notify(data.isTemplate?'Template saved to your library. Use it later from New presentation, then From template.':`Presentation saved at ${result.url}`);
 });};
 function openVariant(slug='',company=null) {
  variantCompany.reset({company});

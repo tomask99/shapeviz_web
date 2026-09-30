@@ -28,7 +28,7 @@ export function createCrm({api,notify}) {
   const research=createResearch({root,api,navigate});
   const dialog = document.createElement('dialog');
   dialog.id = 'lead-dialog'; dialog.setAttribute('aria-labelledby','lead-form-title');
-  dialog.innerHTML = `<form id="lead-form"><div class="dialog-head"><div><p class="eyebrow">SALES / COMPANY</p><h2 id="lead-form-title">Add lead.</h2></div><button type="button" data-cancel aria-label="Close">×</button></div>
+  dialog.innerHTML = `<form id="lead-form"><div class="dialog-head"><div><p class="eyebrow">SALES / COMPANY</p><h2 id="lead-form-title">Add lead.</h2></div><button type="button" data-cancel aria-label="Close"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
     <label>Company name *<input name="company_name" maxlength="160" autocomplete="organization" required></label>
     ${input('website','Website',2048,'url')}
     ${input('logo_url','Logo URL (optional)',2048,'url')}
@@ -119,14 +119,14 @@ export function createCrm({api,notify}) {
   async function detail(id) {
     cleanupDetail?.();cleanupDetail=null;
     const seq=++requestId; current=null;
-    root.innerHTML='<a href="/admin/leads" data-lead class="quiet">← All leads</a><p role="status">Loading company…</p>';
+    root.innerHTML='<a href="/admin/leads" data-lead class="quiet"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 12H4m7-7-7 7 7 7"/></svg> All leads</a><p role="status">Loading company…</p>';
     try {
       const {company:c}=await api('crm-detail',null,{id});
       if(!active||seq!==requestId)return; current=c;
-      root.innerHTML='<a href="/admin/leads" data-lead class="quiet">← All leads</a>'+
+      root.innerHTML='<a href="/admin/leads" data-lead class="quiet"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 12H4m7-7-7 7 7 7"/></svg> All leads</a>'+
         heading(c.company_name,'SALES / COMPANY', `<div class="actions">${notesButton(c,{preview:false})}<button class="primary" data-edit>Edit company</button></div>`)+
         `<div class="actions"><span class="badge">${escape(label(c.pipeline_status))}</span><span class="badge">${escape(c.country||'INT')}</span><span class="fine">Priority: ${escape(label(c.priority))}</span>${c.archived_at?'<span class="badge">Archived</span>':''}</div>
-        <div class="crm-detail-grid"><section class="chart-panel"><p class="eyebrow">COMPANY INFORMATION</p><h2>${escape(c.industry||'Industry not set')}</h2><p class="crm-description">${escape(c.short_description||'No description yet.')}</p><dl><dt>Country / city</dt><dd>${escape([c.country,c.city].filter(Boolean).join(' / ')||'Not specified')}</dd><dt>Lead source</dt><dd>${escape(c.lead_source)}</dd><dt>Added</dt><dd>${escape(date(c.created_at))}</dd><dt>Updated</dt><dd>${escape(date(c.updated_at))}</dd></dl><div class="actions">${['website','instagram','linkedin'].filter(k=>/^https?:\/\//i.test(c[k])).map(k=>`<a class="secondary" href="${escape(c[k])}" target="_blank" rel="noopener noreferrer">${label(k)} ↗</a>`).join('')}</div></section>
+        <div class="crm-detail-grid"><section class="chart-panel"><p class="eyebrow">COMPANY INFORMATION</p><h2>${escape(c.industry||'Industry not set')}</h2><p class="crm-description">${escape(c.short_description||'No description yet.')}</p><dl><dt>Country / city</dt><dd>${escape([c.country,c.city].filter(Boolean).join(' / ')||'Not specified')}</dd><dt>Lead source</dt><dd>${escape(c.lead_source)}</dd><dt>Added</dt><dd>${escape(date(c.created_at))}</dd><dt>Updated</dt><dd>${escape(date(c.updated_at))}</dd></dl><div class="actions">${['website','instagram','linkedin'].filter(k=>/^https?:\/\//i.test(c[k])).map(k=>`<a class="secondary" href="${escape(c[k])}" target="_blank" rel="noopener noreferrer">${label(k)} <svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></a>`).join('')}</div></section>
         <section class="chart-panel"><p class="eyebrow">POTENTIAL SHAPEVIZ SERVICES</p><h2>Ways to collaborate.</h2><div class="crm-tags">${c.services.map(s=>`<span class="badge">${escape(s)}</span>`).join('')||'<p class="fine">No services selected.</p>'}</div><hr><p class="fine">Archiving keeps the company and its history. You can restore it at any time.</p><button class="secondary" data-archive>${c.archived_at?'Restore lead':'Archive lead'}</button></section></div>`;
       const next=document.createElement("section");next.className="chart-panel crm-next-panel";next.innerHTML=`<p class="eyebrow">NEXT ACTION</p><p class="crm-next-action">${escape(nextActionText(c.next_action))}</p><a class="secondary" data-lead href="/admin/follow-ups?companyId=${encodeURIComponent(c.id)}">Manage follow-ups</a>`;root.querySelector(".crm-detail-grid").append(next);
       cleanupDetail=mountRelations({root,company:c,api,notify,onCompanyChanged:()=>{if(active&&current?.id===c.id)detail(c.id);}});
@@ -149,7 +149,7 @@ export function createCrm({api,notify}) {
         lost.innerHTML=`<p class="eyebrow">${c.pipeline_status==='LOST'?'LOST REASON':'PREVIOUSLY SAVED LOST REASON'}</p><h2>${escape(c.lost_reason||'Not specified')}</h2><p class="fine">${c.pipeline_status==='LOST'?'Optional. Add or change it using Edit company.':'This is a retained reason, not the current pipeline outcome. Edit company to change or clear it.'}</p>`;
         root.querySelector('.crm-detail-grid').append(lost);
       }
-    }catch(error){if(active&&seq===requestId)root.innerHTML=`<a href="/admin/leads" data-lead class="quiet">← All leads</a><p role="alert">${escape(error.message)}</p><button class="secondary" data-reload>Try again</button>`;}
+    }catch(error){if(active&&seq===requestId)root.innerHTML=`<a href="/admin/leads" data-lead class="quiet"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 12H4m7-7-7 7 7 7"/></svg> All leads</a><p role="alert">${escape(error.message)}</p><button class="secondary" data-reload>Try again</button>`;}
   }
   function countryField() {
     const other=form.elements.country.value==='OTHER';

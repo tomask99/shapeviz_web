@@ -1,6 +1,8 @@
 import { cp, mkdir, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { discoverProjects } from '../src/presentations/registry.js';
+import { validateUiIcons } from './validate-ui-icons.js';
+await validateUiIcons();
 const required = ['public/index.html', 'public/styles.css', 'public/app.js', 'public/media/milenium-interior-720.webp', 'public/media/milenium-interior-1440.webp', 'public/media/milenium-motion.mp4', 'public/media/milenium-motion-poster.webp', 'public/media/shapeviz-logo.webp'];
 for (const file of required) await stat(file);
 const projects = process.env.PRESENTATIONS_REMOTE === 'true' ? [] : await discoverProjects(path.resolve('presentations'));

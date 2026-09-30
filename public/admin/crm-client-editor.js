@@ -2,7 +2,7 @@ export function createClientEditor({api,notify,onSaved}){
  const dialog=document.createElement('dialog');
  dialog.className='crm-record-dialog client-editor';dialog.id='client-editor';dialog.setAttribute('aria-labelledby','client-editor-title');
  dialog.innerHTML=`<form>
-  <div class="dialog-head"><h2 id="client-editor-title">Add client.</h2><button type="button" data-close aria-label="Close">×</button></div>
+  <div class="dialog-head"><h2 id="client-editor-title">Add client.</h2><button type="button" data-close aria-label="Close"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <label>Company name<input name="company_name" required maxlength="160" autocomplete="organization"></label>
   <label>Website<input name="website" maxlength="2048" inputmode="url" placeholder="example.com"></label>
   <label>What the company does<input name="industry" maxlength="120" placeholder="e.g. Furniture manufacturer"></label>

@@ -8,6 +8,7 @@ async function backdrop(page,dialog){const box=await dialog.boundingBox();await 
 test('existing Studio dialogs close outside and with Escape without duplicate close buttons',async({page})=>{
  await studio(page);await page.locator('#upload-top').click();const dialog=page.locator('#new-dialog');
  await expect(dialog.getByRole('button',{name:'Close',exact:true})).toHaveCount(1);
+ await expect(dialog.getByRole('button',{name:'Close',exact:true}).locator('svg')).toBeVisible();
  const box=await dialog.boundingBox();await page.mouse.click(box.x+5,box.y+5);await expect(dialog).toBeVisible();
  await backdrop(page,dialog);await expect(dialog).toBeHidden();
  await page.locator('#upload-top').click();await page.keyboard.press('Escape');await expect(dialog).toBeHidden();
@@ -16,7 +17,7 @@ test('dynamic dialogs get a sticky cross, retain cancel guards, and ignore drags
  await studio(page);
  await page.evaluate(()=>{const d=document.createElement('dialog');d.id='dynamic-fixture';d.innerHTML='<h2>Long review</h2><div style="height:1200px">Review content</div>';d.addEventListener('cancel',event=>{if(d.dataset.saving==='true')event.preventDefault();});d.addEventListener('close',()=>d.remove());document.body.append(d);d.showModal();});
  const dialog=page.locator('#dynamic-fixture'),close=dialog.getByRole('button',{name:'Close dialog',exact:true});
- await expect(close).toBeVisible();await dialog.evaluate(d=>d.scrollTop=500);await expect(close).toBeInViewport();
+ await expect(close).toBeVisible();await expect(close.locator('svg')).toBeVisible();await dialog.evaluate(d=>d.scrollTop=500);await expect(close).toBeInViewport();
  const box=await dialog.boundingBox();await page.mouse.move(box.x+100,box.y+100);await page.mouse.down();await page.mouse.move(box.x-8,box.y+100);await page.mouse.up();await expect(dialog).toBeVisible();
  await dialog.evaluate(d=>d.dataset.saving='true');await close.click();await backdrop(page,dialog);await expect(dialog).toBeVisible();
  await dialog.evaluate(d=>delete d.dataset.saving);await close.click();await expect(dialog).toHaveCount(0);

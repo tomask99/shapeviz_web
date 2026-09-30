@@ -23,7 +23,7 @@ function externalLink(url,title) {
   try {
     const parsed = new URL(url);
     if (!['http:','https:'].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error();
-    return `<a class="research-source-link" href="${escape(parsed.href)}" target="_blank" rel="noopener noreferrer">${escape(title || parsed.href)} <span aria-hidden="true">↗</span></a>`;
+    return `<a class="research-source-link" href="${escape(parsed.href)}" target="_blank" rel="noopener noreferrer">${escape(title || parsed.href)} <span aria-hidden="true"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></a>`;
   } catch { return `<span>${escape(title || 'Link unavailable')}</span>`; }
 }
 
@@ -62,8 +62,8 @@ function card(candidate) {
     ${array(candidate.top_signals).length ? `<div class="research-card-section"><p class="eyebrow">Signals</p>${tags(candidate.top_signals.map(label))}</div>` : ''}
     <p class="research-summary">${escape(candidate.summary || 'No research summary recorded.')}</p>
     <div class="research-card-footer"><span>${escape(candidate.research_confidence ? label(candidate.research_confidence)+' confidence' : 'Confidence unknown')} · ${Number(candidate.source_count)||0} sources</span><span>${duplicate ? 'Possible duplicate' : candidate.duplicate_checked_at ? 'Duplicate check recorded' : 'Duplicates not checked'}</span></div>
-    <a class="research-open" data-research-link href="/admin/ai-research/${encodeURIComponent(candidate.id)}">View research <span aria-hidden="true">↗</span></a>
-    ${inLeads ? `<a class="research-lead-link" href="/admin/leads/${encodeURIComponent(candidate.approved_company_id)}">Open lead <span aria-hidden="true">↗</span></a>` : ''}
+    <a class="research-open" data-research-link href="/admin/ai-research/${encodeURIComponent(candidate.id)}">View research <span aria-hidden="true"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></a>
+    ${inLeads ? `<a class="research-lead-link" href="/admin/leads/${encodeURIComponent(candidate.approved_company_id)}">Open lead <span aria-hidden="true"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></a>` : ''}
     ${notesButton(candidate,{candidate:true})}
   </article>`;
 }
@@ -72,7 +72,7 @@ function detail(candidate,back,events = []) {
   const sources = array(candidate.sources), services = array(candidate.potential_services), signals = array(candidate.opportunity_signals);
   const guidance = researchGuidance(candidate);
   const weights = {HIGH:3,MEDIUM:2,LOW:1};
-  return `<a class="research-back" data-research-link href="${escape(back)}">← Research inbox</a>${heading(candidate.company_name)}
+  return `<a class="research-back" data-research-link href="${escape(back)}"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 12H4m7-7-7 7 7 7"/></svg> Research inbox</a>${heading(candidate.company_name)}
     <div class="research-detail-meta">${tag(RESEARCH_STATUSES[candidate.research_status] || 'Unknown')}${fit(candidate.fit)}${tag(candidate.research_confidence ? label(candidate.research_confidence)+' research confidence' : 'Research confidence unknown')}<span class="fine">Last researched: ${escape(date(candidate.last_researched_at))}</span></div>
     ${researchReviewActions(candidate)}
     ${notesButton(candidate,{candidate:true})}
@@ -147,7 +147,7 @@ export function createResearch({root,api,navigate}) {
     active = true;
     const version = ++generation, match = location.pathname.match(/^\/admin\/ai-research\/([^/]+)\/?$/);
     root.setAttribute('aria-busy','true');
-    if (match) root.innerHTML = `<a class="research-back" data-research-link href="${escape(back())}">← Research inbox</a>${heading('Research candidate')}<div id="research-results" aria-live="polite"><p class="fine">Loading research…</p></div>`;
+    if (match) root.innerHTML = `<a class="research-back" data-research-link href="${escape(back())}"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 12H4m7-7-7 7 7 7"/></svg> Research inbox</a>${heading('Research candidate')}<div id="research-results" aria-live="polite"><p class="fine">Loading research…</p></div>`;
     else { listQuery = location.search; listShell(); }
     try {
       if (match) {

@@ -10,9 +10,9 @@ function website(value){
 }
 function websiteLink(value){
  const url=website(value);
- return url?`<a class="client-website" href="${esc(url.href)}" target="_blank" rel="noopener noreferrer">${esc(url.hostname.replace(/^www\./,''))} <span aria-hidden="true">↗</span></a>`:'<span class="fine">Website not added</span>';
+ return url?`<a class="client-website" href="${esc(url.href)}" target="_blank" rel="noopener noreferrer">${esc(url.hostname.replace(/^www\./,''))} <span aria-hidden="true"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></a>`:'<span class="fine">Website not added</span>';
 }
-const back='<a href="/admin/clients" data-lead class="quiet">← All clients</a>';
+const back='<a href="/admin/clients" data-lead class="quiet"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 12H4m7-7-7 7 7 7"/></svg> All clients</a>';
 
 export function showClients({root,api,navigate,notify}){
  let disposed=false,seq=0;
@@ -37,7 +37,7 @@ export function showClients({root,api,navigate,notify}){
     <p class="client-industry">${esc(c.industry||'Industry not added')}</p>
     ${websiteLink(c.website)}
     <p class="client-card-description">${esc(c.short_description||'No company summary yet.')}</p>
-    <div class="research-card-footer"><span>Client since ${esc(c.client_since)}</span><span class="client-open">Open client <span aria-hidden="true">↗</span></span></div>
+    <div class="research-card-footer"><span>Client since ${esc(c.client_since)}</span><span class="client-open">Open client <span aria-hidden="true"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 19 19 5M5 5h14v14"/></svg></span></span></div>
    </article>`).join('')}</div>`:'<div class="research-empty"><h2>No clients found.</h2><p>Use Add client to create your first client, or try another search.</p></div>')+
    `<div class="actions crm-pagination"><button class="secondary" data-client-page="${page-1}" ${page===1?'disabled':''}>Previous</button><span class="fine">Page ${page} / ${pages}</span><button class="secondary" data-client-page="${page+1}" ${page>=pages?'disabled':''}>Next</button></div>`;
   }catch(error){if(!disposed&&ticket===seq)target.innerHTML=`<p role="alert">${esc(error.message)}</p><button class="secondary" data-client-retry>Retry clients</button>`;}
