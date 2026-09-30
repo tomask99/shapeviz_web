@@ -37,7 +37,7 @@ async function api(params, signal, method='GET') {
 async function load() {
   const ticket = ++generation;
   loading?.abort(); loading = new AbortController();
-  content.setAttribute('aria-busy','true'); content.innerHTML = '<p class="empty" role="status">Opening your files…</p>';
+  content.setAttribute('aria-busy','true'); content.innerHTML = '<p class="loading" role="status">Opening your files…</p>';
   document.querySelector('#copy-page').hidden = true;
   try {
     if (!share && (!portal || !access)) throw new Error('This file library link is incomplete. Ask the sender for the complete link.');
