@@ -1,6 +1,6 @@
 // Private to this page/session. Never persist CRM responses in browser storage.
-export function createCrmReadCache(request,{now=Date.now,ttl=10000,maxEntries=30}={}) {
-  const allowed=new Set(['crm-list','crm-pipeline','crm-followups','crm-saved-views']);
+export function createCrmReadCache(request,{now=Date.now,ttl=30000,maxEntries=30}={}) {
+  const allowed=new Set(['crm-list','crm-pipeline','crm-followups','crm-saved-views','list','stats','website-stats']);
   const entries=new Map();let generation=0,writes=0;
   function invalidate(){generation++;entries.clear();}
   async function api(action,body,params={}) {

@@ -5,6 +5,26 @@ import {createAdminHandler} from '../src/admin/handler.js';
 import {supportsClientNameApi,transformDeck} from '../src/admin/html.js';
 import {parse} from 'parse5';
 
+test('admin template preview defers offscreen media before HTML reaches the iframe',async()=>{
+ const html='<html><head><base href="https://old.example/"></head><body><section class="slide active"><h1>Company</h1><img src="https://media.example/first.jpg"></section><section class="slide"><video autoplay src="https://media.example/later.mp4"></video></section></body></html>';
+ const send=async url=>{
+  if(url.endsWith('/auth/v1/user'))return Response.json({id:'owner'});
+  if(url.includes('presentation_admins?'))return Response.json([{role:'owner'}]);
+  if(url.includes('presentation_projects?'))return Response.json([{deck_slug:'template',client:'Company',is_template:true,status:'draft',source_type:'standalone',source_bucket:'presentation-source',source_path:'template.html'}]);
+  if(url.includes('/storage/'))return new Response(html);
+  throw Error('Unexpected preview request');
+ };
+ const server=createServer(createAdminHandler({env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_SECRET_KEY:'test'},send}));
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;
+ try{
+  const response=await fetch(origin+'/?action=preview',{method:'POST',headers:{Origin:origin,Cookie:'sv_access=test','Content-Type':'application/json'},body:JSON.stringify({template:'template',client:'Milenium'})});
+  assert.equal(response.status,200);const result=await response.json();
+  assert.match(result.html,/Milenium/);assert.doesNotMatch(result.html,/<base\b/);
+  assert.match(result.html,/data-sv-src="https:\/\/media.example\/later.mp4"/);
+  assert.match(result.html,/preload="none"/);assert.match(result.html,/src="\/presentation-system\/media.js"/);
+ }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
+});
+
 test('auth throttling keeps the session and forwards Retry-After without refreshing',async()=>{
  const urls=[];
  const send=async url=>{urls.push(url);return Response.json({error:'busy'},{status:429,headers:{'Retry-After':'5'}});};

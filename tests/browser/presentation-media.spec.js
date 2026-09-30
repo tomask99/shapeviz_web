@@ -76,3 +76,22 @@ test('scrolling decks load only media entering the viewport',async({page})=>{
   await page.locator('[data-slide="second"]').scrollIntoViewIfNeeded();
   await expect.poll(()=>requested.length).toBe(2);
 });
+
+for(const mobile of [false,true])test(`admin srcdoc preview uses deferred media (${mobile?'mobile':'desktop'})`,async({page})=>{
+  if(mobile)await page.setViewportSize({width:390,height:844});
+  const requests=[],errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.route('**/test-media/**',route=>{
+    requests.push(new URL(route.request().url()).pathname);
+    return route.fulfill({body:png,contentType:'image/png'});
+  });
+  await page.route('**/preview-fixture',route=>route.fulfill({body:'<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><iframe id="preview" style="width:100%;height:90vh;border:0" title="Presentation preview"></iframe></body></html>',contentType:'text/html'}));
+  await page.goto('/preview-fixture');
+  const html='<html><head><style>body{margin:0}.slide{display:none}.slide.active{display:block}img{width:200px;height:100px}</style></head><body><section class="slide active"><h1>First</h1><img src="/test-media/first.png"></section><section class="slide"><h1>Second</h1><img src="/test-media/second.png"></section><button onclick="document.querySelectorAll(\'.slide\').forEach(s=>s.classList.toggle(\'active\'))">Next slide</button></body></html>';
+  await page.locator('#preview').evaluate((iframe,html)=>iframe.srcdoc=html,deferPresentationMedia(html));
+  const frame=page.frameLocator('#preview');
+  await expect.poll(()=>frame.locator('.active img').evaluate(img=>img.naturalWidth)).toBeGreaterThan(0);
+  expect(requests).toEqual(['/test-media/first.png']);
+  await frame.getByRole('button',{name:'Next slide'}).click();
+  await expect.poll(()=>frame.locator('.active img').evaluate(img=>img.naturalWidth)).toBeGreaterThan(0);
+  expect(requests).toEqual(['/test-media/first.png','/test-media/second.png']);expect(errors).toEqual([]);
+});

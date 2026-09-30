@@ -9,6 +9,7 @@ import {getBundledPresentationSource} from '../src/presentations/bundled.js';
 import {createPresentationPageHandler} from '../src/presentations/page.js';
 import {newRecipientToken,recipientHash} from '../src/presentations/recipient-token.js';
 import {signTracking,verifyTracking} from '../src/presentations/tracking-proof.js';
+import {createBuildMediaCache} from '../scripts/lib/build-media-cache.js';
 
 const env={SUPABASE_URL:'https://test.supabase.co',SUPABASE_SECRET_KEY:'fixture-secret'};
 const project={deck_slug:'milenium',status:'published',access_mode:'unlisted',source_type:'standalone',source_bucket:'presentation-source',source_path:'private/index.html',updated_at:'2026-09-30T12:00:00Z',analytics_enabled:true};
@@ -97,4 +98,31 @@ test('production build fails on missing credentials or an unavailable media file
     if(url===mediaUrl)return new Response(null,{status:404});
     return new Response(html);
   }}),/download failed/);
+});
+
+test('build cache revalidates media, downloads replacements and never falls back to deleted or corrupt bytes',async()=>{
+  const root=await mkdtemp(path.join(tmpdir(),'shapeviz-media-cache-'));
+  let version='one',status=200,transferred=0;
+  const requests=[];
+  const send=async(url,options)=>{
+    requests.push({url,etag:options.headers['If-None-Match']});
+    if(status!==200)return new Response(null,{status});
+    if(options.headers['If-None-Match']===version)return new Response(null,{status:304});
+    transferred+=version.length;
+    return new Response(version,{headers:{etag:version}});
+  };
+  const first=createBuildMediaCache(root,send);
+  assert.equal((await first(mediaUrl)).reused,false);
+  // A fresh build process must reuse the persisted bytes after validation.
+  const second=createBuildMediaCache(root,send);
+  assert.equal((await second(mediaUrl)).reused,true);assert.equal(transferred,3);
+  version='replacement';assert.equal((await second(mediaUrl)).data.toString(),'replacement');
+  assert.equal(transferred,14);
+  status=404;await assert.rejects(second(mediaUrl),/404/);status=503;await assert.rejects(second(mediaUrl),/503/);status=200;
+  const directory=path.join(root,'node_modules/.cache/shapeviz-media-v1');
+  const file=(await readdir(directory)).find(name=>name.endsWith('.bin'));
+  await writeFile(path.join(directory,file),'broken');
+  assert.equal((await second(mediaUrl)).reused,false);assert.equal(requests.at(-1).etag,undefined);
+  await second(mediaUrl.replace('test.supabase.co','another.supabase.co'));
+  assert.equal(requests.at(-1).etag,undefined);
 });

@@ -16,11 +16,11 @@ function objectPath(value) {
   return value.split('/').map(encodeURIComponent).join('/');
 }
 
-export async function getPresentationProject(slug, { env, send = fetch }) {
+export async function getPresentationProject(slug, { env, send = fetch, analyticsOnly = false }) {
   if (!hasSupabase(env) || !slugPattern.test(slug || '')) return null;
   const query = new URLSearchParams({
     deck_slug: `eq.${slug}`,
-    select: 'deck_slug,source_type,template_key,client,title,presentation_date,description,locale,status,access_mode,analytics_enabled,slide_count,source_bucket,source_path,media_bucket,media_prefix,cover_path,content,updated_at',
+    select: analyticsOnly ? 'deck_slug,client,title,status,access_mode,analytics_enabled' : 'deck_slug,source_type,template_key,client,title,presentation_date,description,locale,status,access_mode,analytics_enabled,slide_count,source_bucket,source_path,media_bucket,media_prefix,cover_path,content,updated_at',
     limit: '1'
   });
   const response = await send(`${baseUrl(env)}/rest/v1/presentation_projects?${query}`, { headers: headers(env) });

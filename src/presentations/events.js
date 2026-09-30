@@ -85,7 +85,9 @@ export function createPresentationEventHandler({ env = process.env, send = fetch
     }
 
     let project;
-    try { project = await getPresentationProject(event.deck, { env, send }); }
+    // Check current access on every event, without transferring the deck's
+    // content and Storage manifest for every slide or heartbeat.
+    try { project = await getPresentationProject(event.deck, { env, send, analyticsOnly: true }); }
     catch { res.writeHead(204, { 'X-Analytics-Status': 'unavailable' }).end(); return; }
     if (!project || project.status !== 'published' || project.access_mode && project.access_mode !== 'unlisted' || project.analytics_enabled !== true) { res.writeHead(204, { 'X-Analytics-Status': 'disabled' }).end(); return; }
 

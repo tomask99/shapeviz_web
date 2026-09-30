@@ -89,7 +89,10 @@ test('analytics writes only through the configured server-side RPC', async () =>
   let request;
   const env = { SUPABASE_URL: 'https://shapeviz.supabase.co', SUPABASE_SECRET_KEY: 'server-secret' };
   await withServer({ env, send: async (url, options = {}) => {
-    if (url.includes('/presentation_projects?')) return Response.json([{ deck_slug: 'milenium', status: 'published', analytics_enabled: true }]);
+    if (url.includes('/presentation_projects?')) {
+      assert.equal(new URL(url).searchParams.get('select'),'deck_slug,client,title,status,access_mode,analytics_enabled');
+      return Response.json([{ deck_slug: 'milenium', status: 'published', analytics_enabled: true }]);
+    }
     request = { url, options };
     return new Response(null, { status: 204 });
   } }, async origin => {

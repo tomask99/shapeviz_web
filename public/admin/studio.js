@@ -2,7 +2,6 @@ import './cursor.js';
 import '../dialog-dismiss.js';
 import {createCrm} from './crm.js';
 import {createCrmReadCache} from './crm-read-cache.js';
-import {localDayBounds} from './crm-dates.js';
 import {installQuickNotes} from './crm-quick-note.js';
 import {installCommandPalette} from './crm-command.js';
 import {refreshWebsiteStats} from './website-stats.js';
@@ -80,11 +79,8 @@ $('#nav-leads').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)re
 $('#nav-followups').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/follow-ups');};
 $('#nav-pipeline').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/pipeline');};
 $('#nav-research').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/ai-research');};
-// Warm only the destination the user is approaching; never preload every board.
-for(const [id,action] of [['nav-leads','crm-list'],['nav-pipeline','crm-pipeline'],['nav-followups','crm-followups']]){
- const warm=()=>{if($('#studio').hidden||navigator.connection?.saveData)return;api(action,null,action==='crm-followups'?localDayBounds():{}).catch(()=>{});};
- $('#'+id).addEventListener('pointerenter',warm);$('#'+id).addEventListener('focus',warm);
-}
+// Load a board only when opened; hovering or tabbing past navigation must not
+// trigger authenticated database queries for an unused screen.
 document.addEventListener('visibilitychange',()=>{if(document.hidden)api.invalidate();});
 window.addEventListener('focus',()=>api.invalidate());
 window.addEventListener('popstate',()=>{if($('#studio').hidden)return;if(isCrmPath())crm.show();else setView(locationView(),false);});
@@ -130,7 +126,7 @@ $('#create-from-template').onclick=()=>{$('#new-dialog').close();openVariant();}
 $('#create-from-upload').onclick=()=>{$('#new-dialog').close();openUpload();};
 $('#upload-template-from-create').onclick=()=>{$('#variant-dialog').close();openUpload('template');};
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
-$('#search').oninput=renderProjects;$('#days').onchange=()=>refresh().catch(e=>notify(e.message));$('#refresh').onclick=()=>refresh().catch(e=>notify(e.message));
+$('#search').oninput=renderProjects;$('#days').onchange=()=>refresh().catch(e=>notify(e.message));$('#refresh').onclick=()=>{api.invalidate();refresh().catch(e=>notify(e.message));};
 const slugify=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 $('#upload-form').elements.client.addEventListener('input',e=>{const form=$('#upload-form');form.elements.slug.value=(form.elements.kind.value==='template'?'template-':'')+slugify(e.target.value).slice(0,90).replace(/-$/,'');});
 let pendingUpload=null;

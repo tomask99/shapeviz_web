@@ -16,6 +16,9 @@ test('rapid navigation reuses all three views; refresh bypasses and status save 
  const pipeline=async()=>{await page.locator('#nav-pipeline').click();await expect(page.locator('[data-card]')).toHaveCount(1);};
  const followups=async()=>{await page.locator('#nav-followups').click();await expect(page.locator('.followup-group')).toHaveCount(4);};
  await page.goto('/admin/leads');await expect(page.locator('#lead-results')).toContainText('Speed fixture');
+ await page.locator('#nav-pipeline').hover();await page.locator('#nav-followups').focus();
+ await page.waitForTimeout(100);
+ expect(calls['crm-pipeline']||0).toBe(0);expect(calls['crm-followups']||0).toBe(0);
  await pipeline();await followups();await leads();await pipeline();await followups();
  for(const action of ['crm-list','crm-pipeline','crm-followups'])expect(calls[action]).toBe(1);
  await page.locator('[data-followup-refresh]').click();await expect.poll(()=>calls['crm-followups']).toBe(2);

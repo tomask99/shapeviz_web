@@ -14,6 +14,7 @@ import { removeProjectFiles, storageScopes, referencedMedia } from './storage.js
 import {preparePresentation} from './prepare-presentation.js';
 import {fileActions,handleClientFiles} from '../files/admin.js';
 import {trackingReadActions} from '../files/admin-tracking.js';
+import {deferPresentationMedia} from '../presentations/deferred-media.js';
 
 const fail = (status, message) => Object.assign(new Error(message), {status});
 const fields = 'deck_slug,client,title,status,source_type,template_key,is_template,template_match,parent_slug,slide_count,analytics_enabled,updated_at';
@@ -202,7 +203,7 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
         if(!modern && !from) throw fail(400,'This older template is missing its original company name.');
         const transformed=transformDeck(originalHtml,modern ? {company,slug,analytics:false,useClientNameApi:true} : {from,company,slug,analytics:false});
         if(!transformed.replacements) throw fail(400,modern ? 'No client-name embed fields were found.' : 'No matching company text was found. Check the original name.');
-        if(action==='preview') reply(200,{...transformed,html:transformed.html.replace(/<base\b[^>]*>/gi,'')});
+        if(action==='preview') reply(200,{...transformed,html:deferPresentationMedia(transformed.html.replace(/<base\b[^>]*>/gi,''))});
         else reply(201,await saveDeck({...body,slug,autoSlug:!body.slug,title:text(body.title)||original.title,publish:body.publish!==false,isTemplate:false},transformed.html,original.deck_slug,storageScopes(original).filter(s=>s.bucket==='presentation-media')));
         return;
       }

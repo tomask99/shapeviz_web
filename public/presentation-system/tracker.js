@@ -79,7 +79,8 @@
     lastSlide = index;
     maxSlide = Math.max(maxSlide, index);
     send('slide_viewed', { slideIndex: index });
-    send('slide_reached_max', { slideIndex: maxSlide });
+    // record_presentation_event already advances max_slide atomically for
+    // slide_viewed. A second event used to duplicate both the write and lookup.
   };
   const activity = () => { accumulate(); lastActivity = performance.now(); };
   ['pointerdown', 'pointermove', 'keydown', 'scroll'].forEach(type => addEventListener(type, activity, { passive: true }));
