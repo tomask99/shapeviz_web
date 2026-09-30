@@ -55,6 +55,19 @@ new access tokens are generated and old links remain invalid.
 
 ## Storage and download behavior
 
+Raster images (PNG, JPEG, WebP, GIF, AVIF and BMP, up to 32 MiB each) have
+lazy-loaded previews in the file list and a larger preview in their file detail.
+The **Preview size** slider remembers its value in this browser and resizes
+existing thumbnails without downloading the images again. Unsupported or
+larger files keep their normal file icon and download controls.
+
+Previews use the same scoped access checks as downloads. At most two original
+images are fetched directly from MEGA at a time, decrypted and integrity-checked
+in the browser, then reduced to small thumbnails. This uses MEGA transfer
+allowance; it does not upload images to Supabase or proxy image bytes through
+Vercel. Navigating away aborts unfinished previews and releases their Blob URLs.
+Animated images use a still preview; download the original for the full image.
+
 All models, ZIPs and other file bytes remain in MEGA. Supabase stores only portal
 settings and share-link records; its Storage service is not used by this feature.
 The Vercel API reads folder metadata and checks access. File downloads travel

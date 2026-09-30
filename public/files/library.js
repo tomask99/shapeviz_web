@@ -1,4 +1,5 @@
 import '../admin/cursor.js';
+import { previewType } from './preview-types.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const share = /^\/files\/share\/([\w-]{32})\/?$/.exec(location.pathname)?.[1];
 const portal = !share && /^\/files\/([a-z0-9-]{1,80})\/?$/.exec(location.pathname)?.[1];
@@ -6,6 +7,10 @@ const access = portal ? new URLSearchParams(location.hash.slice(1)).get('access'
 const basePath = share ? `/files/share/${share}` : `/files/${portal}`;
 const content = document.querySelector('#content');
 let view, loading, generation = 0, downloading = false, stopDownload, noticeTimer;
+let previewSize=160;
+try {const saved=Number(localStorage.getItem('shapeviz.previewSize'));if(saved>=96&&saved<=320)previewSize=Math.round(saved/32)*32;} catch {}
+content.style.setProperty('--preview-size',previewSize+'px');
+const previewSlot=(item,large=false)=>`<span class="image-preview${large?' detail-image':''}" data-image-preview="${item.id}" aria-hidden="true"><span>Loading preview…</span></span>`;
 export function formatSize(bytes) {
   if (!bytes) return '0 B';
   const unit = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), 3);
@@ -58,6 +63,32 @@ async function load() {
       content.innerHTML = `<div class="folder-tools"><p>${data.total} ${data.total===1?'item':'items'}${params.get('q')?' found':''}</p><form id="file-search"><label class="sr-only" for="search-files">Search this folder</label><input type="search" id="search-files" name="q" maxlength="160" placeholder="Search this folder" value="${esc(params.get('q')||'')}"></form></div><div class="file-list">${data.items.map(item => `<article class="file-row"><a class="file-name" data-browse href="${href(item.id)}"><span class="file-icon ${item.directory?'folder-icon':''}" aria-hidden="true">${item.directory?folderIcon:esc(extension(item))}</span><span><strong>${esc(item.name)}</strong><small>${item.directory?'FOLDER':esc(extension(item))+' &nbsp; / &nbsp; '+formatSize(item.size)}</small></span></a><div class="row-actions"><button class="copy-row" data-copy="${item.id}" aria-label="Copy link to ${esc(item.name)}">Copy link ↗</button>${item.directory?`<a class="secondary" data-browse href="${href(item.id)}" aria-label="Open ${esc(item.name)}">Open →</a>`:`<button class="secondary" data-download="${item.id}" aria-label="Download ${esc(item.name)}" ${downloading?'disabled':''}>Download ↓</button>`}</div></article>`).join('') || '<p class="empty">No files found in this folder.</p>'}</div>${data.page>1||data.hasMore?`<div class="pagination"><button class="secondary" data-page="${data.page-1}" ${data.page===1?'disabled':''}>Previous</button><span>Page ${data.page}</span><button class="secondary" data-page="${data.page+1}" ${!data.hasMore?'disabled':''}>Next</button></div>`:''}`;
       document.querySelector('#file-search').onsubmit = event => { event.preventDefault(); const next = new URL(href(data.current.id),location.origin); const q = new FormData(event.currentTarget).get('q').trim(); if (q) next.searchParams.set('q',q); navigate(next); };
     }
+    // Keep the normal file links and actions intact; only replace image artwork.
+    if(!data.current.directory&&previewType(data.current)) {
+      content.querySelector('.detail-art').innerHTML=previewSlot(data.current,true);
+      content.querySelector('.file-detail').classList.add('image-detail');
+    } else if(data.current.directory) {
+      for(const item of data.items)if(previewType(item)) {
+        const link=content.querySelector(`.file-name[href="${CSS.escape(href(item.id))}"]`);
+        link.querySelector('.file-icon').outerHTML=previewSlot(item);
+      }
+      if(content.querySelector('[data-image-preview]')) {
+        const controls=document.createElement('label');controls.className='preview-size-control';
+        controls.innerHTML=`<span>Preview size</span><input type="range" min="96" max="320" step="32" value="${previewSize}" aria-label="Preview size"><output>${previewSize} px</output>`;
+        content.querySelector('.folder-tools').insertBefore(controls,content.querySelector('#file-search'));
+        controls.querySelector('input').oninput=event=>{
+          previewSize=Number(event.target.value);content.style.setProperty('--preview-size',previewSize+'px');
+          controls.querySelector('output').value=previewSize+' px';
+          try{localStorage.setItem('shapeviz.previewSize',String(previewSize));}catch{}
+        };
+      }
+    }
+    if(content.querySelector('[data-image-preview]')) {
+      const signal=loading.signal;
+      import('./previews.js').then(({mountPreviews})=>{if(!signal.aborted)mountPreviews({root:content,api,signal});}).catch(()=>{
+        if(!signal.aborted)content.querySelectorAll('[data-image-preview]').forEach(slot=>{slot.textContent='No preview';});
+      });
+    }
   } catch (error) {
     if (ticket !== generation) return;
     view = null;
@@ -76,6 +107,8 @@ document.addEventListener('click', event => {
   if (button.hasAttribute('data-download')) download(button.dataset.download);
 });
 window.addEventListener('popstate',load);
+window.addEventListener('pagehide',()=>loading?.abort());
+window.addEventListener('pageshow',event=>{if(event.persisted)load();});
 window.addEventListener('beforeunload',event => { if (downloading) { event.preventDefault(); event.returnValue=''; } });
 document.querySelector('#cancel-download').onclick = () => stopDownload?.();
 async function download(id) {

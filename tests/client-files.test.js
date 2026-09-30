@@ -140,7 +140,7 @@ test('scoped links enforce live ancestry, private portal access, forwarding and 
   const scoped=base+'/?share='+folderToken;
   const scopeData=await(await fetch(scoped)).json();assert.equal(scopeData.current.parent,null);assert.equal(scopeData.breadcrumbs.length,1);assert.equal(scopeData.breadcrumbs[0].id,'folder01');assert.equal(scopeData.restricted,true);
   assert.doesNotMatch(JSON.stringify(scopeData),/rootroot|public_token|mega_url/);
-  for(const action of ['browse','download','share'])assert.equal((await fetch(scoped+'&node=rootroot&action='+action,{method:action==='share'?'POST':'GET'})).status,404);
+  for(const action of ['browse','download','share','preview'])assert.equal((await fetch(scoped+'&node=rootroot&action='+action,{method:action==='share'?'POST':'GET'})).status,404);
   const forwarded=await(await fetch(scoped+'&node=model001&action=share',{method:'POST'})).json();
   const childToken=forwarded.url.split('/').at(-1),child=links.find(item=>item.token===childToken),parent=links[0];
   assert.equal(child.parent_id,parent.id);assert.deepEqual(child.ancestor_ids,[parent.id]);
@@ -148,9 +148,18 @@ test('scoped links enforce live ancestry, private portal access, forwarding and 
   assert.equal(exactData.current.name,file.name);assert.equal(exactData.current.parent,null);assert.equal(exactData.breadcrumbs.length,1);assert.equal(exactData.items.length,0);
   assert.equal((await fetch(exact+'&node=folder01')).status,404);
   const download=await(await fetch(exact+'&action=download')).json();assert.deepEqual(download.download.downloadId,file.downloadId);assert.equal(download.download.key,file.key.toString('base64url'));
+  assert.equal((await fetch(exact+'&action=preview')).status,415);
+  const model=tree.nodes.get('model001');model.name='Render.PNG';
+  const preview=await(await fetch(exact+'&action=preview')).json();
+  assert.equal(preview.file.name,'Render.PNG');assert.deepEqual(preview.download.downloadId,file.downloadId);
+  assert.doesNotMatch(JSON.stringify(preview),/mega_url|owner_id|public_token|rootroot/);
+  model.size=33*1024*1024;assert.equal((await fetch(exact+'&action=preview')).status,415);
+  model.size=file.size;
+  for(const name of ['Render.svg','Render.html','Render.constructor']){model.name=name;assert.equal((await fetch(exact+'&action=preview')).status,415);}
+  model.name=file.name;
   const ownLink=await(await fetch(exact+'&action=share',{method:'POST'})).json();assert.equal(ownLink.url,forwarded.url);
   parent.enabled=false;const before=loaded;
-  assert.equal((await fetch(exact+'&action=download')).status,404);assert.equal((await fetch(scoped)).status,404);assert.equal(loaded,before);
+  assert.equal((await fetch(exact+'&action=download')).status,404);assert.equal((await fetch(exact+'&action=preview')).status,404);assert.equal((await fetch(scoped)).status,404);assert.equal(loaded,before);
   parent.enabled=true;
   tree.nodes.get('model001').parent='rootroot';
   assert.equal((await fetch(exact)).status,404);assert.equal((await fetch(scoped+'&node=model001&action=download')).status,404);

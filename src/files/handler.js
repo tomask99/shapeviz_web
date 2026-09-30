@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { createFolderLoader, fail } from './mega.js';
 import { createFileStore, resolveAccess } from './access.js';
+import { previewType } from '../../public/files/preview-types.js';
 
 export function createFilesHandler({ env = process.env, send = fetch, loadFolder = createFolderLoader({ send }) } = {}) {
   const store=createFileStore({env,send});
@@ -13,7 +14,7 @@ export function createFilesHandler({ env = process.env, send = fetch, loadFolder
     try {
       const params = new URL(req.url, 'http://localhost').searchParams;
       const action=params.get('action') || 'browse';
-      if (!['browse','download','share'].includes(action)) throw fail(400,'Invalid file action.');
+      if (!['browse','download','share','preview'].includes(action)) throw fail(400,'Invalid file action.');
       if (req.method!==(action==='share'?'POST':'GET')) { res.setHeader('Allow',action==='share'?'POST':'GET');throw fail(405,'Invalid request method.'); }
       if (action==='share') {
         if (req.headers['sec-fetch-site']==='cross-site') throw fail(403,'Open this file on Shapeviz to share it.');
@@ -45,8 +46,9 @@ export function createFilesHandler({ env = process.env, send = fetch, loadFolder
         }
         reply(200,{url:`/files/share/${existing.token}`});return;
       }
-      if (action==='download') {
+      if (action==='download' || action==='preview') {
         if (current.directory) throw fail(400,'Open a folder and choose an individual file to download.');
+        if (action==='preview' && !previewType(current)) throw fail(415,'Preview unavailable. Download the file to view it.');
         // Only this authorised file key is sent. The root folder key stays private.
         reply(200,{file:safeNode(current),download:{downloadId:current.file.downloadId,key:current.file.key.toString('base64url')}});return;
       }
