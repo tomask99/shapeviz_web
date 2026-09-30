@@ -5,6 +5,7 @@
   "outputDirectory": "dist",
   "cleanUrls": false,
   "functions": {
+    "api/files.js": {"maxDuration": 60},
     "api/mcp.js": {"maxDuration": 60},
     "api/contact.js": {
       "maxDuration": 60
@@ -32,6 +33,8 @@
     }
   ],
   "rewrites": [
+    {"source": "/files/share/:share([A-Za-z0-9_-]{32})", "destination": "/files/index.html"},
+    {"source": "/files/:slug([a-z0-9]+(?:-[a-z0-9]+)*)", "destination": "/files/index.html"},
     {"source": "/oauth/authorize", "destination": "/api/oauth/authorize"},
     {"source": "/oauth/token", "destination": "/api/oauth/token"},
     {"source": "/oauth/revoke", "destination": "/api/oauth/revoke"},
@@ -89,6 +92,17 @@
     }
   ],
   "headers": [
+    {
+      "source": "/files/:path*",
+      "headers": [
+        {"key":"Cache-Control","value":"no-store"},
+        {"key":"Referrer-Policy","value":"no-referrer"},
+        {"key":"X-Robots-Tag","value":"noindex, nofollow, noarchive"},
+        {"key":"X-Content-Type-Options","value":"nosniff"},
+        {"key":"X-Frame-Options","value":"DENY"},
+        {"key":"Content-Security-Policy","value":"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://*.mega.co.nz https://*.mega.nz; worker-src 'self'; frame-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"}
+      ]
+    },
     {
       "source": "/admin/:path*",
       "headers": [

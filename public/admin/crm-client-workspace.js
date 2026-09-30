@@ -2,6 +2,7 @@ import {mountTasks,mountNotes} from './crm-client-records.js';
 import {notesButton} from './crm-quick-note.js';
 import {createClientEditor} from './crm-client-editor.js';
 import {mountProjectWorkspace} from './crm-project-workspace.js';
+import {mountClientFiles} from './client-files.js';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function website(value){
@@ -69,12 +70,20 @@ export function showClientDetail({root,api,notify,companyId,navigate}){
      </section>
     </div>`;
    const projectId=new URLSearchParams(location.search).get('project');
+   const filesTab=new URLSearchParams(location.search).get('tab')==='files';
+   const tabNav=document.createElement('nav');tabNav.className='client-file-tabs';tabNav.setAttribute('aria-label','Client workspace');
+   const clientBase='/admin/clients/'+encodeURIComponent(companyId);
+   tabNav.innerHTML=`<a data-lead href="${clientBase}" ${!filesTab?'aria-current="page"':''}>Overview & projects</a><a data-lead href="${clientBase}?tab=files" ${filesTab?'aria-current="page"':''}>Files</a>`;
+   root.querySelector('.page-heading').after(tabNav);
    const general=root.querySelector('.client-workspace-grid');general.id='client-general-panel';general.hidden=!!projectId;
    root.querySelector('.client-summary').hidden=!!projectId;
    const projects=document.createElement('section');projects.id='client-projects-panel';projects.setAttribute('aria-label',projectId?'Project workspace':'Client projects');general.after(projects);
-   const stopProjects=mountProjectWorkspace({root:projects,api,notify,company,navigate,projectId});
-   const stopTasks=projectId?()=>{}:mountTasks({root:root.querySelector('.client-tasks'),api,notify,companyId,archived:!!company.archived_at});
-   const stopNotes=projectId?()=>{}:mountNotes({root:root.querySelector('.client-notes'),api,notify,companyId});
+   const files=document.createElement('section');files.id='client-files-panel';files.hidden=!filesTab;projects.after(files);
+   if(filesTab){general.hidden=true;projects.hidden=true;root.querySelector('.client-summary').hidden=true;}
+   const stopFiles=filesTab?mountClientFiles({root:files,api,notify,company}):()=>{};
+   const stopProjects=filesTab?()=>{}:mountProjectWorkspace({root:projects,api,notify,company,navigate,projectId});
+   const stopTasks=projectId||filesTab?()=>{}:mountTasks({root:root.querySelector('.client-tasks'),api,notify,companyId,archived:!!company.archived_at});
+   const stopNotes=projectId||filesTab?()=>{}:mountNotes({root:root.querySelector('.client-notes'),api,notify,companyId});
    const editor=createClientEditor({api,notify,onSaved:({company:updated})=>{
     Object.assign(company,updated);
     root.querySelector('.page-heading h1').innerHTML=esc(company.company_name)+(company.company_name.endsWith('.')?'':'<span>.</span>');
@@ -84,7 +93,7 @@ export function showClientDetail({root,api,notify,companyId,navigate}){
     const notes=root.querySelector('[data-quick-note]');notes.dataset.companyName=company.company_name;notes.setAttribute('aria-label','Notes for '+company.company_name);
    }});
    root.querySelector('[data-edit-client]').onclick=()=>editor.open(company);
-   cleanup=()=>{stopTasks();stopNotes();stopProjects();editor.destroy();};
+   cleanup=()=>{stopTasks();stopNotes();stopProjects();stopFiles();editor.destroy();};
   }catch(error){if(!disposed&&current===ticket){root.innerHTML=back+`<p role="alert">${esc(error.message)}</p><button class="secondary" data-retry-client>Retry client</button>`;root.querySelector('[data-retry-client]').onclick=load;}}
  }
  load();return ()=>{disposed=true;cleanup();};

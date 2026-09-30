@@ -4,6 +4,10 @@ The private presentation studio is at `/adminlogin`. See
 [`docs/admin-studio.md`](docs/admin-studio.md) for account setup, HTML uploads,
 company variants and analytics.
 
+Client file libraries are available under **Clients → client → Files**. Connect
+a MEGA folder and share branded links to its folders or individual models. See
+[`docs/client-files.md`](docs/client-files.md) for setup and download behavior.
+
 The repository also contains the reusable Shapeviz Presentation System. The
 system delivers uploaded decks at `/p/{slug}`. Production reads the registry
 and media from Supabase; new decks

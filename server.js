@@ -10,11 +10,13 @@ import {createOAuthHandler,OAUTH_ROUTES} from './src/oauth/handler.js';
 import { createPresentationEventHandler } from './src/presentations/events.js';
 import { createPresentationPageHandler } from './src/presentations/page.js';
 import { discoverProjects } from './src/presentations/registry.js';
+import { createFilesHandler } from './src/files/handler.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
-const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.mp4': 'video/mp4', '.woff2': 'font/woff2', '.ico': 'image/x-icon' };
+const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.mp4': 'video/mp4', '.woff2': 'font/woff2', '.ico': 'image/x-icon' };
 const siteCsp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
 const presentationCsp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; font-src 'self' data:; base-uri 'self'; form-action 'none'; frame-ancestors 'none'";
+const filesCsp = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://*.mega.co.nz https://*.mega.nz; worker-src 'self'; frame-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 
 function safeFile(base, relative) {
   const filename = path.resolve(base, relative);
@@ -51,6 +53,7 @@ async function serveFile(req, res, filename, pathname, extraHeaders = {}) {
 
 export function createApp({ publicDir = path.join(root, 'public'), presentationsDir = path.join(root, 'presentations'), builtPresentations = false, templatesRoot, env = process.env, send = fetch } = {}) {
   const contact = createContactHandler({ env, send });
+  const files = createFilesHandler({ env, send });
   const websiteEvent = createWebsiteEventHandler({ env, send });
   const admin = createAdminHandler({ env, send, templatesRoot });
   const oauth = createOAuthHandler({env,send});
@@ -65,6 +68,19 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
     try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
     catch { res.writeHead(400).end('Bad request'); return; }
     if (pathname === '/api/contact') { await contact(req, res); return; }
+    if (pathname === '/api/files') { await files(req, res); return; }
+    if (pathname.startsWith('/files/')) {
+      if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405,{Allow:'GET, HEAD'}).end(); return; }
+      res.setHeader('Content-Security-Policy',filesCsp);
+      res.setHeader('Referrer-Policy','no-referrer');
+      res.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');
+      if (/^\/files\/(?:share\/[\w-]{32}|[a-z0-9]+(?:-[a-z0-9]+)*)\/?$/.test(pathname)) {
+        await serveFile(req,res,path.join(publicDir,'files/index.html'),pathname,{'Cache-Control':'no-store'});return;
+      }
+      if (pathname === '/files/vendor/megajs.mjs' && publicDir === path.join(root,'public')) {
+        await serveFile(req,res,path.join(root,'node_modules/megajs/dist/main.browser-es.mjs'),pathname);return;
+      }
+    }
     if (pathname === '/api/site-events') { await websiteEvent(req, res); return; }
     if (pathname === '/api/admin') { await admin(req, res); return; }
     if(Object.hasOwn(OAUTH_ROUTES,pathname)){await oauth(req,res);return;}

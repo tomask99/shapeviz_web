@@ -12,6 +12,7 @@ import { getPrivatePresentationSource, uploadStorageObject, slugPattern } from '
 import { renderPresentationTemplate } from '../presentations/page.js';
 import { removeProjectFiles, storageScopes, referencedMedia } from './storage.js';
 import {preparePresentation} from './prepare-presentation.js';
+import {fileActions,handleClientFiles} from '../files/admin.js';
 
 const fail = (status, message) => Object.assign(new Error(message), {status});
 const fields = 'deck_slug,client,title,status,source_type,template_key,is_template,template_match,parent_slug,slide_count,analytics_enabled,updated_at';
@@ -98,7 +99,7 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
       if(action===MCP_ACTION&&req.method!=='POST')throw fail(405,'Use POST for the stateless MCP endpoint.');
       if(OAUTH_ADMIN_ACTIONS.includes(action)&&req.method!==(action==='oauth-connections'?'GET':'POST'))throw fail(405,'Use the required connection method.');
       if(action==='crm-tools-list'&&req.method!=='GET'||action==='crm-tools-call'&&req.method!=='POST')throw fail(405,'Use GET for the tool catalog and POST for tool calls.');
-      const readActions=['me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary','crm-tools-list',...researchReadActions];
+      const readActions=['client-files','client-file-links','me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary','crm-tools-list',...researchReadActions];
       if(req.method==='GET' && ![...readActions,'crm-note-summaries','oauth-connections','crm-global-search','crm-sales-report','crm-clients','crm-client','crm-client-tasks','crm-project','crm-project-tasks','crm-project-notes','crm-projects','crm-saved-views','crm-overview','crm-action-center','crm-recent-activity','crm-suggestions','crm-recipients','crm-recipient-stats','crm-signals','tracking-gate'].includes(action)) throw fail(405,'Use POST for this action.');
       if(req.method==='POST' && !/^application\/json\b/i.test(req.headers['content-type']||'')) throw fail(415,'JSON is required.');
       // A JSON string is escaped inside the transport envelope; the research validator
@@ -131,6 +132,7 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
         return;
       }
       const {user,token}=await session(req,res);
+      if(fileActions.includes(action)){reply(200,await handleClientFiles({action,body,url,user,token,call}));return;}
       if(OAUTH_ADMIN_ACTIONS.includes(action)){reply(200,await handleOAuthAdmin({action,body,url,req,res,user,token,env,call}));return;}
       if(action===MCP_ACTION){await handleReadMcp({req,res,body,url,user,token,scopes:[...ADMIN_READ_SCOPES],call,audit:toolAudit});return;}
       if(READ_TOOL_ACTIONS.includes(action)){reply(200,await handleReadTools({action,body,url,user,token,call,audit:toolAudit}));return;}

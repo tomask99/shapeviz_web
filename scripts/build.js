@@ -7,6 +7,9 @@ const projects = process.env.PRESENTATIONS_REMOTE === 'true' ? [] : await discov
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
 await cp('public', 'dist', { recursive: true });
+await mkdir('dist/files/vendor', { recursive: true });
+await cp('node_modules/megajs/dist/main.browser-es.mjs','dist/files/vendor/megajs.mjs');
+await cp('node_modules/megajs/LICENSE','dist/files/vendor/MEGAJS-LICENSE.txt');
 for (const project of projects) {
   if (project.status !== 'published') continue;
   if (project.access.mode !== 'unlisted') throw new Error(`${project.slug}: protected delivery is not configured`);
