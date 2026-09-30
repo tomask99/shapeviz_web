@@ -1,3 +1,4 @@
+import '../admin/cursor.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const share = /^\/files\/share\/([\w-]{32})\/?$/.exec(location.pathname)?.[1];
 const portal = !share && /^\/files\/([a-z0-9-]{1,80})\/?$/.exec(location.pathname)?.[1];

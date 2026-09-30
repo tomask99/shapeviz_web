@@ -75,6 +75,7 @@
 .client-file-tabs a{color:inherit;text-decoration:none;opacity:.65}
 .client-file-tabs a[aria-current]{opacity:1;color:var(--accent,#d88739)}
 .file-collection{display:flex;flex-direction:column;gap:16px;min-width:0}
+.file-collection button{position:relative;z-index:1}
 .file-collection h3,.file-collection p{margin:0;overflow-wrap:anywhere}
 .file-collection .actions{flex-wrap:wrap;margin-top:auto}
 .file-collection-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}

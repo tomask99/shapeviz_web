@@ -1,0 +1,5 @@
+.studio-glow{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:2}
+.studio-glow span{position:absolute;left:0;top:0;border-radius:50%;mix-blend-mode:screen;opacity:0;will-change:transform,opacity}
+.studio-glow .glow-head{width:2450px;height:2450px;margin:-1225px;filter:blur(70px) saturate(1.06);background:radial-gradient(circle at 50% 50%,rgba(225,145,72,.26) 0%,rgba(188,105,45,.19) 18%,rgba(128,66,25,.12) 34%,rgba(76,38,14,.055) 52%,rgba(22,11,5,0) 72%)}
+.studio-glow .glow-tail{width:2950px;height:1700px;margin-left:-1475px;margin-top:-850px;filter:blur(90px) saturate(1.04);background:radial-gradient(ellipse at 58% 50%,rgba(217,132,61,.17) 0%,rgba(164,86,34,.115) 24%,rgba(98,48,17,.06) 45%,rgba(20,10,4,0) 74%)}
+@media(pointer:coarse),(prefers-reduced-motion:reduce){.studio-glow{display:none}}

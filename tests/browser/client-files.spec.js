@@ -46,6 +46,16 @@ test('folder navigation, exact file links, reload, copying and mobile layout',as
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await context.grantPermissions(['clipboard-read','clipboard-write']);
   await library(page);await page.goto(portalUrl());
+  await page.mouse.move(650,220);
+  await expect.poll(()=>page.locator('.glow-head').evaluate(el=>Number(getComputedStyle(el).opacity))).toBeGreaterThan(0);
+  await expect(page.locator('.studio-glow')).toHaveCSS('pointer-events','none');
+  const firstPosition=await page.locator('.glow-head').evaluate(el=>el.style.transform);
+  await page.mouse.move(350,420);
+  await expect.poll(()=>page.locator('.glow-head').evaluate(el=>el.style.transform)).not.toBe(firstPosition);
+  await page.screenshot({path:'.cache/files-cursor-desktop.png',fullPage:true});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await expect(page.locator('.studio-glow')).toBeHidden();
+  await page.emulateMedia({reducedMotion:'no-preference'});
   await page.getByRole('link',{name:'Open Sofas',exact:true}).click();
   await page.getByRole('link',{name:/Sofa <oak>.fbx FBX/}).click();
   await expect(page).toHaveURL(new RegExp('node='+file.id));
@@ -112,6 +122,7 @@ test('cancel stops the file writer and leaves a retry available',async({page})=>
 });
 
 test('admin connects, edits, pauses and removes a portal with confirmation and retry',async({page,context})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
   await context.grantPermissions(['clipboard-read','clipboard-write']);
   let items=[],fail=true,failDelete=true;const calls=[];
   await page.route('**/api/admin?*',route=>{
@@ -148,6 +159,16 @@ test('admin connects, edits, pauses and removes a portal with confirmation and r
   await expect(dialog.getByLabel('Replace MEGA folder link')).toBeVisible();
   await expect(dialog.getByLabel('Files URL slug')).toHaveValue('sofas');
   await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
+  await library(page);
+  const card=page.locator('.file-collection'),bounds=await card.boundingBox();
+  await card.click({position:{x:bounds.width-30,y:bounds.height/2}});
+  await expect(page).toHaveURL('http://127.0.0.1:4173'+portalUrl());
+  await expect(page.getByRole('link',{name:'Open Sofas',exact:true})).toBeVisible();
+  await page.goBack();
+  await page.getByRole('link',{name:'Open file portal',exact:false}).focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL('http://127.0.0.1:4173'+portalUrl());
+  await page.goBack();
   const remove=page.getByRole('button',{name:'Remove file portal',exact:true});
   await page.screenshot({path:'.cache/files-remove-card.png',fullPage:true});
   page.once('dialog',async confirmation=>{expect(confirmation.message()).toContain('Files in MEGA will not be deleted');await confirmation.dismiss();});
