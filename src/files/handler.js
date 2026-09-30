@@ -3,10 +3,12 @@ import { createFolderLoader, fail } from './mega.js';
 import { createFileStore, resolveAccess } from './access.js';
 import { previewType } from '../../public/files/preview-types.js';
 import { createCloudClickTracker } from './website-click.js';
+import {createDownloadTracker} from './download-tracking.js';
 
 export function createFilesHandler({ env = process.env, send = fetch, loadFolder = createFolderLoader({ send }) } = {}) {
   const store=createFileStore({env,send});
   const trackCloudClick=createCloudClickTracker({env,send,store});
+  const downloads=createDownloadTracker({env,store});
   return async function files(req, res) {
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
@@ -16,8 +18,8 @@ export function createFilesHandler({ env = process.env, send = fetch, loadFolder
     try {
       const params = new URL(req.url, 'http://localhost').searchParams;
       const action=params.get('action') || 'browse';
-      if (!['browse','download','share','preview','website-click'].includes(action)) throw fail(400,'Invalid file action.');
-      const writing=action==='share'||action==='website-click';
+      if (!['browse','download','download-complete','share','preview','website-click'].includes(action)) throw fail(400,'Invalid file action.');
+      const writing=['share','website-click','download-complete'].includes(action);
       if (req.method!==(writing?'POST':'GET')) { res.setHeader('Allow',writing?'POST':'GET');throw fail(405,'Invalid request method.'); }
       if (writing) {
         if (req.headers['sec-fetch-site']==='cross-site') throw fail(403,'Open this file on Shapeviz to share it.');
@@ -30,6 +32,7 @@ export function createFilesHandler({ env = process.env, send = fetch, loadFolder
         const status=await trackCloudClick(req,params);
         res.writeHead(204,{'X-Cloud-Click-Status':status}).end();return;
       }
+      if(action==='download-complete'){reply(200,await downloads.complete(req,params));return;}
       const page=Number(params.get('page') || 1),query=(params.get('q') || '').trim();
       if (!Number.isSafeInteger(page) || page<1 || page>200 || query.length>160) throw fail(400,'Invalid file search.');
       const {portal,link,folder,root,current,safeNode}=await resolveAccess({req,params,store,loadFolder});
@@ -57,7 +60,12 @@ export function createFilesHandler({ env = process.env, send = fetch, loadFolder
         if (current.directory) throw fail(400,'Open a folder and choose an individual file to download.');
         if (action==='preview' && !previewType(current)) throw fail(415,'Preview unavailable. Download the file to view it.');
         // Only this authorised file key is sent. The root folder key stays private.
-        reply(200,{file:safeNode(current),download:{downloadId:current.file.downloadId,key:current.file.key.toString('base64url')}});return;
+        let receipt;
+        if(action==='download'){
+          try{receipt=await downloads.issue({portal,folder,current});}
+          catch{console.error('Download tracking could not be prepared.');}
+        }
+        reply(200,{file:safeNode(current),download:{downloadId:current.file.downloadId,key:current.file.key.toString('base64url')},...(receipt?{receipt}:{})});return;
       }
       const breadcrumbs=[];
       for (let item=current;item;item=folder.nodes.get(item.parent)) { breadcrumbs.unshift(safeNode(item));if (item.id===root.id) break; }

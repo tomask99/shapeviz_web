@@ -1,6 +1,7 @@
 import '../admin/cursor.js';
 import { previewType } from './preview-types.js';
 import { mountStudioLinks } from './studio-links.js';
+import {recordCompletedDownload} from './download-receipts.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const share = /^\/files\/share\/([\w-]{32})\/?$/.exec(location.pathname)?.[1];
 const portal = !share && /^\/files\/([a-z0-9-]{1,80})\/?$/.exec(location.pathname)?.[1];
@@ -142,6 +143,7 @@ async function download(id) {
       status.textContent = `${formatSize(bytes)} / ${formatSize(data.file.size)} — downloading`;
     } });
     progress.value=100; status.textContent = 'Download complete. Your file is ready.';
+    recordCompletedDownload({receipt:data.receipt,share,portal,access});
   } catch (error) {
     status.textContent = error.name==='AbortError' || controller.signal.aborted ? 'Download cancelled. You can start it again.' : `Download failed. ${error.message || 'Please try again.'}`;
   } finally {

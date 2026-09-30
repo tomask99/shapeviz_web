@@ -119,7 +119,60 @@ at 375 px; Safari/iOS downloads still need a real-device compatibility check.
 The supplied collection verified a real 57,777,004-byte FBX download. A generated
 2 GiB attachment separately verified streaming and output length; that was not
 a real 2 GiB MEGA download. Folder ZIP generation, reload-resume, rendered 3D
-previews and download analytics are outside this MVP.
+previews are outside this MVP.
+
+## Lifetime download statistics
+
+In **Clients > client > Files**, the **Download statistics** section below the
+portal card accepts a Shapeviz folder-share URL or a complete portal URL (with
+its access fragment and optional `node`). MEGA URLs and other clients' links are
+rejected. A tracked folder covers every descendant file, including files added
+later and downloads through separate file links or the main portal. Up to 100
+folders per client can be tracked; re-adding the same folder preserves its totals.
+
+Rankings show each file's name, relative path, completed-download count and last
+completion. Results are sorted by lifetime count with 50 files per page.
+Counts are keyed by MEGA node ID, so renaming the same file does not reset it;
+the displayed name/path updates when it is next downloaded. A newly uploaded
+replacement with a new MEGA node ID is a separate file. Moving an existing file
+into a tracked folder starts counting future downloads there; moving it out
+stops future counts there. Historical rows are retained. Overlapping tracked
+folders each count their descendant downloads independently.
+
+The download API checks live MEGA ancestry and issues a signed 48-hour receipt
+containing the file identity and matching trackers. Merely browsing, copying a
+link, viewing an image preview, or preparing a download never increments a count.
+Only after MEGA integrity verification, exact byte length and the download
+writer's close operation succeed does the browser POST that receipt. The server
+rechecks portal/share access and atomically claims the event ID and increments
+the aggregates. Retries cannot double-count. Invalid, expired and cross-origin
+requests are rejected. Analytics failure does not block file delivery.
+
+This measures **browser-confirmed completed transfers through Shapeviz**. Direct
+MEGA downloads cannot be observed. With attachment downloads, the browser owns
+the final disk-save step; its OS write cannot be independently verified by the
+server. A determined authorized client can simulate a completion callback; these
+are popularity statistics, not tamper-proof billing records. If the page closes
+before confirmation or tracking remains unavailable beyond the receipt lifetime,
+a completion may be missed. Completed receipts are retried from localStorage
+on later portal visits, on reconnection and every 30 seconds while the page is
+open, then removed on acknowledgement or expiry. Receipt entries include the
+existing portal capability when required, never a MEGA key or file contents.
+
+The counters have no automatic reset or retention limit and no reset action.
+Pausing/resuming tracking, disabling/removing the portal, replacing its MEGA
+source, disabling the original copied link, and new deployments preserve history.
+Replacing a source requires adding a new folder tracker; the previous totals
+remain visible as history. Deleting the entire CRM company explicitly deletes
+its analytics with the rest of its records. Tracking starts when enabled; past
+downloads cannot be reconstructed. Refresh statistics or reopen Files to see
+new completions. Owner downloads through the portal are included as well.
+
+Migration `20260930165702_client_file_download_tracking.sql` adds owner-readable
+RLS-protected tracker/aggregate tables and a server-only atomic RPC. No anonymous
+access or authenticated counter writes are granted. The compact replay ledger
+expires alongside signed receipts; its cleanup never deletes aggregates. Only
+file metadata/counters use the database. MEGA file bytes never use Supabase Storage.
 
 ## Configuration and verification
 

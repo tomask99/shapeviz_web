@@ -1,14 +1,15 @@
 import { randomBytes } from 'node:crypto';
 import { uuid, string } from '../crm/validation.js';
 import { createFolderLoader, normalizeMegaFolder, validSlug, fail } from './mega.js';
+import {trackingActions,trackingReadActions,handleFileTracking} from './admin-tracking.js';
 
-export const fileActions = ['client-files', 'client-files-save', 'client-files-status', 'client-files-delete', 'client-file-links', 'client-file-link-disable'];
+export const fileActions = ['client-files', 'client-files-save', 'client-files-status', 'client-files-delete', 'client-file-links', 'client-file-link-disable',...trackingActions];
 const fields = 'id,company_id,title,slug,description,public_token,active,version,source_version,created_at';
 const linkFields = 'id,portal_id,name,type,token,enabled,source_version,parent_id,ancestor_ids,version,created_at';
 const loadMega = createFolderLoader();
 
 export async function handleClientFiles({ action, body, url, user, token, call, loadFolder = loadMega }) {
-  const reading = action === 'client-files' || action === 'client-file-links';
+  const reading = action === 'client-files' || action === 'client-file-links' || trackingReadActions.includes(action);
   const companyId = reading ? url.searchParams.get('companyId') : body.companyId;
   if (!token || !uuid(user?.id)) throw fail(401, 'Please sign in.');
   if (!uuid(companyId)) throw fail(400, 'Invalid client.');
@@ -16,6 +17,7 @@ export async function handleClientFiles({ action, body, url, user, token, call, 
   const scope = `company_id=eq.${companyId}&owner_id=eq.${user.id}`;
   const clients = await request(`/rest/v1/crm_clients?${scope}&select=company_id,crm_companies(archived_at)`);
   if (!clients?.[0]) throw fail(404, 'Client not found.');
+  if(trackingActions.includes(action))return handleFileTracking({action,body,url,user,companyId,request,call,loadFolder,archived:clients[0].crm_companies?.archived_at});
   if (action === 'client-files') return { items: await request(`/rest/v1/client_file_shares?${scope}&select=${fields}&limit=1`) };
   if (action === 'client-file-links') {
     const page=Number(url.searchParams.get('page') || 1);
