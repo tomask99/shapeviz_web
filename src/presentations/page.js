@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { getPresentationProject, getPrivatePresentationSource, hasSupabase, slugPattern } from './remote.js';
 import { requestOrigin } from '../http.js';
 import {normalizePresentationCtaArrows} from './cta-arrows.js';
+import {deferPresentationMedia} from './deferred-media.js';
 import {trackingClassification,signTracking} from './tracking-proof.js';
 import {recipientParam,recipientHash,resolveRecipient} from './recipient-token.js';
 
@@ -80,7 +81,7 @@ export function createPresentationPageHandler({ env = process.env, send = fetch,
       const session=hash?randomUUID():null;
       const proof=classification?.exclude===false?signTracking({kind:'visit',deck:slug,exp:Date.now()+3600000,...(hash?{recipient:hash,session}:{})},env.SUPABASE_SECRET_KEY):'';
       const config=`<script>window.__shapevizTracking=${JSON.stringify({exclude:!proof,proof,...(hash?{session}:{})})};</script>`;
-      const normalized = normalizePresentationCtaArrows(source);
+      const normalized = deferPresentationMedia(normalizePresentationCtaArrows(source));
       const html = /<head\b[^>]*>/i.test(normalized)
         ? normalized.replace(/<head\b[^>]*>/i,match=>match+config)
         : config + normalized;
