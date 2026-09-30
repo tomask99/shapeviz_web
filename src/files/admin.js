@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { uuid, string } from '../crm/validation.js';
 import { createFolderLoader, normalizeMegaFolder, validSlug, fail } from './mega.js';
 
-export const fileActions = ['client-files', 'client-files-save', 'client-files-status', 'client-file-links', 'client-file-link-disable'];
+export const fileActions = ['client-files', 'client-files-save', 'client-files-status', 'client-files-delete', 'client-file-links', 'client-file-link-disable'];
 const fields = 'id,company_id,title,slug,description,public_token,active,version,source_version,created_at';
 const linkFields = 'id,portal_id,name,type,token,enabled,source_version,parent_id,ancestor_ids,version,created_at';
 const loadMega = createFolderLoader();
@@ -28,6 +28,12 @@ export async function handleClientFiles({ action, body, url, user, token, call, 
   if (clients[0].crm_companies?.archived_at) throw fail(409, 'Restore the client before changing shared files.');
   const id = body.id;
   if (id && (!uuid(id) || !Number.isSafeInteger(body.version) || body.version < 1)) throw fail(400, 'Reload the collection before saving.');
+  if (action === 'client-files-delete') {
+    if (!id || body.confirm !== 'delete') throw fail(400,'Confirm removal of this file portal.');
+    const rows=await request(`/rest/v1/client_file_shares?id=eq.${id}&${scope}&version=eq.${body.version}&select=id`,{method:'DELETE',headers:{Prefer:'return=representation'}});
+    if (!rows?.[0]) throw fail(409,'The portal changed. Refresh it before removing it.');
+    return {deleted:true};
+  }
   if (action === 'client-file-link-disable') {
     if (!id) throw fail(400,'Invalid share link.');
     const rows=await request(`/rest/v1/client_file_links?id=eq.${id}&${scope}&version=eq.${body.version}&select=${linkFields}`,{method:'PATCH',body:{enabled:false},headers:{Prefer:'return=representation'}});

@@ -17,7 +17,7 @@ function fixture(options={}) {
   const call=async(path,opts={})=>{
     calls.push({path,...opts});assert.equal(opts.token,'user-jwt');
     if(path.includes('/crm_clients?'))return options.missing?[]:[{company_id:company,crm_companies:{archived_at:options.archived?'2026-09-30':null}}];
-    if(opts.method==='POST'||opts.method==='PATCH')return options.conflict?[]:[{id,...opts.body}];
+    if(['POST','PATCH','DELETE'].includes(opts.method))return options.conflict?[]:[{id,...opts.body}];
     if(path.includes('request_id='))return options.existing?[{id,title:'Existing'}]:[];
     return [];
   };
@@ -56,6 +56,19 @@ async function serverFor(t,handler) {
   t.after(()=>new Promise(resolve=>{server.closeAllConnections();server.close(resolve);}));
   return 'http://127.0.0.1:'+server.address().port;
 }
+
+test('removing a portal requires confirmation, owner scope and the current version',async()=>{
+  const {run,calls}=fixture();
+  await assert.rejects(run('client-files-delete',{id,version:2}),{status:400});
+  assert.ok(!calls.some(call=>call.method==='DELETE'));
+  assert.deepEqual(await run('client-files-delete',{id,version:2,confirm:'delete',owner_id:id}),{deleted:true});
+  const deletion=calls.at(-1);
+  assert.equal(deletion.method,'DELETE');assert.match(deletion.path,/version=eq.2/);
+  assert.ok(deletion.path.includes('company_id=eq.'+company));assert.ok(deletion.path.includes('owner_id=eq.'+owner));
+  assert.equal(deletion.body,undefined);assert.ok(!calls.some(call=>call.mega));
+  await assert.rejects(run('client-files-delete',{id,version:0,confirm:'delete'}),{status:400});
+  for(const [options,status] of [[{missing:true},404],[{archived:true},409],[{conflict:true},409]])await assert.rejects(fixture(options).run('client-files-delete',{id,version:2,confirm:'delete'}),{status});
+});
 test('scoped links enforce live ancestry, private portal access, forwarding and revocation through HTTP',async t=>{
   const portal={id,company_id:company,owner_id:owner,slug:'sofas',public_token:share,active:true,source_version:1,title:'Sofa library',description:'Public description',mega_url:mega};
   const links=[];let tree=indexFolder(root),loaded=0;

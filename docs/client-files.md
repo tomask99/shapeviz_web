@@ -43,6 +43,12 @@ Individual link listing and permanent revocation remain available through the
 owner-only admin API; removing the list from the UI does not delete or disable
 existing share links.
 
+The cross in the portal card's top-right corner removes the portal after
+confirmation. It deletes only the Shapeviz portal settings and related share
+records, so old links stop working. Files and folders in MEGA stay intact.
+The client can then connect a new folder, including reusing the same slug;
+new access tokens are generated and old links remain invalid.
+
 ## Storage and download behavior
 
 All models, ZIPs and other file bytes remain in MEGA. Supabase stores only portal
@@ -77,7 +83,9 @@ The existing `SUPABASE_URL` and `SUPABASE_SECRET_KEY` variables are used. Migrat
 `20260930121806_client_file_shares.sql` and
 `20260930125222_client_file_portals_scoped_links.sql` create portal settings and
 scoped share records, owner RLS, column permissions, unique constraints and
-versioning triggers. Both are applied to the connected Supabase project.
+versioning triggers. `20260930132644_client_file_portal_removal.sql` adds
+owner-authorised portal removal and cascading deletion of its share records.
+These migrations are applied to the connected Supabase project.
 The web application still needs deployment before these routes work on the
 public website. Existing Milenium settings are retained with slug `milenium`.
 

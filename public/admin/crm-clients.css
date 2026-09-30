@@ -77,3 +77,7 @@
 .file-collection{display:flex;flex-direction:column;gap:16px;min-width:0}
 .file-collection h3,.file-collection p{margin:0;overflow-wrap:anywhere}
 .file-collection .actions{flex-wrap:wrap;margin-top:auto}
+.file-collection-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.file-collection-remove{width:34px;height:34px;flex-shrink:0}
+.file-collection-remove svg{width:14px;height:14px}
+@media(max-width:700px){.file-collection-remove{width:44px;height:44px}}

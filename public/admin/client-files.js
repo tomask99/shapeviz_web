@@ -9,7 +9,7 @@ export function mountClientFiles({ root, api, notify, company }) {
       const data=await api('client-files',null,{companyId:company.id});
       if (disposed) return;
       portal=data.items[0];
-      root.innerHTML=`<div class="section-title"><div><p class="eyebrow">CLIENT DELIVERY</p><h2>Files.</h2></div><button class="primary" data-edit-portal ${company.archived_at?'disabled':''}>${portal?'Portal settings':'Connect MEGA folder'}</button></div><p class="fine">Send the portal link to your client. Copying a file or folder link inside the portal shares only that selection.</p>${portal?`<article class="research-card file-collection"><span class="research-tag ${portal.active?'research-tag-accent':''}">${portal.active?'Portal enabled':'Portal disabled'}</span><h3>${esc(portal.title)}</h3><p class="crm-description">${esc(portal.description)}</p><p class="fine">/files/${esc(portal.slug)} · MEGA folder connected</p><a href="${esc(portalUrl(portal))}" target="_blank" rel="noopener noreferrer">Open file portal ↗</a><div class="actions"><button class="secondary" data-copy-portal>Copy portal URL</button><button class="quiet" data-toggle-portal ${company.archived_at?'disabled':''}>${portal.active?'Disable portal':'Enable portal'}</button></div><p class="fine">The complete portal URL includes a private access token. Anyone with it can browse this client's files.</p><p role="alert"></p></article>`:'<div class="research-empty"><h3>Your client’s file portal.</h3><p>Connect one dedicated MEGA folder. Its subfolders and files will appear automatically.</p></div>'}`;
+      root.innerHTML=`<div class="section-title"><div><p class="eyebrow">CLIENT DELIVERY</p><h2>Files.</h2></div><button class="primary" data-edit-portal ${company.archived_at?'disabled':''}>${portal?'Portal settings':'Connect MEGA folder'}</button></div><p class="fine">Send the portal link to your client. Copying a file or folder link inside the portal shares only that selection.</p>${portal?`<article class="research-card file-collection"><div class="file-collection-heading"><span class="research-tag ${portal.active?'research-tag-accent':''}">${portal.active?'Portal enabled':'Portal disabled'}</span><button type="button" class="project-icon-button project-icon-delete file-collection-remove" data-delete-portal title="Remove file portal" aria-label="Remove file portal" ${company.archived_at?'disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><h3>${esc(portal.title)}</h3><p class="crm-description">${esc(portal.description)}</p><p class="fine">/files/${esc(portal.slug)} · MEGA folder connected</p><a href="${esc(portalUrl(portal))}" target="_blank" rel="noopener noreferrer">Open file portal ↗</a><div class="actions"><button class="secondary" data-copy-portal>Copy portal URL</button><button class="quiet" data-toggle-portal ${company.archived_at?'disabled':''}>${portal.active?'Disable portal':'Enable portal'}</button></div><p class="fine">The complete portal URL includes a private access token. Anyone with it can browse this client's files.</p><p role="alert"></p></article>`:'<div class="research-empty"><h3>Your client’s file portal.</h3><p>Connect one dedicated MEGA folder. Its subfolders and files will appear automatically.</p></div>'}`;
     } catch(error) { if(!disposed)root.innerHTML=`<p role="alert">${esc(error.message)}</p><button class="secondary" data-retry-files>Retry files</button>`; }
   }
   function edit() {
@@ -35,17 +35,24 @@ export function mountClientFiles({ root, api, notify, company }) {
     const button=event.target.closest('button');if(!button||busy||button.disabled)return;
     if(button.hasAttribute('data-edit-portal'))return edit();
     if(button.hasAttribute('data-retry-files'))return load();
+    const deleting=button.hasAttribute('data-delete-portal');
+    if(deleting&&!confirm(`Remove the file portal for “${portal.title}”? Its Shapeviz links will stop working. Files in MEGA will not be deleted.`))return;
     const card=button.closest('.file-collection');
     if(button.hasAttribute('data-copy-portal')){
       try {await navigator.clipboard.writeText(portalUrl(portal));notify('Shapeviz link copied.');}
       catch {card.querySelector('[role=alert]').textContent='Open the link and copy the address from your browser.';}return;
     }
-    busy=true;button.disabled=true;
+    busy=true;
+    const controls=[...card.querySelectorAll('button')].map(button=>({button,disabled:button.disabled}));
+    controls.forEach(({button})=>button.disabled=true);card.setAttribute('aria-busy','true');
+    card.querySelector('[role=alert]').textContent='';
     try {
-      if(button.hasAttribute('data-toggle-portal'))await api('client-files-status',{companyId:company.id,id:portal.id,version:portal.version,active:!portal.active});
+      if(deleting){await api('client-files-delete',{companyId:company.id,id:portal.id,version:portal.version,confirm:'delete'});notify('File portal removed. Your MEGA files are unchanged.');}
+      else if(button.hasAttribute('data-toggle-portal'))await api('client-files-status',{companyId:company.id,id:portal.id,version:portal.version,active:!portal.active});
       if(!disposed)await load();
+      if(deleting&&!disposed)root.querySelector('[data-edit-portal]')?.focus();
     } catch(error) {if(!disposed)card.querySelector('[role=alert]').textContent=error.message;}
-    finally {busy=false;button.disabled=false;}
+    finally {busy=false;controls.forEach(({button,disabled})=>{if(button.isConnected)button.disabled=disabled;});card.removeAttribute('aria-busy');}
   };
   load();return()=>{disposed=true;root.onclick=null;dialog.close();dialog.remove();};
 }

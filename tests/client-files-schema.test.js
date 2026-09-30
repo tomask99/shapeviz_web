@@ -71,5 +71,26 @@ test('file sharing migration enforces owner isolation, private sources, immutabl
     await assert.rejects(db.exec(`update public.client_file_shares set active=true where id='${id}'`),/Client unavailable/);
     const grants=await db.query(`select has_table_privilege('anon','public.client_file_shares','select') as anonymous_access`);
     assert.equal(grants.rows[0].anonymous_access,false);
+    await db.exec('reset role');
+    await db.exec(await readFile(new URL('../supabase/migrations/20260930132644_client_file_portal_removal.sql',import.meta.url),'utf8'));
+    await db.exec(`set role authenticated;set request.jwt.claim.sub='11111111-1111-4111-8111-111111111111'`);
+    await assert.rejects(db.exec(`delete from public.client_file_shares where id='${id}'`),/Client unavailable/);
+    await db.exec(`reset role;update public.crm_companies set archived_at=null where id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';set role anon`);
+    await assert.rejects(db.exec(`delete from public.client_file_shares where id='${id}'`),/permission denied/);
+    await db.exec(`reset role;set role authenticated;set request.jwt.claim.sub='22222222-2222-4222-8222-222222222222'`);
+    assert.equal((await db.query(`delete from public.client_file_shares where id='${id}' returning id`)).rows.length,0);
+    const other=(await db.query(`insert into public.client_file_shares(company_id,owner_id,request_id,title,slug,mega_url,public_token) values('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',auth.uid(),gen_random_uuid(),'Other','other','https://mega.nz/folder/abcdefgh#AAAAAAAAAAAAAAAAAAAAAA',repeat('f',32)) returning id`)).rows[0];
+    await db.exec(`reset role;insert into public.client_file_links(portal_id,company_id,owner_id,mega_node_id,type,name,token,source_version) values('${other.id}','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','22222222-2222-4222-8222-222222222222','outside1','file','Other file',repeat('g',32),1);set role authenticated;set request.jwt.claim.sub='11111111-1111-4111-8111-111111111111'`);
+    const version=(await db.query(`select version from public.client_file_shares where id='${id}'`)).rows[0].version;
+    assert.equal((await db.query(`delete from public.client_file_shares where id='${id}' and version=${version-1} returning id`)).rows.length,0);
+    assert.equal((await db.query(`select id from public.client_file_links where portal_id='${id}'`)).rows.length,2);
+    assert.equal((await db.query(`delete from public.client_file_shares where id='${id}' and version=${version} returning id`)).rows.length,1);
+    await db.exec('reset role');
+    assert.equal((await db.query(`select id from public.client_file_links where portal_id='${id}'`)).rows.length,0);
+    assert.equal((await db.query(`select id from public.client_file_links where portal_id='${other.id}'`)).rows.length,1);
+    assert.equal((await db.query('select * from public.crm_clients')).rows.length,2);
+    await db.exec(`set role authenticated;set request.jwt.claim.sub='11111111-1111-4111-8111-111111111111';insert into public.client_file_shares(company_id,owner_id,request_id,title,slug,mega_url,public_token) values('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',auth.uid(),gen_random_uuid(),'Reconnected','sofas','https://mega.nz/folder/abcdefgh#AAAAAAAAAAAAAAAAAAAAAA',repeat('h',32))`);
+    assert.equal((await db.query(`select id from public.client_file_shares where public_token=repeat('a',32)`)).rows.length,0);
+    assert.equal((await db.query(`select id from public.client_file_shares where slug='sofas'`)).rows.length,1);
   } finally { await db.close(); }
 });

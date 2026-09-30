@@ -111,9 +111,9 @@ test('cancel stops the file writer and leaves a retry available',async({page})=>
   await expect(page.locator('.detail-actions').getByRole('button',{name:'Download file'})).toBeEnabled();
 });
 
-test('admin connects a collection, preserves a failed draft, copies branded URLs and pauses sharing',async({page,context})=>{
+test('admin connects, edits, pauses and removes a portal with confirmation and retry',async({page,context})=>{
   await context.grantPermissions(['clipboard-read','clipboard-write']);
-  let items=[],fail=true;const calls=[];
+  let items=[],fail=true,failDelete=true;const calls=[];
   await page.route('**/api/admin?*',route=>{
     const action=new URL(route.request().url()).searchParams.get('action'),body=route.request().postDataJSON();calls.push({action,body});
     let data={items:[]};
@@ -125,6 +125,11 @@ test('admin connects a collection, preserves a failed draft, copies branded URLs
       items=[{id:companyId,...body,public_token:share,active:true,version:1,source_version:1}];data={item:items[0]};
     }
     if(action==='client-files-status'){items[0].active=body.active;items[0].version++;data={item:items[0]};}
+    if(action==='client-files-delete'){
+      expect(body.confirm).toBe('delete');expect(body.version).toBe(items[0].version);
+      if(failDelete){failDelete=false;return route.fulfill({status:503,json:{error:'Could not remove portal. Try again.'}});}
+      items=[];data={deleted:true};
+    }
     return route.fulfill({json:data});
   });
   await page.goto('/admin/clients/'+companyId+'?tab=files');
@@ -142,4 +147,16 @@ test('admin connects a collection, preserves a failed draft, copies branded URLs
   await page.getByRole('button',{name:'Portal settings',exact:true}).click();
   await expect(dialog.getByLabel('Replace MEGA folder link')).toBeVisible();
   await expect(dialog.getByLabel('Files URL slug')).toHaveValue('sofas');
+  await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
+  const remove=page.getByRole('button',{name:'Remove file portal',exact:true});
+  await page.screenshot({path:'.cache/files-remove-card.png',fullPage:true});
+  page.once('dialog',async confirmation=>{expect(confirmation.message()).toContain('Files in MEGA will not be deleted');await confirmation.dismiss();});
+  await remove.click();expect(calls.filter(call=>call.action==='client-files-delete')).toHaveLength(0);
+  page.once('dialog',confirmation=>confirmation.accept());await remove.click();
+  await expect(page.locator('.file-collection [role=alert]')).toContainText('Could not remove portal');
+  await expect(remove).toBeEnabled();
+  page.once('dialog',confirmation=>confirmation.accept());await remove.click();
+  await expect(page.locator('.file-collection')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Connect MEGA folder'})).toBeFocused();
+  await page.reload();await expect(page.getByRole('button',{name:'Connect MEGA folder'})).toBeVisible();
 });
