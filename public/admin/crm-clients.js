@@ -1,20 +1,7 @@
 import {SERVICES} from './crm-options.js';
-import {notesButton} from './crm-quick-note.js';
 import {opportunityValueText} from './crm-value.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=(value,monthly=false)=>opportunityValueText({estimated_value:value,value_type:monthly?'MONTHLY':'ONE_TIME'});
-export function showClients({root,api}){
- let page=1,seq=0;root.innerHTML='<div class="page-heading"><div><p class="eyebrow">ONGOING RELATIONSHIPS</p><h1>Clients.</h1></div></div><form data-client-search><label>Search clients<input name="q" maxlength="160" type="search"></label><label>Account status<select name="active"><option value="">All clients</option><option value="yes">Active</option><option value="no">Inactive</option></select></label><button class="secondary">Search clients</button></form><div data-client-results></div>';
- const form=root.querySelector('form'),target=root.querySelector('[data-client-results]');
- async function load(){
-  const ticket=++seq;target.textContent='Loading clients…';
-  try{const d=await api('crm-clients',null,{...Object.fromEntries(new FormData(form)),page});if(!form.isConnected||ticket!==seq)return;
-   target.innerHTML=(d.items||[]).map(c=>`<article class="crm-entry"><h2><a data-lead href="/admin/leads/${esc(c.company_id)}">${esc(c.company_name)}</a></h2><p>${esc(c.services.join(' · '))}</p><p>${c.active?'Active':'Inactive'} account · ${Number(c.active_projects)} active projects · Client since ${esc(c.client_since)}</p><p class="fine">Project agreements: ${esc(money(c.project_value))} one-time · Active monthly: ${esc(money(c.monthly_value,true))}. Not payment records.</p><p class="fine">Last activity: ${c.last_activity?esc(new Date(c.last_activity).toLocaleString()):'None'}${c.archived_at?' · Archived company':''}</p>${notesButton(c)}</article>`).join('')||'<p>No clients yet. Convert a Won lead from its company detail.</p>';
-   target.insertAdjacentHTML('beforeend',`<div class="actions"><button class="secondary" data-client-page="-1" ${page===1?'disabled':''}>Previous</button><span>Page ${page}</span><button class="secondary" data-client-page="1" ${page*25>=d.total?'disabled':''}>Next</button></div>`);
-  }catch(e){if(form.isConnected&&ticket===seq)target.innerHTML=`<p role="alert">${esc(e.message)}</p><button data-client-retry>Retry clients</button>`;}
- }
- form.onsubmit=e=>{e.preventDefault();page=1;load();};target.onclick=e=>{const b=e.target.closest('button');if(b?.dataset.clientPage){page+=Number(b.dataset.clientPage);load();}if(b?.hasAttribute('data-client-retry'))load();};load();
-}
 export function mountClient({root,company,api,notify}){
  const panel=document.createElement('section');panel.className='chart-panel crm-client';root.querySelector('.crm-detail-grid').append(panel);
  const dialog=document.createElement('dialog');dialog.className='crm-record-dialog';dialog.id='crm-project-dialog';document.body.append(dialog);let disposed=false,pending=false,client=null,projects=[],page=1;

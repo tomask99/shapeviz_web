@@ -1,0 +1,6 @@
+import {formatPipelineEUR} from './crm-pipeline-value.js';
+export function projectRevenueMarkup(value){
+ const valid=value?.currency==='EUR'&&['one_time','monthly'].every(key=>Number.isSafeInteger(value[key]?.count)&&value[key].count>=0&&typeof value[key]?.amount==='string'&&/^\d{1,30}(\.\d{1,2})?$/.test(value[key].amount));
+ if(!valid)return '<section class="business-revenue"><h3>Revenue</h3><p class="fine" role="status">Project totals unavailable. Refresh sales to try again.</p></section>';
+ return `<section class="business-revenue"><h3>Revenue</h3><p class="fine">Agreed project prices in EUR, not payment records. Cancelled projects and archived companies are excluded.</p><div class="business-cards business-value-cards"><div data-revenue="one_time"><span>One-time projects</span><strong>${formatPipelineEUR(value.one_time.amount)}</strong><small>${value.one_time.count} project agreements</small></div><div data-revenue="monthly"><span>Active monthly revenue</span><strong>${formatPipelineEUR(value.monthly.amount)} / month</strong><small>${value.monthly.count} active monthly agreements</small></div></div><p class="fine">Monthly agreements count only while Active. Prices come from client projects; lead estimates and Won amounts are not added again.</p></section>`;
+}

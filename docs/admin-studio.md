@@ -142,6 +142,34 @@ existing bot configuration. Concurrent retries and refreshes do not trigger anot
 notification. Delivery failure does not break the website and is not retried, avoiding
 duplicate messages on uncertain delivery. No extra Telegram credentials are needed.
 
+## Client projects
+
+Open a client in **Clients**. Project cards appear directly below the client's
+tasks and notes; choose **New project** to create one or click a card to open it.
+Each project has a name,
+agreed EUR price, one-time or monthly billing, short description and status.
+Circular card buttons pause/resume a project, mark it completed/reopen it, or
+delete it after confirmation. Deletion also removes that project's tasks, notes
+and brief, and removes its price from Overview. Paused and completed monthly
+services no longer count toward active monthly revenue; completed one-time work
+keeps its agreed value. Company-level notes and tasks stay attached to the client.
+Its detail contains a longer brief (up to 50,000 characters), its own checklist
+and editable notes. Company-level tasks and notes remain separate. Briefs save
+with **Save brief**; **Edit project** changes the price, billing, description or
+status without replacing an unsaved brief.
+
+Overview's **Revenue** sums project agreements, not recorded payments:
+
+- One-time amounts include all projects except Cancelled.
+- Monthly amounts include only Active projects; Planned, On hold, Completed
+  and Cancelled monthly agreements are excluded.
+- Archived companies are excluded. One-time and monthly totals stay separate.
+- Company-level Won values and pipeline estimates are not added to project
+  totals, so recording a project does not count the same agreement twice.
+
+Existing projects and their earlier notes remain accessible. Legacy projects
+with both one-time and monthly values retain both until the billing is changed.
+
 ## Isolation
 
 Owner sessions use HttpOnly, SameSite=Strict cookies scoped to `/api/admin`

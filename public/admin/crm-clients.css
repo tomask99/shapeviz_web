@@ -1,0 +1,73 @@
+.client-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,220px) auto;gap:18px;align-items:end;margin:28px 0}
+.client-heading-actions{display:flex;align-items:center;gap:18px;flex-shrink:0;flex-wrap:wrap}
+.client-editor{width:min(560px,calc(100vw - 32px))}
+.client-editor label{display:block}
+.client-editor textarea{min-height:110px}
+.client-editor .actions{justify-content:flex-end;margin-bottom:0}
+.client-filters button{margin-bottom:16px}
+.client-card{min-height:330px}
+.client-industry{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 10px}
+.client-website{position:relative;z-index:1;color:var(--accent);font-size:13px;overflow-wrap:anywhere;width:fit-content}
+.client-website:hover{text-decoration:underline}
+.client-card-description{font-size:14px;line-height:1.8;color:var(--muted);margin:24px 0 30px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.client-open{color:var(--accent);font-weight:600}
+.client-open span{margin-left:12px}
+.client-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;margin:26px 0 22px}
+.client-summary h2{font-size:22px;margin:0 0 12px}
+.client-summary .crm-description{max-width:80ch;line-height:1.8;color:var(--muted);margin-bottom:0}
+.client-summary-meta{align-self:center;text-align:right}
+.client-workspace-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
+.client-workspace-grid h2{font-size:26px;margin:0 0 12px}
+.client-workspace-grid form{margin-top:24px}
+.client-workspace-grid form>label{display:block}
+.client-workspace-grid textarea{display:block;width:100%;min-height:130px;background:var(--surface);color:inherit;border:1px solid var(--line);border-radius:16px;padding:15px;font:inherit;line-height:1.7;margin:10px 0 20px;resize:vertical;outline-offset:5px}
+.client-workspace-grid .section-title{margin:0;gap:16px;flex-wrap:wrap}
+.client-workspace-grid .crm-notes-control{margin:0}
+.client-task-items{list-style:none;padding:0;margin:22px 0 0}
+.client-task{display:flex;gap:12px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:16px 0}
+.client-task-check{display:flex;align-items:flex-start;gap:12px;cursor:pointer;min-width:0;margin:0;color:inherit;font-size:14px;line-height:1.7}
+.client-task-check input{width:18px;height:18px;flex:0 0 18px;padding:0;margin:3px 0 0;accent-color:var(--accent)}
+.client-task-check span{overflow-wrap:anywhere;min-width:0}
+.client-task.is-complete .client-task-check span{text-decoration:line-through;color:var(--muted)}
+.client-task-actions{display:flex;flex-shrink:0;gap:4px}
+.client-task-actions .quiet{padding:8px;font-size:11px}
+.client-empty{color:var(--muted);font-size:13px;line-height:1.8;padding:20px 0}
+.client-note{border-top:1px solid var(--line);padding:18px 0}
+.client-note .crm-description{line-height:1.8;font-size:14px;margin-bottom:0}
+.client-list-pagination{justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:18px}
+.client-list-pagination .quiet{font-size:11px;padding:8px 0}
+.client-account-notes{margin-top:16px;font-size:13px}
+#client-projects-panel{margin-top:32px}
+#client-projects-panel>.section-title{margin:0 0 12px;gap:16px;flex-wrap:wrap}
+.project-grid{margin-top:24px}
+.project-card{min-height:280px}
+.project-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.project-card-actions{position:relative;z-index:1;display:flex;align-items:center;gap:4.8px;margin-left:auto}
+.project-icon-button{display:grid;place-items:center;width:24px;height:24px;padding:0;border:1px solid var(--line);border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;transition:color 160ms,border-color 160ms,background 160ms}
+.project-icon-button svg{width:10.8px;height:10.8px;pointer-events:none}
+.project-icon-button:hover:not(:disabled),.project-icon-button:focus-visible{color:var(--accent);border-color:var(--accent);background:#d8873914}
+.project-icon-button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.project-icon-pause[aria-pressed=true]{color:var(--accent);border-color:#d8873980;background:#d8873914}
+.project-icon-complete[aria-pressed=true]{color:#a4d7ae;border-color:#a4d7ae70;background:#a4d7ae12}
+.project-icon-delete:hover:not(:disabled),.project-icon-delete:focus-visible{color:#f29c91;border-color:#f29c9180;background:#f29c9112}
+.project-icon-button:disabled{cursor:default;opacity:.35}
+.project-card[data-project-status=COMPLETED] .research-tag{color:#a4d7ae;border-color:#a4d7ae50}
+.project-card[data-project-status=ON_HOLD] .research-tag{color:var(--accent);border-color:#d8873950}
+.project-card-error{position:relative;z-index:1;margin-bottom:18px;color:#f29c91;font-size:13px;line-height:1.6}
+.project-card-error .quiet{padding:8px 0}
+.project-card h3{font-size:25px;margin:24px 0 14px;line-height:1.2}
+.project-price{font-size:18px;line-height:1.5;color:var(--accent);font-weight:600;margin:0 0 14px}
+.project-summary{margin:20px 0}
+.project-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
+.project-heading>div{min-width:0}
+.project-heading h2{font-size:32px;line-height:1.2;margin:0 0 16px;overflow-wrap:anywhere}
+.project-heading>button{flex-shrink:0}
+.project-summary>.crm-description{margin:24px 0 0;color:var(--muted);line-height:1.8}
+.project-brief{margin-bottom:22px}
+.project-brief form>label{display:block}
+.project-brief textarea{display:block;width:100%;min-height:240px;resize:vertical;background:var(--surface);color:inherit;font:inherit;line-height:1.8;border:1px solid var(--line);border-radius:16px;margin:12px 0 18px;padding:18px}
+.project-records h3{font-size:26px}
+.business-revenue{margin:28px 0;padding:24px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+@media(max-width:700px){.project-heading{flex-direction:column}.project-heading h2{font-size:26px}.project-brief textarea{min-height:260px}}
+@media(max-width:1000px){.client-workspace-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.client-filters{grid-template-columns:1fr}.client-filters button{margin:0}.client-summary{grid-template-columns:1fr;gap:20px}.client-summary-meta{text-align:left}.client-task{align-items:flex-start;flex-wrap:wrap}.client-task-check{flex:1 1 180px}.client-task-actions{margin-left:auto}.client-card{min-height:300px}}

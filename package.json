@@ -7,7 +7,7 @@
     "node": ">=22.9.0"
   },
   "scripts": {
-    "dev": "node --env-file-if-exists=.env server.js",
+    "dev": "node --watch --env-file-if-exists=.env server.js",
     "start": "node --env-file-if-exists=.env server.js --production",
     "build": "node scripts/build.js",
     "presentations:validate": "node scripts/validate-presentations.js",

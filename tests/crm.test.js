@@ -28,6 +28,12 @@ test('CRM reads and writes always use the user token and explicit owner; stale u
   await assert.rejects(()=>handleCrm({...base,action:'crm-archive',body:{id,version:1,archived:'true'}}),{status:400});
 });
 
+test('Unknown CRM actions report an unsupported action before validating company fields',async()=>{
+ const base={user:{id:owner},token:'jwt',url:new URL('https://example.test'),call:()=>assert.fail('Unsupported actions must not query the database')};
+ for(const body of [{},{companyId:id},{id}])await assert.rejects(handleCrm({...base,action:'crm-unsupported-action',body}),{status:404,message:'Unknown CRM action.'});
+ await assert.rejects(handleCrm({...base,action:'crm-archive',body:{}}),{status:400,message:'Invalid company.'});
+});
+
 test('CRM list validates paging and combines filters as RPC parameters, not SQL',async()=>{
   let sent;
   const base={user:{id:owner},token:'jwt',action:'crm-list',body:{},call:async(path,opts)=>{sent={path,opts};return {companies:[]};}};

@@ -17,6 +17,7 @@ import {handleRecipients,recipientActions} from './recipients.js';
 import {handleSavedViews,savedViewActions} from './saved-views.js';
 import {websiteMetadata} from './website-metadata.js';
 import {handleClients,clientActions} from './clients.js';
+import {handleProjectWorkspace,projectWorkspaceActions} from './project-workspace.js';
 import {handleOperations,operationActions} from './operations.js';
 import {filterConfig,FILTER_CHOICES} from '../../public/admin/crm-filter-config.js';
 import {normalizedDomain,normalizedName} from '../../public/admin/crm-normalize.js';
@@ -55,6 +56,7 @@ export async function handleCrm({action, body, url, user, token, call, signingKe
   if(['crm-suggestions','crm-suggestion-state'].includes(action))return handleSuggestions({action,body,url,request});
   if(action==='crm-recent-activity')return recentActivityPage(await request(recentActivityQuery(url.searchParams,user.id)));
   const owner = `owner_id=eq.${encodeURIComponent(user.id)}`;
+  if(projectWorkspaceActions.includes(action))return handleProjectWorkspace({action,body,url,user,request,owner});
   if(noteActions.includes(action))return handleNotes({action,body,url,user,request,owner});
   if(operationActions.includes(action))return handleOperations({action,body,url,request,validateCompany:companyInput});
   if(clientActions.includes(action))return handleClients({action,body,url,user,request,owner});
@@ -100,6 +102,7 @@ export async function handleCrm({action, body, url, user, token, call, signingKe
     const rows = await request('/rest/v1/crm_companies', {method:'POST', body:{...companyInput(body), owner_id:user.id}, headers:{Prefer:'return=representation'}});
     return {company:rows[0]};
   }
+  if (!['crm-detail','crm-update','crm-archive','crm-status'].includes(action)) throw fail(404, 'Unknown CRM action.');
   const id = action === 'crm-detail' ? url.searchParams.get('id') : body.id;
   if (!uuid(id)) throw fail(400, 'Invalid company.');
   const path = `/rest/v1/crm_companies?id=eq.${id}&${owner}`;
@@ -108,7 +111,6 @@ export async function handleCrm({action, body, url, user, token, call, signingKe
     if (!rows[0]) throw fail(404, 'Company not found.');
     return withNextActions({company:rows[0]},request);
   }
-  if (!['crm-update','crm-archive','crm-status'].includes(action)) throw fail(404, 'Unknown CRM action.');
   if (!Number.isSafeInteger(body.version) || body.version < 1) throw fail(400, 'Reload the company before saving.');
   if (action === 'crm-archive' && typeof body.archived !== 'boolean') throw fail(400, 'Invalid archive action.');
   const values = action === 'crm-update' ? companyInput(body) : action==='crm-status' ? {pipeline_status:choice(body.pipeline_status,STATUSES,'status')} : {archived_at:body.archived ? new Date().toISOString() : null};

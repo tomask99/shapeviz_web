@@ -56,6 +56,10 @@
       "destination": "/admin/index.html"
     },
     {
+      "source": "/admin/clients/:id",
+      "destination": "/admin/index.html"
+    },
+    {
       "source": "/admin/follow-ups",
       "destination": "/admin/index.html"
     },

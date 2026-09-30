@@ -26,6 +26,7 @@ npm.cmd run dev
 
 Náhľad: http://localhost:3000. Vo Windows používame `npm.cmd`, aby spustenie
 neblokovala PowerShell execution policy. Po úprave súborov stačí obnoviť stránku.
+Príkaz `npm.cmd run dev` pri zmene serverového kódu automaticky reštartuje server.
 
 ```powershell
 npm.cmd run build

@@ -8,7 +8,8 @@ import {opportunityValueInput,opportunityValueText} from './crm-value.js';
 import {LOST_REASONS,WON_FIELDS} from './crm-outcome.js';
 import {signalSummary,mountCompanySignals} from './crm-signals.js';
 import {mountSavedViews} from './crm-saved-views.js';
-import {showClients,mountClient} from './crm-clients.js';
+import {mountClient} from './crm-clients.js';
+import {showClients,showClientDetail} from './crm-client-workspace.js';
 import {mountCsv,showReports} from './crm-operations.js';
 import {createResearch} from './research.js';
 
@@ -61,6 +62,7 @@ export function createCrm({api,notify}) {
     document.querySelector('#nav-pipeline').classList.remove('active');
     document.querySelector('#nav-followups').classList.remove('active');
     document.querySelector('#nav-research').classList.remove('active');
+    document.querySelector('#nav-clients')?.classList.remove('active');
     if (value) document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'));
   }
   function navigate(path, replace = false) {
@@ -213,7 +215,12 @@ export function createCrm({api,notify}) {
       document.querySelector('#nav-research').classList.add('active');
       research.show();return;
     }
-    if(/^\/admin\/clients\/?$/.test(location.pathname)){document.querySelector('#nav-leads').classList.remove('active');showClients({root,api});return;}
+    const clientPath=location.pathname.match(/^\/admin\/clients(?:\/([^/]+))?\/?$/);
+    if(clientPath){
+      document.querySelector('#nav-leads').classList.remove('active');
+      document.querySelector('#nav-clients')?.classList.add('active');
+      cleanupDetail=clientPath[1]?showClientDetail({root,api,notify,navigate,companyId:clientPath[1]}):showClients({root,api,navigate,notify});return;
+    }
     if(/^\/admin\/reports\/?$/.test(location.pathname)){document.querySelector('#nav-leads').classList.remove('active');showReports({root,api});return;}
     if(/^\/admin\/follow-ups\/?$/.test(location.pathname)){
       document.querySelector('#nav-leads').classList.remove('active');
