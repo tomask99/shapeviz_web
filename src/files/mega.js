@@ -48,6 +48,10 @@ export function createFolderLoader({ send = fetch, ttl = 60_000, now = Date.now 
     const request = api.request.bind(api);
     api.request = (body, callback, retry) => {
       if (signal.aborted || api.closed) { callback?.(new Error('Folder request expired.')); return; }
+      // MEGAJS enables MEGA's server-side tree snapshot (ca=1). Without
+      // replaying action packets that snapshot can omit later changes, even
+      // on a fresh HTTP request. Always request the current complete tree.
+      if (body.a === 'f') delete body.ca;
       return request(body, callback, retry);
     };
     api.fetch = (target, options = {}) => send(target, { ...options, signal });

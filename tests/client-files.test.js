@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { normalizeMegaFolder, indexFolder } from '../src/files/mega.js';
+import { createCipheriv } from 'node:crypto';
+import { normalizeMegaFolder, indexFolder, createFolderLoader } from '../src/files/mega.js';
 import { handleClientFiles } from '../src/files/admin.js';
 import { createFilesHandler } from '../src/files/handler.js';
 import { createApp } from '../server.js';
@@ -33,6 +34,42 @@ test('folder indexing contains only reachable nodes and rejects cycles or missin
   const tree=indexFolder(root);assert.equal(tree.nodes.size,3);assert.equal(tree.nodes.get('model001').parent,'folder01');
   assert.throws(()=>indexFolder({...root,key:null}),{status:502});
   assert.throws(()=>indexFolder({...root,children:[root]}),{status:502});
+});
+test('fresh MEGA loads see additions, renames, moves and removals beyond a stale server snapshot',async()=>{
+  // Exercise MEGAJS decoding with encrypted synthetic API nodes. MEGA's ca=1
+  // response intentionally stays old while the live folder changes.
+  function encrypt(mode,key,value) {
+    const cipher=createCipheriv('aes-128-'+mode,key,mode==='cbc'?Buffer.alloc(16):null);
+    cipher.setAutoPadding(false);return Buffer.concat([cipher.update(value),cipher.final()]).toString('base64url');
+  }
+  function node(h,p,name,directory=true) {
+    const key=Buffer.alloc(directory?16:32,7),attributeKey=Buffer.from(key.subarray(0,16));
+    if(!directory)for(let i=0;i<16;i++)attributeKey[i]^=key[i+16];
+    const text=Buffer.from('MEGA'+JSON.stringify({n:name})),attributes=Buffer.alloc(Math.ceil(text.length/16)*16);
+    text.copy(attributes);
+    return {h,p,t:directory?1:0,s:directory?0:123,a:encrypt('cbc',attributeKey,attributes),k:'rootroot:'+encrypt('ecb',Buffer.alloc(16),key)};
+  }
+  const parent=node('rootroot',undefined,'Models'),original=node('folder01','rootroot','Architects');
+  const snapshot=[parent,original,node('model001','folder01','Original.fbx',false)];
+  let current=snapshot,calls=0;
+  const load=createFolderLoader({send:async(url,options)=>{
+    calls++;assert.equal(new URL(url).searchParams.get('n'),'abcdefgh');
+    const [request]=JSON.parse(options.body);assert.equal(request.a,'f');
+    return Response.json([{f:request.ca?snapshot:current}]);
+  }});
+  const first=await load(mega);
+  assert.equal(first.nodes.size,3);assert.equal(first.nodes.get('model001').name,'Original.fbx');
+  current=[parent,original,node('renders1','rootroot','02_RENDERS'),node('model001','renders1','Renamed.fbx',false)];
+  assert.equal(await load(mega),first);assert.equal(calls,1);
+  const changed=await load(mega,{fresh:true});
+  assert.equal(changed.nodes.get('renders1')?.name,'02_RENDERS');
+  assert.equal(changed.nodes.get('model001').name,'Renamed.fbx');
+  assert.equal(changed.nodes.get('model001').parent,'renders1');
+  current=[parent,node('renders1','rootroot','Final renders')];
+  const removed=await load(mega,{fresh:true});
+  assert.equal(removed.nodes.size,2);assert.equal(removed.nodes.get('renders1').name,'Final renders');
+  assert.equal(removed.nodes.has('folder01'),false);assert.equal(removed.nodes.has('model001'),false);
+  assert.equal(calls,3);
 });
 test('admin verifies ownership, validates MEGA before creating and retries idempotently',async()=>{
   const {run,calls}=fixture();const result=await run('client-files-save',{title:' Sofa models ',slug:'sofas',description:'Download files.',megaUrl:mega,requestId:id,owner_id:id});

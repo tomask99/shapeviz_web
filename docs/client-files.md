@@ -18,6 +18,10 @@ search within the current folder, download individual files and copy links.
 Metadata is loaded fresh on each API request, so additions, renames, removals
 and moves appear on refresh. MEGA node IDs survive renames; replacing/deleting
 a node can invalidate its old link. No file hierarchy is maintained in Supabase.
+The loader disables MEGAJS's `ca=1` server-side tree snapshot: without replaying
+MEGA action packets it can return an older tree even on a fresh HTTP request.
+Each public request instead fetches the current full tree (the same `nocache`
+behavior used by [MEGA's SDK](https://github.com/meganz/sdk/blob/master/src/commands.cpp)).
 
 ## Scoped sharing
 
