@@ -123,17 +123,18 @@ previews are outside this MVP.
 
 ## Lifetime download statistics
 
-In **Clients > client > Files**, the **Download statistics** section below the
+In **Clients > client > Files**, the **Downloads** section below the
 portal card accepts a Shapeviz folder-share URL or a complete portal URL (with
 its access fragment and optional `node`). MEGA URLs and other clients' links are
 rejected. A tracked folder covers every descendant file, including files added
 later and downloads through separate file links or the main portal. Up to 100
 folders per client can be tracked; re-adding the same folder preserves its totals.
 
-Rankings show each file's name, relative path, completed-download count and last
-completion. Results are sorted by lifetime count with 50 files per page.
+Rankings use a compact, plain-text list showing only the full filename (including
+its extension) and completed-download count. Different formats such as `.fbx`
+and `.3ds` remain separate rows. Results are sorted by lifetime count with 50 files per page.
 Counts are keyed by MEGA node ID, so renaming the same file does not reset it;
-the displayed name/path updates when it is next downloaded. A newly uploaded
+the displayed name updates when it is next downloaded. A newly uploaded
 replacement with a new MEGA node ID is a separate file. Moving an existing file
 into a tracked folder starts counting future downloads there; moving it out
 stops future counts there. Historical rows are retained. Overlapping tracked

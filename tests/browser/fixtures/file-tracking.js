@@ -18,7 +18,7 @@ export async function mockTrackingAdmin(page){
     if(action==='client-file-tracking-status'){paused=!body.active;data={item:tracker()};}
     if(action==='client-file-download-stats')data={tracker:tracker(),page:1,hasMore:false,items:[
       {mega_node_id:'great001',file_name:'Great Sofa.fbx',file_path:'Great / Great Sofa.fbx',download_count:12,last_download_at:'2026-09-30T16:00:00Z'},
-      {mega_node_id:'merlo001',file_name:'Merlo <fabric>.zip',file_path:'Merlo / Merlo <fabric>.zip',download_count:5,last_download_at:'2026-09-30T15:00:00Z'}
+      {mega_node_id:'great002',file_name:'Great Sofa.3ds',file_path:'Great / Great Sofa.3ds',download_count:5,last_download_at:'2026-09-30T15:00:00Z'}
     ]};
     return route.fulfill({json:data});
   });
