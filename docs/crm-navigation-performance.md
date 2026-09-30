@@ -4,6 +4,13 @@
 
 Read-only Supabase `pg_stat_statements` inspection (following the Supabase performance skill) found company-list RPC mean execution 40.88 ms / maximum 745.47 ms across 295 calls; follow-up list 36.12 ms / maximum 249.53 ms across 11 calls; next-action lookup 1.63 ms across 79 calls. These are cumulative database timings, including development/test traffic, not production browser latency measurements. No statistics were reset and no database records or indexes were changed.
 
+The 30 September follow-up identified `crm_list_companies` as the first row in
+the owner's Query Performance screenshot: 1,330 calls, 63.53 seconds total,
+47.77 ms mean. `pg_timezone_names` (38.45 seconds) runs as `authenticator`; the
+extension catalog query (about 11 seconds) runs as `postgres`. These catalog
+queries are not media downloads. Optimizations target application reads and
+Storage transfer rather than modifying Supabase-managed catalogs.
+
 Code inspection found that every route revisit re-fetched its data. Each uncached request also performs server-side authentication and owner verification. Pipeline fans out to nine stage-list RPCs before a next-action lookup. Stage requests already run in parallel; there is no sequential stage loop to remove.
 
 ## Implemented
@@ -25,4 +32,4 @@ The navigation regression verifies that two rapid visits to each of Leads, Pipel
 
 This improves repeated navigation and avoids unused prefetches; it does not claim a measured production speedup or eliminate first-load network/cold-start latency. A next measured optimization, if first opening remains slow after deployment, is one batched pipeline RPC and reducing its repeated signal aggregation. Do not add speculative indexes without a representative query plan.
 
-Changes are local until explicitly pushed/deployed.
+The application changes were deployed in commit `2778a38`.
