@@ -32,13 +32,16 @@ retains its parent capability: disabling the parent also invalidates derived
 links. Moving the child outside the shared subtree makes the derived link
 unavailable. Up to eight generations of derived links are supported.
 
-The admin Files tab lists created links, their original names, creation dates
-and status. **Disable link** permanently revokes that token. Copying the item
-again from an authorised portal produces a new link. **Disable portal** pauses
-all access; **Enable portal** restores only links that were not individually
+The admin Files tab shows portal settings and controls, without a list of
+individual shared links. **Disable portal** pauses all access;
+**Enable portal** restores only links that were not individually
 revoked and still match the current source. None of these actions deletes MEGA
 files. Already obtained file keys or started downloads cannot be recalled;
 removing underlying MEGA access is a separate action.
+
+Individual link listing and permanent revocation remain available through the
+owner-only admin API; removing the list from the UI does not delete or disable
+existing share links.
 
 ## Storage and download behavior
 

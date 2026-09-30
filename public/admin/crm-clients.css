@@ -77,6 +77,3 @@
 .file-collection{display:flex;flex-direction:column;gap:16px;min-width:0}
 .file-collection h3,.file-collection p{margin:0;overflow-wrap:anywhere}
 .file-collection .actions{flex-wrap:wrap;margin-top:auto}
-.file-share-list { display:grid; gap:12px; margin-bottom:20px; }
-.file-share-list h4 { overflow-wrap:anywhere; margin:12px 0 8px; }
-.file-collection + .section-title { margin-top:32px; }

@@ -114,15 +114,12 @@ test('cancel stops the file writer and leaves a retry available',async({page})=>
 test('admin connects a collection, preserves a failed draft, copies branded URLs and pauses sharing',async({page,context})=>{
   await context.grantPermissions(['clipboard-read','clipboard-write']);
   let items=[],fail=true;const calls=[];
-  const link={id:companyId,name:'Milano.fbx',type:'file',token:shared,enabled:true,source_version:1,version:1,created_at:'2026-09-30T12:00:00Z'};
   await page.route('**/api/admin?*',route=>{
     const action=new URL(route.request().url()).searchParams.get('action'),body=route.request().postDataJSON();calls.push({action,body});
     let data={items:[]};
     if(action==='me')data={email:'owner@example.test'};
     if(action==='crm-client')data={item:{company_id:companyId,active:true,client_since:'2026-09-30'},company:{id:companyId,company_name:'Sofa Studio',industry:'Furniture',website:'',short_description:''}};
     if(action==='client-files')data={items};
-    if(action==='client-file-links')data={items:[link],page:1,hasMore:false};
-    if(action==='client-file-link-disable'){link.enabled=false;link.version++;data={item:link};}
     if(action==='client-files-save'){
       if(fail){fail=false;return route.fulfill({status:502,json:{error:'MEGA unavailable. Please retry.'}});}
       items=[{id:companyId,...body,public_token:share,active:true,version:1,source_version:1}];data={item:items[0]};
@@ -142,7 +139,6 @@ test('admin connects a collection, preserves a failed draft, copies branded URLs
   await page.getByRole('button',{name:'Copy portal URL'}).click();expect(await page.evaluate(()=>navigator.clipboard.readText())).toBe('http://127.0.0.1:4173'+portalUrl());
   await page.getByRole('button',{name:'Disable portal',exact:true}).click();await expect(page.locator('.file-collection')).toContainText('Portal disabled');
   await page.getByRole('button',{name:'Enable portal',exact:true}).click();await expect(page.locator('.file-collection')).toContainText('Portal enabled');
-  await page.getByRole('button',{name:'Disable link',exact:true}).click();await expect(page.locator('[data-share]')).toContainText('Disabled');
   await page.getByRole('button',{name:'Portal settings',exact:true}).click();
   await expect(dialog.getByLabel('Replace MEGA folder link')).toBeVisible();
   await expect(dialog.getByLabel('Files URL slug')).toHaveValue('sofas');
