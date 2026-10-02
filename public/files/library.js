@@ -1,5 +1,5 @@
 import '../admin/cursor.js';
-import { previewType } from './preview-types.js';
+import { previewType, videoType } from './preview-types.js';
 import { mountStudioLinks } from './studio-links.js';
 import {recordCompletedDownload} from './download-receipts.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -67,11 +67,18 @@ async function load() {
       document.querySelector('#file-search').onsubmit = event => { event.preventDefault(); const next = new URL(href(data.current.id),location.origin); const q = new FormData(event.currentTarget).get('q').trim(); if (q) next.searchParams.set('q',q); navigate(next); };
     }
     // Keep the normal file links and actions intact; only replace image artwork.
-    if(!data.current.directory&&previewType(data.current)) {
+    if(videoType(data.current)) {
+      const art=content.querySelector('.detail-art');
+      art.removeAttribute('aria-hidden');
+      art.innerHTML='<div class="video-preview" data-video-preview><button class="primary" type="button">Load video preview</button><p role="status">Loads the video before playback (up to 128 MB).</p></div>';
+      content.querySelector('.file-detail').classList.add('image-detail');
+      const signal=loading.signal;
+      import('./video-preview.js').then(({mountVideoPreview})=>{if(!signal.aborted)mountVideoPreview({slot:art.querySelector('[data-video-preview]'),file:data.current,api,signal});}).catch(()=>{if(!signal.aborted)art.textContent='Preview unavailable. Download the file to view it.';});
+    } else if(!data.current.directory&&previewType(data.current)) {
       content.querySelector('.detail-art').innerHTML=previewSlot(data.current,true);
       content.querySelector('.file-detail').classList.add('image-detail');
     } else if(data.current.directory) {
-      for(const item of data.items)if(previewType(item)) {
+      for(const item of data.items)if(previewType(item)&&!videoType(item)) {
         const link=content.querySelector(`.file-name[href="${CSS.escape(href(item.id))}"]`);
         link.querySelector('.file-icon').outerHTML=previewSlot(item);
       }
