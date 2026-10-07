@@ -1,14 +1,15 @@
+import {svgIcon} from '../ui/icons.js';
 import {notesButton} from './crm-quick-note.js';
 import {localDayBounds,localInput,localInstant,displayDate} from './crm-dates.js';
 import {label} from './crm-options.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const groupNames={overdue:'Overdue',today:'Today',upcoming:'Upcoming',completed:'Completed'};
 
-export function createFollowups({root,api,notify,todayOnly=false,onChanged=()=>{}}) {
-  const prefix=todayOnly?'action-':'';
+export function createFollowups({root,api,notify,onChanged=()=>{}}) {
+  const prefix='';
   const dialog=document.createElement('dialog');dialog.className='crm-record-dialog';dialog.id=prefix+'followup-dialog';dialog.setAttribute('aria-labelledby',prefix+'followup-title');document.body.append(dialog);
   let active=false,sequence=0,epoch=0,groups=[],company=null,pending=false,clock,bounds,dialogSequence=0,loading=false;
-  const companyId=()=>todayOnly?'':new URLSearchParams(location.search).get('companyId')||'';
+  const companyId=()=>new URLSearchParams(location.search).get('companyId')||'';
   const query=()=>({...bounds,...(companyId()?{companyId:companyId()}:{})});
   function render() {
     root.querySelector(`#${prefix}followup-groups`).innerHTML=groups.map(g=>`<section class="followup-group" aria-label="${groupNames[g.key]}"><header><h2>${groupNames[g.key]}</h2><span class="badge">${g.total}</span></header>${g.items.map(f=>`<article class="crm-entry" data-followup="${esc(f.id)}">
@@ -26,7 +27,7 @@ export function createFollowups({root,api,notify,todayOnly=false,onChanged=()=>{
     root.querySelectorAll('[data-followup-complete],[data-followup-edit],[data-followup-page]').forEach(b=>b.disabled=true);
     if(!groups.length)target.textContent='Loading follow-ups…';
     try {
-      const data=await api(todayOnly?'crm-action-center':'crm-followups',null,{...query(),...(group?{group,page}:{})});
+      const data=await api('crm-followups',null,{...query(),...(group?{group,page}:{})});
       if(!active||ticket!==sequence)return;
       if(!Array.isArray(data.groups)||data.groups.some(g=>!Array.isArray(g.items)||!Number.isFinite(g.total)))throw new Error('Follow-ups are unavailable.');
       if(group){const replacement=data.groups[0];if(!replacement.items.length&&page>1){await load(group,page-1);return;}groups=groups.map(g=>g.key===group?replacement:g);}
@@ -98,18 +99,12 @@ export function createFollowups({root,api,notify,todayOnly=false,onChanged=()=>{
     catch(e){if(active&&life===epoch){root.querySelector(`#${prefix}followup-error`).textContent=e.message+' Refresh before retrying.';render();}}
     finally{if(life===epoch){pending=false;root.querySelectorAll('[data-schedule-followup],[data-followup-refresh]').forEach(b=>b.disabled=!!company?.archived_at);}}
   }
-  function checkDay(){if(active&&!pending&&!loading&&!dialog.open&&!root.hidden&&!document.hidden&&(todayOnly||bounds.today!==localDayBounds().today)){bounds=localDayBounds();load();}}
+  function checkDay(){if(active&&!pending&&!loading&&!dialog.open&&!root.hidden&&!document.hidden&&bounds.today!==localDayBounds().today){bounds=localDayBounds();load();}}
   async function show() {
     active=true;pending=false;loading=false;groups=[];company=null;const life=++epoch;bounds=localDayBounds();
-    root.innerHTML=`<div class="page-heading"><div><p class="eyebrow">YOUR NEXT CONVERSATION.</p><h1>Follow-ups<span>.</span></h1></div><button class="primary" data-schedule-followup disabled>Schedule follow-up +</button></div>
+    root.innerHTML=`<div class="page-heading"><div><p class="eyebrow">YOUR NEXT CONVERSATION.</p><h1>Follow-ups<span>.</span></h1></div><button class="primary" data-schedule-followup disabled>Schedule follow-up ${svgIcon('plus')}</button></div>
       <p class="fine" id="${prefix}followup-scope">Loading…</p><div class="actions"><button class="secondary" data-followup-refresh>Refresh</button><a class="quiet" href="/admin/follow-ups" data-lead>All follow-ups</a><a class="quiet" href="/admin/leads" data-lead>Open Leads</a></div>
-      <p class="fine">Dates use your local timezone. Overdue means before today; archived companies are hidden.</p><p id="${prefix}followup-error" role="alert"></p><div id="${prefix}followup-groups"></div>`;
-    if(todayOnly){
-      root.querySelector('.page-heading').innerHTML='<div><p class="eyebrow">TODAY / ACTION CENTER</p><h2>Your next conversations.</h2></div><button class="primary" data-schedule-followup disabled>Schedule follow-up +</button>';
-      root.querySelector('.page-heading').className='section-title';
-      root.querySelector(`#${prefix}followup-scope`).hidden=true;
-      root.querySelector(`#${prefix}followup-error`).previousElementSibling.textContent='Overdue includes tasks earlier today. Today shows the remaining tasks before local midnight. Completed tasks and archived companies are hidden. Refreshes every minute while visible.';
-    }
+      <details class="ui-help"><summary>About due dates</summary><p>Dates use your local timezone. Overdue means before today; archived companies are hidden.</p></details><p id="${prefix}followup-error" role="alert"></p><div id="${prefix}followup-groups"></div>`;
     try {
       if(companyId()){const data=await api('crm-detail',null,{id:companyId()});if(!active||epoch!==life)return;company=data.company;}
       root.querySelector(`#${prefix}followup-scope`).textContent=company?`${company.company_name}${company.archived_at?' — archived. Restore this company to manage its follow-ups.':''}`:'All active companies';

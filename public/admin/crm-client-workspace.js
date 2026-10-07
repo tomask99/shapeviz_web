@@ -60,7 +60,7 @@ export function showClientDetail({root,api,notify,companyId,navigate}){
     ${company.archived_at?'<p class="fine">This company is archived. Restore it in Leads to change its tasks.</p>':''}
     <section class="research-panel client-summary"><div><p class="eyebrow">AT A GLANCE</p><h2>${esc(company.industry||'Company summary')}</h2><p class="crm-description">${esc(company.short_description||'No company summary yet.')}</p></div><div class="client-summary-meta">${websiteLink(company.website)}<p class="fine">Client since ${esc(client.client_since)}</p></div></section>
     <div class="client-workspace-grid">
-     <section class="research-panel client-tasks" aria-labelledby="client-tasks-title"><p class="eyebrow">WHAT’S NEXT</p><h2 id="client-tasks-title">Task list.</h2><p class="fine">Keep track of the work to do for this client.</p>
+     <section class="research-panel client-tasks" aria-labelledby="client-tasks-title"><p class="eyebrow">WHAT’S NEXT</p><h2 id="client-tasks-title">Task list.</h2>
       <form data-task-form><label>New task<input name="title" maxlength="160" required placeholder="What needs to be done?" ${company.archived_at?'disabled':''}></label><div class="actions"><button class="primary" ${company.archived_at?'disabled':''}>Add task</button><button type="button" class="quiet" data-cancel-task hidden>Cancel edit</button></div><p role="alert" data-task-error></p></form>
       <div data-task-list aria-live="polite"></div>
      </section>

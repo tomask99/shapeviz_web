@@ -3,7 +3,7 @@ import {RECENT_TYPES} from './crm-recent-types.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createRecentActivity({api}){
  const root=document.createElement('section');root.id='recent-activity';root.className='chart-panel';root.hidden=true;
- document.querySelector('#business-overview').before(root);
+ document.querySelector('#business-overview').after(root);
  let seq=0,data=null,cursor=null,pending=null,loading=false,expanded=false;
  const events=items=>`<ul class="recent-events">${items.map(r=>`<li><a class="recent-company" href="/admin/leads/${encodeURIComponent(r.company_id)}?tab=activity" title="${esc(r.company_name)}">${esc(r.company_name)}</a><div class="recent-event"><strong>${esc(RECENT_TYPES[r.event_type]||'Activity')}</strong>${r.detail&&r.detail.trim()!==r.company_name?.trim()?`<p title="${esc(r.detail)}">${esc(r.detail)}</p>`:''}</div><time class="recent-time" datetime="${esc(r.created_at)}" title="${esc(new Date(r.created_at).toLocaleString())}">${esc(new Date(r.created_at).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}))}</time>${notesButton(r,{preview:false})}</li>`).join('')}</ul>`;
  function render(error=''){

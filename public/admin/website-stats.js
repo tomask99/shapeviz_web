@@ -8,6 +8,7 @@ export async function refreshWebsiteStats(api) {
     const stats=await api('website-stats',null,{days});
     if(request!==version)return;
     const summary=stats.summary||{};
+    $('website-chart').hidden=!Number(summary.visits);
     $('website-metrics').innerHTML=[['Website visits',summary.visits||0],['Active time',duration(summary.seconds)],['Average / visit',duration(summary.average_seconds)]].map(([label,value])=>`<div class="metric"><span>${label}</span><strong>${escape(value)}</strong></div>`).join('');
     const rows=stats.daily||[], counts=new Map(rows.map(r=>[r.day,r])), max=Math.max(1,...rows.map(r=>Number(r.visits)));
     $('website-chart').innerHTML=Array.from({length:days},(_,i)=>{

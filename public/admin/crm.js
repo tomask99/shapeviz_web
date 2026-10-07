@@ -12,6 +12,9 @@ import {mountClient} from './crm-clients.js';
 import {showClients,showClientDetail} from './crm-client-workspace.js';
 import {mountCsv,showReports} from './crm-operations.js';
 import {createResearch} from './research.js';
+import {mountWorkspaceProjects} from './workspace-projects.js';
+import {mountCloudStorage} from './cloud-storage.js';
+import {mountTimeTracker} from './time-tracker.js';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const options = (values, pretty = false) => values.map(v => `<option value="${escape(v)}">${escape(pretty ? label(v) : v)}</option>`).join('');
@@ -19,7 +22,7 @@ const select = (name, title, values, pretty = false) => `<label>${title}<select 
 const input = (name, title, max = 120, type = 'text') => `<label>${title}<input name="${name}" type="${type}" maxlength="${max}"></label>`;
 const date = value => new Date(value).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
 
-export function createCrm({api,notify}) {
+export function createCrm({api,notify,timer:timeTracker}) {
   const root = document.createElement('section');
   root.id = 'crm'; root.hidden = true;
   document.querySelector('.workspace footer').before(root);
@@ -63,6 +66,9 @@ export function createCrm({api,notify}) {
     document.querySelector('#nav-followups').classList.remove('active');
     document.querySelector('#nav-research').classList.remove('active');
     document.querySelector('#nav-clients')?.classList.remove('active');
+    document.querySelector('#nav-time')?.classList.remove('active');
+    document.querySelector('#nav-projects')?.classList.remove('active');
+    document.querySelector('#nav-cloud-storage')?.classList.remove('active');
     if (value) document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'));
   }
   function navigate(path, replace = false) {
@@ -210,11 +216,18 @@ export function createCrm({api,notify}) {
   };
   function show() {
     activate(true);
+    if(/^\/admin\/cloud-storage\/?$/.test(location.pathname)){document.querySelector('#nav-leads').classList.remove('active');document.querySelector('#nav-cloud-storage')?.classList.add('active');cleanupDetail=mountCloudStorage({root,api,notify});return;}
+    if(/^\/admin\/time-tracker\/?$/.test(location.pathname)){
+      document.querySelector('#nav-leads').classList.remove('active');
+      document.querySelector('#nav-time')?.classList.add('active');
+      cleanupDetail=mountTimeTracker({root,api,timer:timeTracker});return;
+    }
     if(/^\/admin\/ai-research(?:\/[^/]+)?\/?$/.test(location.pathname)){
       document.querySelector('#nav-leads').classList.remove('active');
       document.querySelector('#nav-research').classList.add('active');
       research.show();return;
     }
+    if(/^\/admin\/projects\/?$/.test(location.pathname)){document.querySelector('#nav-leads').classList.remove('active');document.querySelector('#nav-projects')?.classList.add('active');cleanupDetail=mountWorkspaceProjects({root,api,navigate,notify});return;}
     const clientPath=location.pathname.match(/^\/admin\/clients(?:\/([^/]+))?\/?$/);
     if(clientPath){
       document.querySelector('#nav-leads').classList.remove('active');

@@ -89,7 +89,7 @@ test('Research cards share the image hover effect, respect reduced motion and re
   await card.hover();
   await expect.poll(()=>card.evaluate(element=>getComputedStyle(element).boxShadow)).toContain('70px');
   await expect.poll(()=>card.evaluate(element=>new DOMMatrix(getComputedStyle(element).transform).m42)).toBe(-8);
-  await expect(card).toHaveCSS('background-color','rgb(216, 135, 57)');
+  await expect(card).toHaveCSS('background-color','rgb(213, 161, 100)');
   await page.screenshot({path:'.cache/research-card-hover.png',fullPage:true});
   await page.emulateMedia({reducedMotion:'reduce'});await card.hover();await expect(card).toHaveCSS('transform','none');
   await card.getByRole('link',{name:'Open lead'}).click();await expect(page).toHaveURL('/admin/leads/'+id);
@@ -156,7 +156,7 @@ test('Only companies moved to Leads have an orange card and a lead link on deskt
   await expect(lead).toContainText('BRIK a.s.');
   await expect(lead).toContainText('In Leads');
   await expect(lead.getByRole('link',{name:'Open lead'})).toHaveAttribute('href','/admin/leads/'+id);
-  await expect(lead).toHaveCSS('background-color','rgb(216, 135, 57)');
+  await expect(lead).toHaveCSS('background-color','rgb(213, 161, 100)');
   await page.screenshot({path:'.cache/research-industries-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);

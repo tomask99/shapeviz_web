@@ -1,13 +1,23 @@
 import {test,expect} from '@playwright/test';
-test('rounded studio shows chart numbers, cursor glow and confirms deletion',async({page})=>{
+test('compact mobile navigation keeps search, uploads and account actions accessible',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.route('**/api/admin?*',route=>{const action=new URL(route.request().url()).searchParams.get('action');return route.fulfill({json:action==='me'?{email:'owner@example.test'}:action==='list'?{projects:[]}:{}});});
+ await page.goto('/admin?view=templates');
+ await page.getByRole('button',{name:'Search / Ctrl+K'}).click();await expect(page.locator('#crm-command')).toBeVisible();await page.keyboard.press('Escape');
+ await page.locator('.nav-create summary').click();await page.locator('#open-template-upload').click();await expect(page.locator('#upload-dialog')).toBeVisible();await page.locator('#upload-dialog [data-close]').click();
+ await expect(page.locator('.studio-account summary')).toHaveAccessibleName('Workspace settings');await page.locator('.studio-account summary').click();await expect(page.locator('#logout')).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ await page.locator('#logout').click();await expect(page.locator('#login')).toBeVisible();
+});
+test('studio shows chart numbers and confirms deletion in both layouts',async({page})=>{
  let deleted=false;const today=new Date().toISOString().slice(0,10);
  await page.route('**/api/admin?*',route=>{const action=new URL(route.request().url()).searchParams.get('action');let data={};if(action==='me')data={email:'owner@example.com'};if(action==='list')data={projects:deleted?[]:[{deck_slug:'sample',client:'Sample studio',title:'Visual direction',is_template:false,status:'published',slide_count:3}]};if(action==='stats')data={summary:{visits:7,seconds:180,average_seconds:26,slide_views:18},daily:[{day:today,visits:7,seconds:180}],decks:[],slides:[],sessions:[]};if(action==='delete'){expect(route.request().postDataJSON()).toEqual({slug:'sample',confirmSlug:'sample'});deleted=true;data={ok:true};}return route.fulfill({contentType:'application/json',body:JSON.stringify(data)});});
  await page.goto('/admin?view=presentations');const bar=page.locator(`[data-day="${today}"]`);await bar.hover();await expect(page.locator('#chart-readout')).toContainText('7 visits');await bar.click();await expect(bar).toHaveAttribute('aria-pressed','true');await expect(page.locator('#chart-readout')).toContainText('3m 0s active');
- await page.mouse.move(650,220);await expect.poll(()=>page.locator('.glow-head').evaluate(el=>Number(getComputedStyle(el).opacity))).toBeGreaterThan(0);
- await expect(page.locator('.metric').first()).toHaveCSS('border-radius','24px');await page.screenshot({path:'.cache/admin-rounded-desktop.png',fullPage:true});
+ await expect(page.locator('#nav-clients .ui-icon')).toHaveCount(1);await expect(page.getByRole('button',{name:'Search / Ctrl+K'})).toBeVisible();
+ await expect(page.locator('.metric').first()).toHaveCSS('border-radius','14px');await page.screenshot({path:'.cache/admin-rounded-desktop.png',fullPage:true});
  await page.locator('[data-delete=sample]').click();await page.getByRole('button',{name:'Keep presentation'}).click();expect(deleted).toBe(false);await page.locator('[data-delete=sample]').click();await page.locator('#delete-form input').fill('sample');await page.locator('#delete-form button[type=submit]').click();await expect(page.locator('#projects')).toContainText('No presentations');expect(deleted).toBe(true);
  await page.setViewportSize({width:390,height:844});await bar.click();await expect(page.locator('#chart-readout')).toContainText('7 visits');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);await page.screenshot({path:'.cache/admin-rounded-mobile.png',fullPage:true});
- await page.emulateMedia({reducedMotion:'reduce'});await expect(page.locator('.studio-glow')).toBeHidden();
+ await expect(page.locator('.studio-glow')).toHaveCount(0);
 });
 test('company variant can be previewed and then saved with a pointer',async({page})=>{
  let saved=false,variantBody;

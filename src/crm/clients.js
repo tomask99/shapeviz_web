@@ -1,7 +1,8 @@
 import {fail,uuid,string,choice,link} from './validation.js';
 import {opportunityValueInput} from '../../public/admin/crm-value.js';
 import {SERVICES} from '../../public/admin/crm-options.js';
-export const clientActions=['crm-clients','crm-client','crm-client-create','crm-client-update','crm-client-convert','crm-client-save','crm-projects','crm-project-save','crm-client-tasks','crm-client-task-save','crm-client-task-delete'];
+import {rateCents} from '../../public/admin/time-values.js';
+export const clientActions=['crm-clients','crm-client','crm-client-create','crm-client-update','crm-client-convert','crm-client-save','crm-projects','crm-workspace-projects','crm-project-save','crm-client-tasks','crm-client-task-save','crm-client-task-delete'];
 export function clientCompanyInput(body){
  const company_name=string(body.company_name,160,'company name');
  if(!company_name)throw fail(400,'Enter the company name.');
@@ -15,7 +16,14 @@ export function projectInput(body){
  if(result.start_date&&result.end_date&&result.end_date<result.start_date)throw fail(400,'End date precedes start date.');
  for(const key of ['project_value','monthly_value'])try{result[key]=opportunityValueInput({estimated_value:body[key]??null,value_type:'ONE_TIME'}).estimated_value;}catch(e){throw fail(400,e.message);}
  if(Object.hasOwn(body,'billing_type')){
-  const type=choice(body.billing_type,['ONE_TIME','MONTHLY','MIXED'],'billing type');
+  const type=choice(body.billing_type,['ONE_TIME','MONTHLY','MIXED','HOURLY'],'billing type');
+  if(type==='HOURLY'){
+   try{result.hourly_rate_cents=rateCents(body.amount);}catch(e){throw fail(400,e.message);}
+   result.project_value=null;result.monthly_value=null;
+   for(const key of ['service_type','notes','start_date','end_date'])if(!Object.hasOwn(body,key))delete result[key];
+   return result;
+  }
+  result.hourly_rate_cents=null;
   let amount;try{amount=opportunityValueInput({estimated_value:body.amount,value_type:'ONE_TIME'}).estimated_value;}catch(e){throw fail(400,e.message);}
   if(amount==null)throw fail(400,'Enter the agreed price.');
   result.project_value=type==='MONTHLY'?null:amount;result.monthly_value=type==='MONTHLY'?amount:type==='MIXED'?result.monthly_value:null;
@@ -26,6 +34,10 @@ export function projectInput(body){
 }
 export async function handleClients({action,body,url,user,request,owner}){
  const page=Number(url.searchParams.get('page')||1);if(!Number.isInteger(page)||page<1||page>10000)throw fail(400,'Invalid page.');
+ if(action==='crm-workspace-projects'){
+  const companyId=url.searchParams.get('companyId')||null;if(companyId&&!uuid(companyId))throw fail(400,'Invalid client.');
+  return request('/rest/v1/rpc/crm_workspace_projects',{method:'POST',body:{p_q:string(url.searchParams.get('q'),160,'search'),p_company:companyId,p_status:choice(url.searchParams.get('status')??'OPEN',['OPEN','','PLANNED','ACTIVE','ON_HOLD','COMPLETED','CANCELLED'],'project status'),p_billing:choice(url.searchParams.get('billing')||'',['','HOURLY','ONE_TIME','MONTHLY'],'billing'),p_page:page}});
+ }
  if(action==='crm-client-create'){
   if(!uuid(body.requestId))throw fail(400,'Reopen the client form before saving.');
   return request('/rest/v1/rpc/crm_create_client',{method:'POST',body:{p_request_id:body.requestId,p_data:clientCompanyInput(body)}});
@@ -47,7 +59,7 @@ export async function handleClients({action,body,url,user,request,owner}){
   const rows=await request(`/rest/v1/crm_client_tasks?${scope}&select=*&order=completed,created_at.desc,id&limit=51&offset=${(page-1)*50}`);
   return {items:rows.slice(0,50),hasMore:rows.length>50};
  }
- if(action==='crm-projects'){const rows=await request(`/rest/v1/crm_projects?${scope}&select=id,company_id,name,status,service_type,description,start_date,end_date,project_value,monthly_value,notes,version,created_at,updated_at&order=created_at.desc,id&limit=26&offset=${(page-1)*25}`);return {items:rows.slice(0,25),hasMore:rows.length>25};}
+ if(action==='crm-projects'){const rows=await request(`/rest/v1/crm_projects?${scope}&select=id,company_id,name,status,service_type,description,start_date,end_date,project_value,monthly_value,hourly_rate_cents,notes,version,created_at,updated_at&order=created_at.desc,id&limit=26&offset=${(page-1)*25}`);return {items:rows.slice(0,25),hasMore:rows.length>25};}
  if(companies[0].archived_at)throw fail(409,'Restore the company first.');
  if(action==='crm-client-convert'){if(clients[0])return {item:clients[0]};if(companies[0].pipeline_status!=='WON'||body.confirm!=='convert')throw fail(400,'Confirm conversion of a Won lead.');try{return {item:(await request('/rest/v1/crm_clients',{method:'POST',body:{company_id:companyId,owner_id:user.id},headers:{Prefer:'return=representation'}}))[0]};}catch(e){if(e.status===409){const rows=await request(`/rest/v1/crm_clients?${scope}&select=*`);if(rows[0])return {item:rows[0]};}throw e;}}
  if(!clients[0])throw fail(409,'Convert this company to a client first.');

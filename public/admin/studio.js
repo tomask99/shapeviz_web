@@ -1,4 +1,4 @@
-import './cursor.js';
+import {installStudioShell} from './studio-shell.js';
 import '../dialog-dismiss.js';
 import {createCrm} from './crm.js';
 import {createCrmReadCache} from './crm-read-cache.js';
@@ -9,6 +9,9 @@ import {uploadPresentation} from './upload.js';
 import {createStudioCompany} from './studio-company.js';
 import {createPreparePresentation} from './crm-prepare-presentation.js';
 import {createBusinessOverview} from './crm-overview.js';
+import {createTimeStore} from './time-store.js';
+import {mountMiniTimer} from './time-tracker.js';
+import {svgIcon} from '../ui/icons.js';
 const arrowIcon='<svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" focusable="false" style="vertical-align:-.125em"><path d="M5 19 19 5M5 5h14v14"/></svg>';
 const $=s=>document.querySelector(s);
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -17,12 +20,13 @@ const locationView=()=>{const params=new URLSearchParams(location.search);return
 const duration=n=>{n=Number(n)||0;return n>=3600?`${Math.floor(n/3600)}h ${Math.floor(n%3600/60)}m`:n>=60?`${Math.floor(n/60)}m ${n%60}s`:`${n}s`;};
 const notify=message=>{clearTimeout(noticeTimer);$('#notice').textContent=message;$('#notice').classList.add('visible');noticeTimer=setTimeout(()=>$('#notice').classList.remove('visible'),9000);};
 const api=createCrmReadCache(requestApi);
+const timer=createTimeStore(api);
 async function requestApi(action,body,params={}) {
  const query=new URLSearchParams({...params,action});
  const response=await fetch(`/api/admin?${query}`,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(60000)});
  const data=await response.json().catch(()=>({error:'The server did not finish this request. Please try again.'}));if(!response.ok){if(response.status===401 && action!=='login' && action!=='verify')showLogin();throw Object.assign(new Error(data.error||'Request failed.'),{status:response.status,retryAfter:response.headers.get('Retry-After')});}return data;
 }
-function showLogin(setup=false){api.invalidate();business.hide();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('#studio').hidden=true;$('#login').hidden=false;$('#signin').hidden=setup;$('#set-password').hidden=!setup;$('#login-title').textContent=setup?'Make it yours.':'Welcome back.';$('#login-hint').textContent=setup?'Set a password with at least 12 characters.':'Sign in to your Shapeviz studio.';}
+function showLogin(setup=false){timer.deactivate();api.invalidate();business.hide();document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('#studio').hidden=true;$('#login').hidden=false;$('#signin').hidden=setup;$('#set-password').hidden=!setup;$('#login-title').textContent=setup?'Make it yours.':'Welcome back.';$('#login-hint').textContent=setup?'Set a password with at least 12 characters.':'Sign in to your Shapeviz studio.';}
 function formData(form){const data=Object.fromEntries(new FormData(form));for(const name of ['publish','isTemplate'])if(form.elements[name])data[name]=form.elements[name].checked;return data;}
 const uploadCompany=createStudioCompany($('#upload-form'),api),variantCompany=createStudioCompany($('#variant-form'),api),editCompany=createStudioCompany($('#edit-form'),api);
 async function busy(form,task){const dialog=form.closest('dialog');if(dialog)dialog.dataset.dismissPending='true';const buttons=[...form.querySelectorAll('button')];let errorBox=form.querySelector('[data-form-error]');if(!errorBox){errorBox=document.createElement('p');errorBox.dataset.formError='';errorBox.setAttribute('role','alert');form.append(errorBox);}errorBox.textContent='';buttons.forEach(b=>b.disabled=true);try{await task();}catch(error){errorBox.textContent=error.message;notify(error.message);}finally{buttons.forEach(b=>b.disabled=false);if(dialog)delete dialog.dataset.dismissPending;}}
@@ -67,14 +71,19 @@ async function refresh(){
  catch(error){if(current()){$('#metrics').textContent='Statistics are temporarily unavailable.';$('#chart-readout').textContent=error.message;}}
 }
 $('#website-days').onchange=()=>refreshWebsiteStats(api);
-const crm=createCrm({api,notify});
+const crm=createCrm({api,notify,timer});
+const miniTimerRoot=document.createElement('div');$('.workspace > header').after(miniTimerRoot);mountMiniTimer({root:miniTimerRoot,timer,navigate:crm.navigate});
 installQuickNotes({api,notify});
 installCommandPalette({api,navigate:path=>path.startsWith('/admin?deck=')?location.assign(path):crm.navigate(path),createPresentation:()=>api('list').then(d=>{projects=d.projects;$('#new-dialog').showModal();}).catch(e=>notify(e.message))});
 const business=createBusinessOverview({api,notify});
-const isCrmPath=()=>/^\/admin\/(?:leads(?:\/[^/]+)?|ai-research(?:\/[^/]+)?|pipeline|follow-ups|clients(?:\/[^/]+)?|reports)\/?$/.test(location.pathname);
+const isCrmPath=()=>/^\/admin\/(?:leads(?:\/[^/]+)?|ai-research(?:\/[^/]+)?|pipeline|follow-ups|clients(?:\/[^/]+)?|reports|projects|time-tracker|cloud-storage)\/?$/.test(location.pathname);
 const clientNav=document.createElement('a');clientNav.id='nav-clients';clientNav.href='/admin/clients';clientNav.textContent='Clients';$('#nav-research').after(clientNav);clientNav.onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/clients');};
 const reportsNav=document.createElement('a');reportsNav.href='/admin/reports';reportsNav.textContent='Reports';clientNav.after(reportsNav);reportsNav.onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/reports');};
-async function enter(email){$('#login').hidden=true;$('#studio').hidden=false;$('#account').textContent=email;$('#today').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});if(isCrmPath())crm.show();else{await setView(locationView(),false);const deck=new URLSearchParams(location.search).get('deck');if(deck){if(projects.some(p=>p.deck_slug===deck))showDetail(deck);else notify('Presentation is not in the current library. Refresh or search the library.');}}}
+const timeNav=document.createElement('a');timeNav.id='nav-time';timeNav.href='/admin/time-tracker';timeNav.innerHTML=svgIcon('clock')+' Time Tracker';clientNav.after(timeNav);timeNav.onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/time-tracker');};
+const projectNav=document.createElement('a');projectNav.id='nav-projects';projectNav.href='/admin/projects';projectNav.textContent='Projects';clientNav.after(projectNav);projectNav.onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/projects');};
+const storageNav=document.createElement('a');storageNav.id='nav-cloud-storage';storageNav.href='/admin/cloud-storage';storageNav.textContent='Cloud storage';projectNav.after(storageNav);storageNav.onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/cloud-storage');};
+installStudioShell();
+async function enter(email){$('#login').hidden=true;$('#studio').hidden=false;timer.activate();$('#account').textContent=email;$('#today').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});if(isCrmPath())crm.show();else{await setView(locationView(),false);const deck=new URLSearchParams(location.search).get('deck');if(deck){if(projects.some(p=>p.deck_slug===deck))showDetail(deck);else notify('Presentation is not in the current library. Refresh or search the library.');}}}
 $('#nav-leads').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/leads');};
 $('#nav-followups').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/follow-ups');};
 $('#nav-pipeline').onclick=e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button!==0)return;e.preventDefault();crm.navigate('/admin/pipeline');};

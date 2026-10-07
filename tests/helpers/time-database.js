@@ -1,0 +1,31 @@
+import {PGlite} from '@electric-sql/pglite';
+import {readFile,readdir} from 'node:fs/promises';
+export const owner='11111111-1111-4111-8111-111111111111',company='22222222-2222-4222-8222-222222222222',project='33333333-3333-4333-8333-333333333333',other='44444444-4444-4444-8444-444444444444';
+export async function timeDatabase(){
+ const db=new PGlite();
+ await db.exec(`create role anon;create role authenticated;create role service_role;
+ create schema auth;create schema crm_private;grant usage on schema auth,crm_private to authenticated;
+ create table auth.users(id uuid primary key);insert into auth.users values('${owner}'),('${other}');
+ create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+ create table public.presentation_admins(user_id uuid primary key,role text);insert into public.presentation_admins values('${owner}','owner'),('${other}','owner');
+ create table public.crm_companies(id uuid primary key,owner_id uuid,company_name text,archived_at timestamptz,version integer default 1,website text default '',industry text default '',short_description text default '',pipeline_status text default 'WON',unique(id,owner_id));
+ create table public.crm_clients(company_id uuid primary key,owner_id uuid,active boolean default true,client_since date default current_date);
+ create table public.crm_projects(id uuid primary key default gen_random_uuid(),company_id uuid,owner_id uuid,name text,status text default 'ACTIVE',service_type text default '',description text default '',notes text default '',brief text default '',start_date date,end_date date,project_value numeric(12,2),monthly_value numeric(12,2),version integer default 1,creation_request_id uuid,created_at timestamptz default now(),updated_at timestamptz default now(),unique(id,company_id,owner_id),unique(owner_id,company_id,creation_request_id));
+ alter table public.crm_projects enable row level security;alter table public.crm_companies enable row level security;alter table public.crm_clients enable row level security;
+ create policy owned on public.crm_projects for all to authenticated using(owner_id=(select auth.uid())) with check(owner_id=(select auth.uid()));
+ create policy owned on public.crm_companies for all to authenticated using(owner_id=(select auth.uid())) with check(owner_id=(select auth.uid()));
+ create policy owned on public.crm_clients for all to authenticated using(owner_id=(select auth.uid())) with check(owner_id=(select auth.uid()));
+ grant select on public.presentation_admins to authenticated;grant select,insert,update,delete on public.crm_projects,public.crm_clients,public.crm_companies to authenticated;
+ insert into public.crm_companies(id,owner_id,company_name) values('${company}','${owner}','Test client'),('${other}','${other}','Other client');
+ insert into public.crm_clients(company_id,owner_id) values('${company}','${owner}'),('${other}','${other}');
+ insert into public.crm_projects(id,company_id,owner_id,name,project_value) values('${project}','${company}','${owner}','Hourly design',null),('${other}','${other}','${other}','Other work',100);`);
+ await db.exec(await readFile(new URL('../../supabase/migrations/20261007204318_hourly_time_tracker.sql',import.meta.url),'utf8'));
+ const migrations=new URL('../../supabase/migrations/',import.meta.url);
+ const revenueMigration=(await readdir(migrations)).find(file=>file.endsWith('_hourly_project_revenue.sql'));
+ await db.exec(await readFile(new URL(revenueMigration,migrations),'utf8'));
+ const detailsMigration=(await readdir(migrations)).find(file=>file.endsWith('_time_entry_details_and_projects.sql'));
+ await db.exec(await readFile(new URL(detailsMigration,migrations),'utf8'));
+ await db.exec(`update public.crm_projects set hourly_rate_cents=6000 where id='${project}';set role authenticated;set request.jwt.claim.sub='${owner}';`);
+ const rpc=async(name,args={})=>{if(!/^crm_(time_[a-z_]+|project_time|project_revenue|workspace_projects)$/.test(name))throw new Error('Unexpected RPC '+name);const keys=Object.keys(args);const {rows}=await db.query(`select public.${name}(${keys.map((k,i)=>`${k}=>$${i+1}`).join(',')}) as data`,Object.values(args));return rows[0].data;};
+ return {db,rpc};
+}

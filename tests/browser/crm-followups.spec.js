@@ -41,7 +41,7 @@ test('schedule from company, reload, next actions, reschedule and complete with 
   await page.goto('/admin/leads/'+companyId);
   await page.getByRole('link',{name:'Manage follow-ups'}).click();
   await expect(page.getByRole('heading',{name:'Follow-ups.'})).toBeVisible();
-  await page.getByRole('button',{name:'Schedule follow-up +'}).click();
+  await page.getByRole('button',{name:'Schedule follow-up'}).click();
   const dialog=page.locator('#followup-dialog');
   await dialog.getByLabel('Title *',{exact:true}).fill('Send proposal <draft>');
   await dialog.getByLabel('Due date and time *').fill('2026-01-20T10:30');
@@ -81,7 +81,7 @@ test('global company picker, load retry, save conflict and mobile dialog preserv
   await page.goto('/admin/follow-ups');await expect(page.getByRole('alert')).toContainText('Temporary failure');
   await page.getByRole('button',{name:'Try again'}).click();await expect(page.getByRole('region',{name:'Today'})).toBeVisible();
   await page.setViewportSize({width:320,height:760});
-  await page.getByRole('button',{name:'Schedule follow-up +'}).click();const dialog=page.locator('#followup-dialog');
+  await page.getByRole('button',{name:'Schedule follow-up'}).click();const dialog=page.locator('#followup-dialog');
   await dialog.getByRole('combobox',{name:'Company *',exact:true}).selectOption(companyId);
   await dialog.getByLabel('Title *',{exact:true}).fill('Call marketing');
   await dialog.getByRole('button',{name:'Save follow-up'}).click();

@@ -3,17 +3,34 @@ import { uuid, string } from '../crm/validation.js';
 import { createFolderLoader, normalizeMegaFolder, validSlug, fail } from './mega.js';
 import {trackingActions,trackingReadActions,handleFileTracking} from './admin-tracking.js';
 
-export const fileActions = ['client-files', 'client-files-save', 'client-files-status', 'client-files-delete', 'client-file-links', 'client-file-link-disable',...trackingActions];
+export const fileReadActions = ['cloud-storage','cloud-storage-companies','client-files','client-file-links',...trackingReadActions];
+export const fileActions = [...fileReadActions, 'client-files-save', 'client-files-status', 'client-files-delete', 'client-file-link-disable',...trackingActions];
 const fields = 'id,company_id,title,slug,description,public_token,active,version,source_version,created_at';
 const linkFields = 'id,portal_id,name,type,token,enabled,source_version,parent_id,ancestor_ids,version,created_at';
 const loadMega = createFolderLoader();
 
 export async function handleClientFiles({ action, body, url, user, token, call, loadFolder = loadMega }) {
-  const reading = action === 'client-files' || action === 'client-file-links' || trackingReadActions.includes(action);
+  const reading = fileReadActions.includes(action);
   const companyId = reading ? url.searchParams.get('companyId') : body.companyId;
   if (!token || !uuid(user?.id)) throw fail(401, 'Please sign in.');
-  if (!uuid(companyId)) throw fail(400, 'Invalid client.');
   const request = (path, options = {}) => call(path, { ...options, token });
+  if (action === 'cloud-storage' || action === 'cloud-storage-companies') {
+    const page=Number(url.searchParams.get('page')||1);
+    if (!Number.isSafeInteger(page)||page<1||page>10000) throw fail(400,'Invalid page.');
+    const owner=`owner_id=eq.${user.id}`;
+    if (action === 'cloud-storage-companies') {
+      const rows=await request(`/rest/v1/crm_clients?${owner}&select=company_id,crm_companies!inner(id,company_name,archived_at)&crm_companies.archived_at=is.null&order=company_id&limit=101&offset=${(page-1)*100}`);
+      const companies=rows.slice(0,100),ids=companies.map(row=>row.company_id);
+      const portals=ids.length?await request(`/rest/v1/client_file_shares?${owner}&company_id=in.(${ids.join(',')})&select=company_id`):[];
+      return {items:companies.map(row=>({id:row.company_id,company_name:row.crm_companies.company_name,has_storage:portals.some(portal=>portal.company_id===row.company_id)})),hasMore:rows.length>100};
+    }
+    const rows=await request(`/rest/v1/client_file_shares?${owner}&select=${fields}&order=title.asc,id&limit=51&offset=${(page-1)*50}`);
+    const portals=rows.slice(0,50),ids=portals.map(row=>row.company_id);
+    const companies=ids.length?await request(`/rest/v1/crm_companies?${owner}&id=in.(${ids.join(',')})&select=id,company_name,archived_at`):[];
+    const byId=new Map(companies.map(company=>[company.id,company]));
+    return {items:portals.filter(portal=>byId.has(portal.company_id)).map(portal=>({...portal,company_name:byId.get(portal.company_id).company_name,archived_at:byId.get(portal.company_id).archived_at})),hasMore:rows.length>50};
+  }
+  if (!uuid(companyId)) throw fail(400, 'Invalid client.');
   const scope = `company_id=eq.${companyId}&owner_id=eq.${user.id}`;
   const clients = await request(`/rest/v1/crm_clients?${scope}&select=company_id,crm_companies(archived_at)`);
   if (!clients?.[0]) throw fail(404, 'Client not found.');

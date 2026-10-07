@@ -33,6 +33,9 @@
     }
   ],
   "rewrites": [
+    {"source": "/admin/cloud-storage", "destination": "/admin/index.html"},
+    {"source": "/admin/projects", "destination": "/admin/index.html"},
+    {"source": "/admin/time-tracker", "destination": "/admin/index.html"},
     {"source": "/files/share/:share([A-Za-z0-9_-]{32})", "destination": "/files/index.html"},
     {"source": "/files/:slug([a-z0-9]+(?:-[a-z0-9]+)*)", "destination": "/files/index.html"},
     {"source": "/oauth/authorize", "destination": "/api/oauth/authorize"},

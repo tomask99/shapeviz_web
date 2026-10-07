@@ -10,13 +10,12 @@ import {handleReplies,replyActions} from './replies.js';
 import {instant} from './followups.js';
 import {opportunityValueInput} from '../../public/admin/crm-value.js';
 import {LOST_REASONS} from '../../public/admin/crm-outcome.js';
-import {actionCenterInput} from './action-center.js';
 import {recentActivityQuery,recentActivityPage} from './recent-activity.js';
-import {handleSuggestions} from './suggestions.js';
 import {handleRecipients,recipientActions} from './recipients.js';
 import {handleSavedViews,savedViewActions} from './saved-views.js';
 import {websiteMetadata} from './website-metadata.js';
 import {handleClients,clientActions} from './clients.js';
+import {handleTime,timeActions} from './time-tracker.js';
 import {handleProjectWorkspace,projectWorkspaceActions} from './project-workspace.js';
 import {handleOperations,operationActions} from './operations.js';
 import {filterConfig,FILTER_CHOICES} from '../../public/admin/crm-filter-config.js';
@@ -53,9 +52,9 @@ export async function handleCrm({action, body, url, user, token, call, signingKe
   if (!token || !uuid(user.id)) throw fail(401, 'Please sign in.');
   if([...researchReadActions,...researchWriteActions].includes(action))return handleResearch({action,body,url,user,token,call,signingKey,validateCompany:companyInput});
   const request = (path, options = {}) => call(path, {...options, token});
-  if(['crm-suggestions','crm-suggestion-state'].includes(action))return handleSuggestions({action,body,url,request});
   if(action==='crm-recent-activity')return recentActivityPage(await request(recentActivityQuery(url.searchParams,user.id)));
   const owner = `owner_id=eq.${encodeURIComponent(user.id)}`;
+  if(timeActions.includes(action))return handleTime({action,body,url,request});
   if(projectWorkspaceActions.includes(action))return handleProjectWorkspace({action,body,url,user,request,owner});
   if(noteActions.includes(action))return handleNotes({action,body,url,user,request,owner});
   if(operationActions.includes(action))return handleOperations({action,body,url,request,validateCompany:companyInput});
@@ -64,7 +63,6 @@ export async function handleCrm({action, body, url, user, token, call, signingKe
   if(action==='crm-duplicates')return {items:await request('/rest/v1/rpc/crm_duplicates',{method:'POST',body:{p_domain:normalizedDomain(string(body.website,2048,'website')),p_name:normalizedName(string(body.company_name,160,'name')),p_country:string(body.country,2,'country').toUpperCase()}})};
   if(savedViewActions.includes(action))return handleSavedViews({action,body,user,request,owner});
   if(recipientActions.includes(action))return handleRecipients({action,body,url,user,request,owner});
-  if(action==='crm-action-center')return request('/rest/v1/rpc/crm_action_center',{method:'POST',body:actionCenterInput(url.searchParams)});
   if(action==='crm-overview'){
     const today=instant(url.searchParams.get('today')),tomorrow=instant(url.searchParams.get('tomorrow'));
     const hours=(Date.parse(tomorrow)-Date.parse(today))/3600000;

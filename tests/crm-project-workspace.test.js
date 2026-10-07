@@ -17,7 +17,7 @@ function fixture({archived=false,noProject=false,stale=false}={}){
 }
 test('Project pricing keeps exact decimals and clears the other frequency on a change',()=>{
  const base={name:'Renders',status:'ACTIVE',description:'Summary',amount:'1200,25'};
- assert.deepEqual(projectInput({...base,billing_type:'ONE_TIME'}),{name:'Renders',status:'ACTIVE',description:'Summary',project_value:'1200.25',monthly_value:null});
+ assert.deepEqual(projectInput({...base,billing_type:'ONE_TIME'}),{name:'Renders',status:'ACTIVE',description:'Summary',project_value:'1200.25',monthly_value:null,hourly_rate_cents:null});
  const monthly=projectInput({...base,billing_type:'MONTHLY',project_value:'999'});assert.equal(monthly.project_value,null);assert.equal(monthly.monthly_value,'1200.25');assert.ok(!Object.hasOwn(monthly,'notes'));assert.ok(!Object.hasOwn(monthly,'start_date'));
  assert.equal(projectInput({...base,billing_type:'MONTHLY',amount:'0'}).monthly_value,'0.00');
  for(const change of [{amount:''},{amount:'1.999'},{amount:'-2'},{billing_type:'YEARLY'},{status:'OTHER'}])assert.throws(()=>projectInput({...base,billing_type:'ONE_TIME',...change}),{status:400});

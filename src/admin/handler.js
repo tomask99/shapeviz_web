@@ -1,5 +1,6 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { handleCrm } from '../crm/handler.js';
+import {timeReads} from '../crm/time-tracker.js';
 import {researchReadActions} from '../research/handler.js';
 import {handleReadTools,READ_TOOL_ACTIONS,MAX_TOOL_REQUEST_BYTES,MAX_IMPORT_TOOL_REQUEST_BYTES,ADMIN_READ_SCOPES} from '../tools/handler.js';
 import {handleReadMcp,MCP_ACTION,mcpHttpError} from '../tools/mcp.js';
@@ -12,8 +13,7 @@ import { getPrivatePresentationSource, uploadStorageObject, slugPattern } from '
 import { renderPresentationTemplate } from '../presentations/page.js';
 import { removeProjectFiles, storageScopes, referencedMedia } from './storage.js';
 import {preparePresentation} from './prepare-presentation.js';
-import {fileActions,handleClientFiles} from '../files/admin.js';
-import {trackingReadActions} from '../files/admin-tracking.js';
+import {fileActions,fileReadActions,handleClientFiles} from '../files/admin.js';
 import {deferPresentationMedia} from '../presentations/deferred-media.js';
 
 const fail = (status, message) => Object.assign(new Error(message), {status});
@@ -29,6 +29,9 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
     const value = await response.text();
     let data; try {data = value ? JSON.parse(value) : null;} catch {data = null;}
     if (!response.ok) {
+      const timeRequest=url.startsWith('/rest/v1/rpc/crm_time_')||url.startsWith('/rest/v1/rpc/crm_project_time')||url.startsWith('/rest/v1/crm_projects');
+      if(timeRequest&&/^PT(400|404|409)$/.test(data?.code||''))throw fail(Number(data.code.slice(2)),String(data.message).slice(0,500));
+      if(url.startsWith('/rest/v1/crm_projects')&&data?.code==='23503')throw fail(409,'This project has time records. Keep it and mark it completed or cancelled to preserve its history.');
       const status=[400,401,403,409,413,429].includes(response.status) ? response.status : 502;
       const researchConflict=url.startsWith('/rest/v1/rpc/crm_research_') && response.status===409;
       const reviewConflict=researchConflict && url!=='/rest/v1/rpc/crm_research_import';
@@ -101,8 +104,8 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
       if(action===MCP_ACTION&&req.method!=='POST')throw fail(405,'Use POST for the stateless MCP endpoint.');
       if(OAUTH_ADMIN_ACTIONS.includes(action)&&req.method!==(action==='oauth-connections'?'GET':'POST'))throw fail(405,'Use the required connection method.');
       if(action==='crm-tools-list'&&req.method!=='GET'||action==='crm-tools-call'&&req.method!=='POST')throw fail(405,'Use GET for the tool catalog and POST for tool calls.');
-      const readActions=[...trackingReadActions,'client-files','client-file-links','me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary','crm-tools-list',...researchReadActions];
-      if(req.method==='GET' && ![...readActions,'crm-note-summaries','oauth-connections','crm-global-search','crm-sales-report','crm-clients','crm-client','crm-client-tasks','crm-project','crm-project-tasks','crm-project-notes','crm-projects','crm-saved-views','crm-overview','crm-action-center','crm-recent-activity','crm-suggestions','crm-recipients','crm-recipient-stats','crm-signals','tracking-gate'].includes(action)) throw fail(405,'Use POST for this action.');
+      const readActions=[...timeReads,...fileReadActions,'me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary','crm-tools-list',...researchReadActions];
+      if(req.method==='GET' && ![...readActions,'crm-note-summaries','oauth-connections','crm-global-search','crm-sales-report','crm-clients','crm-client','crm-client-tasks','crm-project','crm-project-tasks','crm-project-notes','crm-projects','crm-workspace-projects','crm-saved-views','crm-overview','crm-recent-activity','crm-recipients','crm-recipient-stats','crm-signals','tracking-gate'].includes(action)) throw fail(405,'Use POST for this action.');
       if(req.method==='POST' && !/^application\/json\b/i.test(req.headers['content-type']||'')) throw fail(415,'JSON is required.');
       // A JSON string is escaped inside the transport envelope; the research validator
       // independently enforces the 500,000-byte source limit after decoding.

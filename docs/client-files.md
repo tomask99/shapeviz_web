@@ -4,6 +4,14 @@ The public panel is named **Cloud storage**, shown above the company name and
 in the browser title. Its header logo and **visual studio** link both navigate
 to `https://shapeviz.com/`. The lower promotional footer is omitted.
 
+Admin directory verification (8 October 2026): 374 Node tests passed, one opt-in
+test skipped; nine focused browser tests passed, including desktop/mobile cards,
+copy/open, portal editing, safe creation retries, loading errors, pagination and
+the original Files workflow. Build, SVG validation and whitespace checks passed.
+A read-only check against the connected database confirmed the new directory
+returns the existing milenium portal and the current client choices. No live
+portal settings or MEGA files were changed during verification.
+
 ## Studio click notifications
 
 An actual logo/studio click sends a small same-origin `keepalive` POST while
@@ -26,6 +34,21 @@ Supabase's informational [RLS-without-policy advisory](https://supabase.com/docs
 is expected for this server-only table; PostgreSQL tests verify client access is denied.
 
 ## Connecting a client
+
+The Studio sidebar has a **Cloud storage** section and a **Cloud storage** link
+at `/admin/cloud-storage`. It lists existing portals as compact company cards.
+Click the card or **Open** to enter the portal in the same tab; **Copy link**
+copies its complete Shapeviz URL, including the access fragment. **Edit** changes
+the existing portal settings. Disabled and archived portals remain labelled in
+the list, and archived companies cannot be edited.
+
+**Add storage** asks for an existing client company and a full MEGA folder link.
+The storage name and URL slug default from the company; **Link settings** exposes
+these fields and the optional description. Companies already connected are
+disabled in the picker. The same validated, versioned and idempotent save API
+serves both this screen and the original client Files tab. Ambiguous creation
+failures retain the same payload and request ID for retry. No schema migration
+or additional storage account is needed.
 
 In **Clients → Client → Files**, connect one dedicated MEGA folder. Set the
 public client name, **Files URL slug**, optional description and complete MEGA

@@ -1,24 +1,27 @@
 import {createProjectEditor,projectPrice,projectStatuses} from './crm-project-editor.js';
 import {mountTasks,mountNotes} from './crm-client-records.js';
 import {projectActionsMarkup} from './crm-project-actions.js';
+import {mountProjectTime} from './time-project.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-export function mountProjectWorkspace({root,api,notify,company,navigate,projectId=null}){
+export function mountProjectWorkspace({root,api,notify,company,navigate,projectId=null,embedded=false,initialProject=null}){
  const companyId=company.id,base='/admin/clients/'+encodeURIComponent(companyId);
- let disposed=false,pendingAction=false,seq=0,page=1,project=null,cleanupRecords=()=>{};
+ let disposed=false,pendingAction=false,seq=0,page=1,project=null,cleanupRecords=()=>{},cleanupTime=()=>{};
  const editor=createProjectEditor({api,notify,companyId,onSaved:item=>{
-  if(projectId){project=item;renderHeader();}
+  if(projectId){project=item;renderHeader();renderTime();}
   else navigate(base+'?project='+encodeURIComponent(item.id));
  }});
+ function renderTime(){cleanupTime();const target=root.querySelector('[data-project-time]');if(!target)return;target.hidden=project.hourly_rate_cents==null;if(!target.hidden)cleanupTime=mountProjectTime({root:target,api,notify,project,company});}
  function renderHeader(){
   const header=root.querySelector('[data-project-header]');
   header.innerHTML=`<div><p class="eyebrow">CLIENT PROJECT</p><h2>${esc(project.name)}</h2><p class="project-price">${esc(projectPrice(project))}</p><span class="research-tag">${esc(projectStatuses[project.status]||project.status)}</span></div><button type="button" class="secondary" data-edit-project ${company.archived_at?'disabled':''}>Edit project</button>`;
-  root.querySelector('[data-project-description]').textContent=project.description||'No short description yet.';
+  if(embedded)header.querySelector('.research-tag').textContent=({ON_HOLD:'Paused',COMPLETED:'Done'}[project.status]||projectStatuses[project.status]||project.status);
+  root.querySelector('[data-project-description]').textContent=project.description||(embedded?'':'No short description yet.');
   header.querySelector('button').onclick=()=>editor.open(project);
  }
  async function list(){
   const ticket=++seq;
-  root.innerHTML=`<div class="section-title"><div><p class="eyebrow">WORK FOR THIS CLIENT</p><h2>Projects.</h2></div><button type="button" class="primary" data-new-project ${company.archived_at?'disabled':''}>New project</button></div><p class="fine">One-time work and monthly agreements, each with its own brief, tasks and notes.</p><div data-project-results aria-live="polite">Loading projects…</div>`;
+  root.innerHTML=`<div class="section-title"><div><p class="eyebrow">WORK FOR THIS CLIENT</p><h2>Projects.</h2></div><button type="button" class="primary" data-new-project ${company.archived_at?'disabled':''}>New project</button></div><div data-project-results aria-live="polite">Loading projects…</div>`;
   root.querySelector('[data-new-project]').onclick=()=>{if(!pendingAction)editor.open();};const target=root.querySelector('[data-project-results]');
   try{
    const data=await api('crm-projects',null,{companyId,page});if(disposed||ticket!==seq)return;
@@ -54,14 +57,16 @@ export function mountProjectWorkspace({root,api,notify,company,navigate,projectI
  async function detail(){
   const ticket=++seq;root.innerHTML='<p role="status">Loading project…</p>';
   try{
-   const data=await api('crm-project',null,{companyId,projectId});if(disposed||ticket!==seq)return;project=data.item;
+   const data=initialProject?{item:initialProject}:await api('crm-project',null,{companyId,projectId});initialProject=null;if(disposed||ticket!==seq)return;project=data.item;
    root.innerHTML=`<a class="quiet" data-lead href="${base}"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 12H4m7-7-7 7 7 7"/></svg> All projects</a><section class="research-panel project-summary"><div class="project-heading" data-project-header></div><p class="crm-description" data-project-description></p></section>
     <section class="research-panel project-brief"><div class="section-title"><div><p class="eyebrow">THE ASSIGNMENT</p><h3>Project brief.</h3></div></div><form><label>Detailed brief<textarea aria-label="Detailed brief" name="brief" rows="10" maxlength="50000" placeholder="Paste the full assignment, deliverables, references and requirements here…" ${company.archived_at?'disabled':''}>${esc(project.brief||'')}</textarea></label><div class="actions"><button class="primary" ${company.archived_at?'disabled':''}>Save brief</button><span class="fine" data-brief-status role="status"></span></div><p role="alert"></p></form></section>
     <div class="client-workspace-grid project-records">
      <section class="research-panel project-tasks" aria-labelledby="project-tasks-title"><p class="eyebrow">PROJECT CHECKLIST</p><h3 id="project-tasks-title">Task list.</h3><form data-task-form><label>New project task<input name="title" maxlength="160" required placeholder="What needs to be done?" ${company.archived_at?'disabled':''}></label><div class="actions"><button class="primary" ${company.archived_at?'disabled':''}>Add task</button><button type="button" class="quiet" data-cancel-task hidden>Cancel edit</button></div><p role="alert" data-task-error></p></form><div data-task-list aria-live="polite"></div></section>
      <section class="research-panel project-notes" aria-labelledby="project-notes-title"><p class="eyebrow">PROJECT UPDATES</p><h3 id="project-notes-title">Notes.</h3>${project.notes?`<details><summary>Earlier project notes</summary><p class="crm-description">${esc(project.notes)}</p></details>`:''}<form><label>New project note<textarea name="content" rows="4" maxlength="5000" required placeholder="Add an idea, decision or update…"></textarea></label><button class="primary">Save note</button><p role="alert"></p></form><div data-client-notes aria-live="polite"></div></section>
     </div>`;
-   renderHeader();
+   const timeRoot=document.createElement('section');timeRoot.className='research-panel time-project';timeRoot.dataset.projectTime='';root.querySelector('.project-summary').after(timeRoot);
+   if(embedded)root.querySelector(':scope > a').remove();
+   renderHeader();renderTime();
    const stopTasks=mountTasks({root:root.querySelector('.project-tasks'),api,notify,companyId,projectId,archived:!!company.archived_at});
    const stopNotes=mountNotes({root:root.querySelector('.project-notes'),api,notify,companyId,projectId,archived:!!company.archived_at});cleanupRecords=()=>{stopTasks();stopNotes();};
    const form=root.querySelector('.project-brief form');let pending=false;
@@ -75,5 +80,5 @@ export function mountProjectWorkspace({root,api,notify,company,navigate,projectI
   }catch(error){if(!disposed&&ticket===seq){root.innerHTML=`<a class="quiet" data-lead href="${base}"><svg class="ui-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 12H4m7-7-7 7 7 7"/></svg> All projects</a><p role="alert">${esc(error.message)}</p><button class="secondary" data-project-retry>Retry project</button>`;root.querySelector('[data-project-retry]').onclick=detail;}}
  }
  if(projectId)detail();else list();
- return ()=>{disposed=true;cleanupRecords();editor.destroy();};
+ return ()=>{disposed=true;cleanupRecords();cleanupTime();editor.destroy();};
 }
