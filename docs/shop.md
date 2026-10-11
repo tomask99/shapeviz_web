@@ -38,7 +38,11 @@ The additive migration was tested with PGlite and applied to the connected
 Shapeviz Supabase database on 2026-10-11. Its local version matches the remote
 migration history. The catalog starts empty, with three categories and
 `launched=false`. Local REST reads and `/api/shop` returned HTTP 200 afterward.
-Website code has not been deployed by this step.
+The database migration alone does not deploy the website code.
+
+On Vercel, `/api/shop` rewrites to `/api/site-events?route=shop`. The shared
+website handler keeps the deployment within the Hobby plan's 12-function limit
+while preserving the existing analytics endpoint and the public shop URL.
 
 The security advisor reports the expected [RLS enabled without policies](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)
 notice for this server-only table. Direct client privileges are revoked;

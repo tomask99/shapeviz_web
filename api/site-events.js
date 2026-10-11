@@ -1,2 +1,2 @@
-import {createWebsiteEventHandler} from '../src/website/events.js';
-export default createWebsiteEventHandler();
+import {createWebsiteHandler} from '../src/website/handler.js';
+export default createWebsiteHandler();

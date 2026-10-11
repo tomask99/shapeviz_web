@@ -1,11 +1,10 @@
-import {createShopHandler} from './src/shop/handler.js';
 import http from 'node:http';
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createContactHandler } from './src/contact.js';
-import { createWebsiteEventHandler } from './src/website/events.js';
+import { createWebsiteHandler } from './src/website/handler.js';
 import { createAdminHandler } from './src/admin/handler.js';
 import {createOAuthHandler,OAUTH_ROUTES} from './src/oauth/handler.js';
 import { createPresentationEventHandler } from './src/presentations/events.js';
@@ -53,10 +52,9 @@ async function serveFile(req, res, filename, pathname, extraHeaders = {}) {
 }
 
 export function createApp({ publicDir = path.join(root, 'public'), presentationsDir = path.join(root, 'presentations'), builtPresentations = false, templatesRoot, env = process.env, send = fetch } = {}) {
-  const shop = createShopHandler({env,send});
   const contact = createContactHandler({ env, send });
   const files = createFilesHandler({ env, send });
-  const websiteEvent = createWebsiteEventHandler({ env, send });
+  const website = createWebsiteHandler({ env, send });
   const admin = createAdminHandler({ env, send, templatesRoot });
   const oauth = createOAuthHandler({env,send});
   const presentationEvent = createPresentationEventHandler({ env, send, presentationsRoot: presentationsDir });
@@ -69,7 +67,7 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
     let pathname;
     try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
     catch { res.writeHead(400).end('Bad request'); return; }
-    if (pathname === '/api/shop') { await shop(req,res);return; }
+    if (pathname === '/api/shop' || pathname === '/api/site-events') { await website(req,res);return; }
     if (pathname === '/shop' || pathname === '/shop/' || pathname === '/shop/index.html') {
       if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405,{Allow:'GET, HEAD'}).end();return; }
       res.setHeader('Content-Security-Policy', siteCsp.replace("script-src 'self'", "script-src 'self' https://gumroad.com https://assets.gumroad.com") + "; frame-src https://gumroad.com https://*.gumroad.com");
@@ -90,7 +88,6 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
         await serveFile(req,res,path.join(root,'node_modules/megajs/dist/main.browser-es.mjs'),pathname);return;
       }
     }
-    if (pathname === '/api/site-events') { await websiteEvent(req, res); return; }
     if (pathname === '/api/admin') { await admin(req, res); return; }
     if(Object.hasOwn(OAUTH_ROUTES,pathname)){await oauth(req,res);return;}
     if(pathname==='/admin/connections'){
