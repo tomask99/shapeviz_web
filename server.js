@@ -70,7 +70,7 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
     if (pathname === '/api/shop' || pathname === '/api/site-events') { await website(req,res);return; }
     if (pathname === '/shop' || pathname === '/shop/' || pathname === '/shop/index.html') {
       if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405,{Allow:'GET, HEAD'}).end();return; }
-      res.setHeader('Content-Security-Policy', siteCsp.replace("script-src 'self'", "script-src 'self' https://gumroad.com https://assets.gumroad.com") + "; frame-src https://gumroad.com https://*.gumroad.com");
+      res.setHeader('Content-Security-Policy', siteCsp.replace("script-src 'self'", "script-src 'self' https://gumroad.com https://assets.gumroad.com").replace("img-src 'self' data:", "img-src 'self' data: https://public-files.gumroad.com https://assets.gumroad.com") + "; frame-src https://gumroad.com https://*.gumroad.com");
       res.setHeader('X-Robots-Tag','noindex, nofollow');
       await serveFile(req,res,path.join(publicDir,'shop/index.html'),pathname,{'Cache-Control':'no-store'});return;
     }

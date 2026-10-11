@@ -49,12 +49,26 @@ export function mountCatalog(root, data) {
   const filters=root.querySelector('.shop-filters'), list=root.querySelector('.shop-products'),empty=root.querySelector('.shop-empty');
   const toggle=root.querySelector('.shop-filter-toggle'),sidebar=root.querySelector('.shop-sidebar');
   toggle.onclick=()=>{const open=toggle.getAttribute('aria-expanded')!=='true';toggle.setAttribute('aria-expanded',String(open));sidebar.classList.toggle('is-open',open);};
-  const cleanups=[], cards=[];
+  const detail=document.createElement('dialog');detail.className='shop-detail';detail.setAttribute('aria-labelledby','shop-detail-title');
+  detail.innerHTML=`<header class="shop-detail-header"><h2 id="shop-detail-title">Product details</h2><button type="button" aria-label="Close product details">${svgIcon('close')}</button></header><div class="shop-detail-content"></div>`;
+  document.body.append(detail);
+  let clearDetail,returnFocus;
+  const closeDetail=()=>{clearDetail?.();clearDetail=null;detail.close();document.body.classList.remove('modal-open');returnFocus?.focus({preventScroll:true});};
+  detail.querySelector('button').onclick=closeDetail;
+  detail.addEventListener('cancel',event=>{event.preventDefault();closeDetail();});
+  detail.addEventListener('click',event=>{if(event.target===detail){const rect=detail.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)closeDetail();}});
+  const cards=[];
   for(const product of data.products){
     const article=document.createElement('article');article.className='shop-product';article.dataset.category=product.categoryId;
-    const label=document.createElement('p');label.className='shop-category-label';label.textContent=data.categories.find(c=>c.id===product.categoryId)?.name || '';
-    const widget=document.createElement('div');widget.className='shop-card-widget';
-    article.append(label,widget);list.append(article);cards.push(article);cleanups.push(mountProduct(widget,product));
+    const title=product.preview?.title || gumroadUrl(product.url).split('/').at(-1);
+    const button=document.createElement('button');button.type='button';button.className='shop-product-card';button.setAttribute('aria-haspopup','dialog');
+    const cover=document.createElement('span');cover.className='shop-product-cover';
+    const missing=document.createElement('span');missing.className='shop-image-missing';missing.innerHTML=`${svgIcon('overview')}<span>Preview unavailable</span>`;missing.setAttribute('aria-hidden','true');cover.append(missing);
+    if(product.preview?.image){const img=document.createElement('img');img.src=product.preview.image;img.alt='';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';missing.hidden=true;img.onerror=()=>{img.hidden=true;missing.hidden=false;};cover.append(img);}
+    const name=document.createElement('span');name.className='shop-product-title';name.textContent=title;name.title=title;
+    button.append(cover,name);
+    button.onclick=()=>{returnFocus=button;detail.querySelector('h2').textContent=title;clearDetail?.();clearDetail=mountProduct(detail.querySelector('.shop-detail-content'),product);detail.showModal();document.body.classList.add('modal-open');};
+    article.append(button);list.append(article);cards.push(article);
   }
   const buttons=[];
   const select=category=>{
@@ -74,5 +88,5 @@ export function mountCatalog(root, data) {
   }
   empty.querySelector('button').onclick=()=>select({id:'all'});
   select({id:'all'});
-  return ()=>{cleanups.forEach(cleanup=>cleanup());root.replaceChildren();};
+  return ()=>{returnFocus=null;if(detail.open)closeDetail();else clearDetail?.();detail.remove();root.replaceChildren();};
 }

@@ -2,12 +2,13 @@
 import {readFile} from 'node:fs/promises';
 import {createApp} from '../../server.js';
 export const sampleUrl='https://tomaskrajcovic.gumroad.com/l/jQHeN';
-export async function shopFixture(){
+export async function shopFixture({livePreviews=false}={}){
  const db=new PGlite();
  await db.exec('create role anon; create role authenticated; create role service_role bypassrls;');
  await db.exec(await readFile(new URL('../../supabase/migrations/20261011124216_shop_catalog.sql',import.meta.url),'utf8'));
  const send=async(input,options={})=>{
   const u=new URL(input),body=options.body?JSON.parse(options.body):{};
+  if(u.hostname==='gumroad.com'||u.hostname.endsWith('.gumroad.com'))return livePreviews?fetch(input,options):new Response('<meta property="og:title" content="Sample product"><meta property="og:image" content="https://public-files.gumroad.com/test-preview">',{headers:{'Content-Type':'text/html'}});
   if(u.pathname==='/auth/v1/user')return options.headers.Authorization==='Bearer owner'?Response.json({id:'11111111-1111-4111-8111-111111111111',email:'owner@example.test'}):options.headers.Authorization==='Bearer visitor'?Response.json({id:'visitor'}):Response.json({error:'Denied'},{status:401});
   if(u.pathname==='/rest/v1/presentation_admins')return Response.json(u.searchParams.get('user_id')==='eq.11111111-1111-4111-8111-111111111111'?[{role:'owner'}]:[]);
   if(u.pathname==='/rest/v1/shop_catalog'){

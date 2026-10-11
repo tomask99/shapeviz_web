@@ -26,17 +26,28 @@
 .shop-result-count{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
 .shop-results-heading>svg{font-size:16px;color:var(--muted)}
 .shop-products{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;align-items:start}
-.shop-product{min-width:0;border:1px solid var(--line);background:#0d0c0b;transition:border-color .2s}
-.shop-product:hover{border-color:#63503b}
-.shop-category-label{color:var(--muted);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:12px;min-height:36px;line-height:1.4}
+.shop-product{min-width:0}
+.shop-product-card{display:block;width:100%;padding:0;border:1px solid var(--line);background:#0d0c0b;text-align:left;transition:border-color .2s}
+.shop-product-card:hover{border-color:var(--accent)}
+.shop-product-cover{display:grid;position:relative;aspect-ratio:1;background:#171512;overflow:hidden}
+.shop-product-cover img{width:100%;height:100%;position:absolute;inset:0;object-fit:contain;background:#fff;transition:transform .2s}
+.shop-product-card:hover img{transform:scale(1.035)}
+.shop-product-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;font-size:14px;font-weight:500;line-height:1.5;min-height:42px;margin:14px 14px 16px}
+.shop-image-missing{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-size:11px;color:var(--muted)}
+.shop-image-missing svg{font-size:28px;opacity:.5}
 .shop-embed-slot{min-width:0;width:100%}
 .shop-embed-slot iframe{display:block;width:100%;min-height:320px;color-scheme:normal}
 .shop-embed-status,.shop-empty{padding:28px 0;color:#9f978d;line-height:1.5}
 .shop-fallback{display:inline-flex;align-items:center;min-height:44px;font-size:13px;text-decoration:underline;text-underline-offset:4px;margin-top:12px}
-.shop-card-widget{min-width:0}
-/* Keep the complete official widget; Gumroad controls its natural height. */
-.shop-card-widget .shop-embed-status{margin:0;padding:24px 16px;font-size:12px}
-.shop-card-widget .shop-fallback{margin:0;padding:4px 12px;color:var(--muted);font-size:11px}
+.shop-detail{width:min(960px,calc(100% - 48px));max-height:90dvh;padding:0;background:#0d0c0b;color:var(--text);border:1px solid #453627;overscroll-behavior:contain}
+.shop-detail::backdrop{background:rgb(0 0 0 / .8);backdrop-filter:blur(5px)}
+.shop-detail-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:12px 20px;position:sticky;top:0;background:#0d0c0b;z-index:2;border-bottom:1px solid var(--line)}
+.shop-detail-header h2{font-size:16px;line-height:1.4;letter-spacing:0;text-transform:none;overflow-wrap:anywhere}
+.shop-detail-header button{display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;background:transparent;border:1px solid var(--line);font-size:20px}
+.shop-detail-header button:hover{border-color:var(--accent);color:var(--accent)}
+.shop-detail-content>.shop-fallback,.shop-detail-content>.shop-embed-status{margin:12px 20px}
+.shop-detail-content{min-height:200px}
+@media(prefers-reduced-motion:reduce){.shop-product-cover img,.shop-product-card{transition:none}}
 .shop-empty{border:1px dashed var(--line);padding:64px 24px;text-align:center}
 .shop-empty h3{font-size:20px;color:var(--text);margin:0 0 8px}
 .shop-empty p{font-size:14px}
@@ -55,5 +66,6 @@
   .shop-filter-toggle>svg:last-child{margin-left:auto}.shop-filter-toggle[aria-expanded=true]>svg:last-child{transform:rotate(180deg)}
   .shop-category-panel{display:none;padding:20px 12px 12px;border:1px solid var(--line);border-top:0}.shop-sidebar.is-open .shop-category-panel{display:block}
   .shop-results-heading{margin-bottom:16px}
+  .shop-detail{width:calc(100% - 20px);max-height:94dvh}.shop-detail-header{padding:10px 12px;gap:12px}.shop-detail-header h2{font-size:14px}
 }
-@media(max-width:600px){.shop-page #shop-main{padding-top:144px}.shop-intro-bottom{align-items:flex-start;flex-direction:column;gap:16px}.shop-intro h1{font-size:clamp(36px,8.5vw,50px)}.shop-intro{padding-bottom:24px}.shop-products{grid-template-columns:minmax(0,1fr);gap:20px}.shop-coming{padding-bottom:60px}}
+@media(max-width:600px){.shop-page #shop-main{padding-top:144px}.shop-intro-bottom{align-items:flex-start;flex-direction:column;gap:16px}.shop-intro h1{font-size:clamp(36px,8.5vw,50px)}.shop-intro{padding-bottom:24px}.shop-products{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.shop-product-title{font-size:13px;min-height:39px;margin:10px}.shop-coming{padding-bottom:60px}}

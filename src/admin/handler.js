@@ -1,4 +1,5 @@
 import {handleShop,shopActions,shopReadActions} from '../shop/catalog.js';
+import {createProductPreviews} from '../shop/previews.js';
 import { randomUUID, createHash } from 'node:crypto';
 import { handleCrm } from '../crm/handler.js';
 import {timeReads} from '../crm/time-tracker.js';
@@ -24,6 +25,7 @@ const key = value => { if (!slugPattern.test(value || '') || value.length > 100)
 const clientSlug = value => key(value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''));
 
 export function createAdminHandler({env = process.env, send = fetch, templatesRoot, toolAudit} = {}) {
+  const shopPreviews = createProductPreviews({send});
   const root = env.SUPABASE_URL?.replace(/\/$/, '');
   async function call(url, {method='GET',body,token,headers={}} = {}) {
     const response = await send(`${root}${url}`, {method, headers:{apikey:env.SUPABASE_SECRET_KEY,...(token ? {Authorization:`Bearer ${token}`} : {}),...(body ? {'Content-Type':'application/json'} : {}),...headers}, ...(body ? {body:JSON.stringify(body)} : {}), signal:AbortSignal.timeout(25_000)});
@@ -138,7 +140,7 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
         return;
       }
       const {user,token}=await session(req,res);
-      if(shopActions.includes(action)){reply(200,await handleShop({action,body,call}));return;}
+      if(shopActions.includes(action)){const catalog=await handleShop({action,body,call});reply(200,action==='shop-preview'?await shopPreviews(catalog):catalog);return;}
       if(fileActions.includes(action)){reply(200,await handleClientFiles({action,body,url:new URL(req.url,requestOrigin(req,env)),user,token,call}));return;}
       if(OAUTH_ADMIN_ACTIONS.includes(action)){reply(200,await handleOAuthAdmin({action,body,url,req,res,user,token,env,call}));return;}
       if(action===MCP_ACTION){await handleReadMcp({req,res,body,url,user,token,scopes:[...ADMIN_READ_SCOPES],call,audit:toolAudit});return;}

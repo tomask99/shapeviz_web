@@ -1,8 +1,9 @@
 ﻿# Shapeviz Shop
 
 The shop is part of the existing HTML/JavaScript site and owner-only Studio.
-It uses Gumroad's official inline product embed, not a local product-content or
-payment system. Integration reference (checked 2026-10-11):
+Cards show a square image and product title read automatically from Gumroad's
+public Open Graph metadata. Clicking a card opens the official inline product
+embed in a modal dialog. Integration reference (checked 2026-10-11):
 https://gumroad.com/help/article/44-build-gumroad-into-your-website
 
 ## Admin workflow
@@ -67,19 +68,29 @@ verified owner requests go through the server.
   even if entered with different Gumroad host aliases. Custom creator domains,
   short links, discount URLs and affiliate paths are outside this version.
 - The official embed script loads once per document. Its own MutationObserver
-  initializes new embeds in the admin. Filtering retains the existing iframes.
-- Only Gumroad script/frame origins are added to the relevant CSPs. The iframe's
+  initializes new embeds in the admin and popup. Catalog browsing does not load
+  any widget; closing the popup removes its iframe and restores keyboard focus.
+- Card metadata is fetched only for the already-authorized catalog, after draft
+  and launch filtering. Server credentials are never forwarded to Gumroad.
+  Requests validate every redirect, limit HTML to 1 MiB, allow six concurrent
+  fetches and share an eight-second deadline. Per-function caches last ten minutes
+  (30 seconds for failures), with a maximum of 200 entries. No database change or
+  manual image/title entry is needed. Missing metadata falls back to a labelled
+  placeholder and the permalink; the card can still open the product.
+- Only Gumroad script/frame origins and its public-files/assets image hosts are
+  added to the relevant CSPs. The iframe's
   internal appearance is not modified. A separate View on Gumroad link remains
   available if scripts or iframe content are blocked; a timeout explains delays.
 
 ## Gumroad behavior
 
-The catalog uses four columns from 1200px, three from 960px, two on smaller
-tablets, and one on phones up to 600px. Category filters and product counts sit
+The catalog uses four columns from 1200px, three from 960px, and two on smaller
+tablets and phones. Category filters and product counts sit
 in a left sidebar; below 701px they become a labelled disclosure button.
-Filtering preserves the existing widget instances. Each complete Gumroad embed
-keeps its natural height, including its description and checkout control; there
-is no cropped preview or detail modal. Card heights depend on the Gumroad content.
+Cards contain only a square cover image and a compact two-line title. The popup
+contains the full-size Gumroad embed, including description and checkout control.
+Close it with the labelled SVG button, Escape, or a click on the backdrop.
+The popup scrolls independently and its close button remains visible.
 
 The product's image, description, price and purchase control load from Gumroad.
 Changes made there appear on the next widget load according to Gumroad caching.
