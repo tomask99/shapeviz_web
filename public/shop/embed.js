@@ -1,4 +1,5 @@
 import {gumroadUrl} from './url.js';
+import {svgIcon} from '../ui/icons.js';
 let scriptRequested = false;
 export function loadGumroad() {
   if (scriptRequested) return;
@@ -35,21 +36,43 @@ export function mountProduct(root, product) {
 }
 
 export function mountCatalog(root, data) {
-  const filters=document.createElement('div');filters.className='shop-filters';filters.setAttribute('role','group');filters.setAttribute('aria-label','Product categories');
-  const list=document.createElement('div');list.className='shop-products';
-  const empty=document.createElement('p');empty.className='shop-empty';empty.setAttribute('role','status');empty.hidden=true;empty.textContent='No products in this category yet. Check back soon.';
-  root.replaceChildren(filters,list,empty);
+  root.innerHTML=`<div class="shop-catalog-layout">
+    <aside class="shop-sidebar" aria-label="Product filters">
+      <h2 class="shop-filter-heading">${svgIcon('filter')} Filters</h2>
+      <button type="button" class="shop-filter-toggle" aria-expanded="false" aria-controls="shop-category-panel">${svgIcon('filter')} <span>Filters</span>${svgIcon('chevronDown')}</button>
+      <div id="shop-category-panel" class="shop-category-panel"><h3>Categories</h3><div class="shop-filters" role="group" aria-label="Product categories"></div></div>
+    </aside>
+    <div class="shop-results"><div class="shop-results-heading"><h2>All products</h2><p class="shop-result-count" role="status" aria-live="polite"></p>${svgIcon('overview')}</div>
+      <div class="shop-products"></div><div class="shop-empty" hidden><h3>No products here yet.</h3><p>Try another category or come back soon.</p><button type="button">View all products</button></div>
+    </div>
+  </div>`;
+  const filters=root.querySelector('.shop-filters'), list=root.querySelector('.shop-products'),empty=root.querySelector('.shop-empty');
+  const toggle=root.querySelector('.shop-filter-toggle'),sidebar=root.querySelector('.shop-sidebar');
+  toggle.onclick=()=>{const open=toggle.getAttribute('aria-expanded')!=='true';toggle.setAttribute('aria-expanded',String(open));sidebar.classList.toggle('is-open',open);};
   const cleanups=[], cards=[];
   for(const product of data.products){
     const article=document.createElement('article');article.className='shop-product';article.dataset.category=product.categoryId;
     const label=document.createElement('p');label.className='shop-category-label';label.textContent=data.categories.find(c=>c.id===product.categoryId)?.name || '';
-    const widget=document.createElement('div');article.append(label,widget);list.append(article);cards.push(article);cleanups.push(mountProduct(widget,product));
+    const widget=document.createElement('div');widget.className='shop-card-widget';
+    article.append(label,widget);list.append(article);cards.push(article);cleanups.push(mountProduct(widget,product));
   }
+  const buttons=[];
+  const select=category=>{
+    for(const button of buttons)button.setAttribute('aria-pressed',String(button.dataset.category===category.id));
+    for(const card of cards)card.hidden=category.id!=='all'&&card.dataset.category!==category.id;
+    const count=cards.filter(card=>!card.hidden).length;
+    empty.hidden=count>0;
+    root.querySelector('.shop-results-heading h2').textContent=category.id==='all'?'All products':category.name;
+    root.querySelector('.shop-result-count').textContent=`${count} ${count===1?'product':'products'}`;
+    toggle.querySelector('span').textContent=category.id==='all'?'Filters':category.name;
+  };
   for(const category of [{id:'all',name:'All'},...data.categories]){
-    const button=document.createElement('button');button.type='button';button.textContent=category.name;button.setAttribute('aria-pressed',String(category.id==='all'));
-    button.onclick=()=>{for(const b of filters.children)b.setAttribute('aria-pressed',String(b===button));for(const card of cards)card.hidden=category.id!=='all'&&card.dataset.category!==category.id;empty.hidden=cards.some(c=>!c.hidden);};
-    filters.append(button);
+    const button=document.createElement('button');button.type='button';button.dataset.category=category.id;button.setAttribute('aria-label',category.name);
+    const name=document.createElement('span');name.textContent=category.name;
+    const count=document.createElement('span');count.className='shop-category-count';count.setAttribute('aria-hidden','true');count.textContent=String(category.id==='all'?cards.length:cards.filter(card=>card.dataset.category===category.id).length);
+    button.append(name,count);button.onclick=()=>select(category);buttons.push(button);filters.append(button);
   }
-  empty.hidden=cards.length>0;
+  empty.querySelector('button').onclick=()=>select({id:'all'});
+  select({id:'all'});
   return ()=>{cleanups.forEach(cleanup=>cleanup());root.replaceChildren();};
 }

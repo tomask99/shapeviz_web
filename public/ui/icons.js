@@ -19,6 +19,7 @@ const paths={
   info:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM12 11v6M12 7v.1',
   chevronDown:'m6 9 6 6 6-6',
   settings:'M4 7h16M4 17h16M8 4v6M16 14v6',
+  filter:'M4 5h16l-6 7v6l-4 2v-8Z',
   logout:'M9 4H4v16h5M9 12h12m-5-5 5 5-5 5',
   wallet:'M3 6h18v14H3ZM3 6V3h15v3M16 11h5v5h-5Z',
   arrowUpRight:'M5 19 19 5M5 5h14v14',

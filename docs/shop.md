@@ -74,6 +74,13 @@ verified owner requests go through the server.
 
 ## Gumroad behavior
 
+The catalog uses four columns from 1200px, three from 960px, two on smaller
+tablets, and one on phones up to 600px. Category filters and product counts sit
+in a left sidebar; below 701px they become a labelled disclosure button.
+Filtering preserves the existing widget instances. Each complete Gumroad embed
+keeps its natural height, including its description and checkout control; there
+is no cropped preview or detail modal. Card heights depend on the Gumroad content.
+
 The product's image, description, price and purchase control load from Gumroad.
 Changes made there appear on the next widget load according to Gumroad caching.
 Checkout and purchased-file delivery happen on Gumroad, not shapeviz.com.
@@ -92,4 +99,7 @@ Run `npm.cmd run icons:validate`, `npm.cmd run build`, and
 `npx.cmd playwright test tests/browser/shop.spec.js --workers=1`.
 For the network-dependent Gumroad test in PowerShell, first set
 `$env:SHOP_LIVE_TEST="true"`, then run the same browser command.
+The live test uses the current Shapeviz Pucci bag product; the original decal
+sample URL now returns 404. Override `SHOP_LIVE_PRODUCT_URL` and
+`SHOP_LIVE_PRODUCT_TITLE` to use another available product.
 Screenshots are generated under `.cache/shop-*.png`.
