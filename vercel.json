@@ -33,6 +33,9 @@
     }
   ],
   "rewrites": [
+    {"source": "/shop", "destination": "/shop/index.html"},
+    {"source": "/shop/", "destination": "/shop/index.html"},
+    {"source": "/admin/shop", "destination": "/admin/index.html"},
     {"source": "/admin/cloud-storage", "destination": "/admin/index.html"},
     {"source": "/admin/projects", "destination": "/admin/index.html"},
     {"source": "/admin/time-tracker", "destination": "/admin/index.html"},
@@ -95,6 +98,7 @@
     }
   ],
   "headers": [
+    {"source":"/shop/:path*","headers":[{"key":"Cache-Control","value":"no-store"},{"key":"X-Robots-Tag","value":"noindex, nofollow"},{"key":"Content-Security-Policy","value":"default-src 'self'; script-src 'self' https://gumroad.com https://assets.gumroad.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src https://gumroad.com https://*.gumroad.com; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"}]},
     {
       "source": "/presentation-media/:path*",
       "headers": [
@@ -131,7 +135,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-src 'self' blob:; img-src 'self' https://*.supabase.co data: blob:; media-src 'self' https://*.supabase.co blob:; font-src 'self' https://*.supabase.co data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co https://gumroad.com https://assets.gumroad.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-src 'self' blob: https://gumroad.com https://*.gumroad.com; img-src 'self' https://*.supabase.co data: blob:; media-src 'self' https://*.supabase.co blob:; font-src 'self' https://*.supabase.co data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
         }
       ]
     },
@@ -182,7 +186,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-src 'self' blob:; img-src 'self' https://*.supabase.co data: blob:; media-src 'self' https://*.supabase.co blob:; font-src 'self' https://*.supabase.co data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co https://gumroad.com https://assets.gumroad.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-src 'self' blob: https://gumroad.com https://*.gumroad.com; img-src 'self' https://*.supabase.co data: blob:; media-src 'self' https://*.supabase.co blob:; font-src 'self' https://*.supabase.co data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
         }
       ]
     }

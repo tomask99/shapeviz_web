@@ -1,3 +1,4 @@
+import {createShopHandler} from './src/shop/handler.js';
 import http from 'node:http';
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
@@ -52,6 +53,7 @@ async function serveFile(req, res, filename, pathname, extraHeaders = {}) {
 }
 
 export function createApp({ publicDir = path.join(root, 'public'), presentationsDir = path.join(root, 'presentations'), builtPresentations = false, templatesRoot, env = process.env, send = fetch } = {}) {
+  const shop = createShopHandler({env,send});
   const contact = createContactHandler({ env, send });
   const files = createFilesHandler({ env, send });
   const websiteEvent = createWebsiteEventHandler({ env, send });
@@ -67,6 +69,13 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
     let pathname;
     try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
     catch { res.writeHead(400).end('Bad request'); return; }
+    if (pathname === '/api/shop') { await shop(req,res);return; }
+    if (pathname === '/shop' || pathname === '/shop/' || pathname === '/shop/index.html') {
+      if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405,{Allow:'GET, HEAD'}).end();return; }
+      res.setHeader('Content-Security-Policy', siteCsp.replace("script-src 'self'", "script-src 'self' https://gumroad.com https://assets.gumroad.com") + "; frame-src https://gumroad.com https://*.gumroad.com");
+      res.setHeader('X-Robots-Tag','noindex, nofollow');
+      await serveFile(req,res,path.join(publicDir,'shop/index.html'),pathname,{'Cache-Control':'no-store'});return;
+    }
     if (pathname === '/api/contact') { await contact(req, res); return; }
     if (pathname === '/api/files') { await files(req, res); return; }
     if (pathname.startsWith('/files/')) {
@@ -88,9 +97,9 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
       res.setHeader('X-Robots-Tag','noindex, nofollow');res.setHeader('Referrer-Policy','no-referrer');
       await serveFile(req,res,path.join(publicDir,'admin/connections.html'),pathname,{'Cache-Control':'no-store'});return;
     }
-    if (pathname === '/adminlogin' || pathname === '/admin' || /^\/admin\/(?:leads(?:\/[^/.]+)?|ai-research(?:\/[^/.]+)?|pipeline|follow-ups|clients(?:\/[^/.]+)?|reports|projects|time-tracker|cloud-storage)\/?$/.test(pathname)) {
+    if (pathname === '/adminlogin' || pathname === '/admin' || /^\/admin\/(?:leads(?:\/[^/.]+)?|ai-research(?:\/[^/.]+)?|pipeline|follow-ups|clients(?:\/[^/.]+)?|reports|projects|time-tracker|cloud-storage|shop)\/?$/.test(pathname)) {
       res.setHeader('X-Robots-Tag', 'noindex, nofollow');
-      res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-src 'self' blob:; img-src 'self' https://*.supabase.co data: blob:; media-src 'self' https://*.supabase.co blob:; font-src 'self' https://*.supabase.co data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+      res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co https://gumroad.com https://assets.gumroad.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-src 'self' blob: https://gumroad.com https://*.gumroad.com; img-src 'self' https://*.supabase.co data: blob:; media-src 'self' https://*.supabase.co blob:; font-src 'self' https://*.supabase.co data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
       await serveFile(req,res,path.join(publicDir,'admin/index.html'),pathname,{'Cache-Control':'no-store'});return;
     }
     if (pathname === '/api/presentation-events') { await presentationEvent(req, res); return; }

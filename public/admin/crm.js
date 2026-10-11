@@ -1,3 +1,4 @@
+import {mountShopAdmin} from './shop.js';
 import {STATUSES,SERVICES,SOURCES,INDUSTRIES,PRIORITIES,label} from './crm-options.js';
 import {mountRelations} from './crm-relations.js';
 import {createPipeline} from './crm-pipeline.js';
@@ -69,6 +70,7 @@ export function createCrm({api,notify,timer:timeTracker}) {
     document.querySelector('#nav-time')?.classList.remove('active');
     document.querySelector('#nav-projects')?.classList.remove('active');
     document.querySelector('#nav-cloud-storage')?.classList.remove('active');
+    document.querySelector('#nav-shop')?.classList.remove('active');
     if (value) document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'));
   }
   function navigate(path, replace = false) {
@@ -216,6 +218,7 @@ export function createCrm({api,notify,timer:timeTracker}) {
   };
   function show() {
     activate(true);
+    if(/^\/admin\/shop\/?$/.test(location.pathname)){document.querySelector('#nav-leads').classList.remove('active');document.querySelector('#nav-shop')?.classList.add('active');cleanupDetail=mountShopAdmin({root,api,notify});return;}
     if(/^\/admin\/cloud-storage\/?$/.test(location.pathname)){document.querySelector('#nav-leads').classList.remove('active');document.querySelector('#nav-cloud-storage')?.classList.add('active');cleanupDetail=mountCloudStorage({root,api,notify});return;}
     if(/^\/admin\/time-tracker\/?$/.test(location.pathname)){
       document.querySelector('#nav-leads').classList.remove('active');

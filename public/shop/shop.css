@@ -1,0 +1,26 @@
+.shop-page #shop-main{padding-top:180px;min-height:75vh}
+.shop-intro{padding-bottom:52px;border-bottom:1px solid var(--line)}
+.shop-intro h1{font-size:clamp(46px,7.5vw,116px);line-height:.94;letter-spacing:-.06em;margin:32px 0 44px;max-width:1200px}
+.shop-intro-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:24px}
+.shop-intro-bottom p{font-size:clamp(16px,1.6vw,23px);line-height:1.5;color:var(--muted)}
+.shop-intro-bottom>.micro{color:var(--muted);white-space:nowrap}
+.shop-coming{padding:64px 0 100px;max-width:700px}
+.shop-coming h2{font-size:clamp(36px,5vw,66px);margin:22px 0}
+.shop-coming>p:not(.micro){line-height:1.7;color:var(--muted);max-width:470px}
+.shop-coming>a{display:inline-flex;gap:25px;align-items:center;margin-top:28px;min-height:44px}
+.shop-coming svg{color:var(--accent)}
+.shop-filters{display:flex;flex-wrap:wrap;gap:10px;margin:36px 0}
+.shop-filters button,.shop-retry{border:1px solid #453627;background:transparent;color:inherit;min-height:44px;padding:12px 20px;font:inherit}
+.shop-filters button[aria-pressed=true]{background:#d88739;color:#000;border-color:#d88739}
+.shop-products{display:grid;gap:54px;max-width:1160px;margin-inline:auto}
+.shop-product{min-width:0}
+.shop-category-label{color:#9f978d;font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 16px}
+.shop-embed-slot{min-width:0;width:100%}
+.shop-embed-slot iframe{display:block;width:100%;min-height:320px;color-scheme:normal}
+.shop-embed-status,.shop-empty{padding:28px 0;color:#9f978d;line-height:1.5}
+.shop-fallback{display:inline-flex;align-items:center;min-height:44px;font-size:13px;text-decoration:underline;text-underline-offset:4px;margin-top:12px}
+.shop-preview-banner{border:1px solid #d88739;padding:18px;line-height:1.6;margin-bottom:28px;color:#d88739}
+.shop-preview-banner a{text-decoration:underline;margin-left:12px}
+.shop-checkout-note{color:#9f978d;font-size:12px;margin:50px 0 70px;line-height:1.6}
+#shop-status{line-height:1.6;margin-top:24px}#shop-status a{text-decoration:underline}
+@media(max-width:600px){.shop-page #shop-main{padding-top:156px}.shop-intro-bottom{align-items:flex-start;flex-direction:column}.shop-intro h1{font-size:clamp(40px,10vw,60px)}.shop-filters{gap:8px}.shop-filters button{font-size:12px;padding:10px 12px}.shop-products{gap:36px}.shop-coming{padding-bottom:60px}}

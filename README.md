@@ -4,6 +4,10 @@ Global UI rule: all icons must be SVG, never emoji or Unicode icon glyphs.
 See [AGENTS.md](AGENTS.md) and [docs/ui-icons.md](docs/ui-icons.md).
 Run `npm.cmd run icons:validate`; the production build enforces the same rule.
 
+The Gumroad shop is at `/shop`, with catalog management in `/admin/shop`.
+It stays in Coming soon until the owner turns on **Shop live**. See
+[`docs/shop.md`](docs/shop.md) for the migration, preview and product workflow.
+
 The private presentation studio is at `/adminlogin`. See
 [`docs/admin-studio.md`](docs/admin-studio.md) for account setup, HTML uploads,
 company variants and analytics.
