@@ -1,10 +1,10 @@
 import {svgIcon} from '../ui/icons.js';
 export function installStudioShell(){
  const nav=document.querySelector('aside nav');
- const items=[['[data-view="all"]','overview','Overview'],['#nav-leads','company','Leads'],['#nav-pipeline','pipeline','Pipeline'],['#nav-followups','calendar','Follow-ups'],['#nav-research','search','AI Research'],['#nav-clients','briefcase','Clients'],['#nav-projects','folder','Projects'],['#nav-time','clock','Time Tracker'],['a[href="/admin/reports"]','chart','Reports'],['[data-view="presentations"]','presentation','Presentations'],['[data-view="templates"]','templates','Templates'],['#open-template-upload','upload','Upload template'],['#open-upload','upload','Upload HTML']];
+ const items=[['[data-view="all"]','overview','Overview'],['#nav-leads','company','Leads'],['#nav-pipeline','pipeline','Pipeline'],['#nav-followups','calendar','Follow-ups'],['#nav-research','search','AI Research'],['#nav-clients','briefcase','Clients'],['#nav-projects','folder','Projects'],['#nav-planner','calendar','Planner'],['#nav-time','clock','Time Tracker'],['a[href="/admin/reports"]','chart','Reports'],['[data-view="presentations"]','presentation','Presentations'],['[data-view="templates"]','templates','Templates'],['#open-template-upload','upload','Upload template'],['#open-upload','upload','Upload HTML']];
  for(const [selector,icon,label] of items){const item=nav.querySelector(selector);if(item)item.innerHTML=svgIcon(icon)+`<span>${label}</span>`;}
  const work=document.createElement('span');work.className='eyebrow crm-nav-label';work.textContent='Workspace';
- nav.querySelector('[data-view="all"]').after(work,nav.querySelector('#nav-clients'),nav.querySelector('#nav-projects'),nav.querySelector('#nav-time'),nav.querySelector('a[href="/admin/reports"]'));
+ nav.querySelector('[data-view="all"]').after(work,nav.querySelector('#nav-clients'),nav.querySelector('#nav-projects'),nav.querySelector('#nav-planner'),nav.querySelector('#nav-time'),nav.querySelector('a[href="/admin/reports"]'));
  const library=nav.querySelector('[data-view="presentations"]').previousElementSibling;
  if(library?.classList.contains('crm-nav-label'))library.textContent='Library';
  const add=document.createElement('details');add.className='nav-create';

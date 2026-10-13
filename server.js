@@ -94,7 +94,7 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
       res.setHeader('X-Robots-Tag','noindex, nofollow');res.setHeader('Referrer-Policy','no-referrer');
       await serveFile(req,res,path.join(publicDir,'admin/connections.html'),pathname,{'Cache-Control':'no-store'});return;
     }
-    if (pathname === '/adminlogin' || pathname === '/admin' || /^\/admin\/(?:leads(?:\/[^/.]+)?|ai-research(?:\/[^/.]+)?|pipeline|follow-ups|clients(?:\/[^/.]+)?|reports|projects|time-tracker|cloud-storage|shop)\/?$/.test(pathname)) {
+    if (pathname === '/adminlogin' || pathname === '/admin' || /^\/admin\/(?:leads(?:\/[^/.]+)?|ai-research(?:\/[^/.]+)?|pipeline|follow-ups|clients(?:\/[^/.]+)?|reports|projects|planner|time-tracker|cloud-storage|shop)\/?$/.test(pathname)) {
       res.setHeader('X-Robots-Tag', 'noindex, nofollow');
       res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co https://gumroad.com https://assets.gumroad.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-src 'self' blob: https://gumroad.com https://*.gumroad.com; img-src 'self' https://*.supabase.co data: blob:; media-src 'self' https://*.supabase.co blob:; font-src 'self' https://*.supabase.co data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
       await serveFile(req,res,path.join(publicDir,'admin/index.html'),pathname,{'Cache-Control':'no-store'});return;

@@ -170,6 +170,38 @@ Overview's **Revenue** sums project agreements, not recorded payments:
 Existing projects and their earlier notes remain accessible. Legacy projects
 with both one-time and monthly values retain both until the billing is changed.
 
+## Personal planner
+
+Open **Workspace / Planner** at `/admin/planner`. The board contains personal
+sticky notes and to-do lists, separate from client and project tasks. Cards stay
+on the board while you edit their title, text, color and checklist. Use **Save**
+on each card, including after checking off a task. The card shows unsaved,
+saving and error states; failed saves keep the entered text. Delete asks for
+confirmation. Refresh reloads server data and asks before discarding drafts.
+
+The Monday-first monthly calendar supports previous/next month and **Today**.
+Select a day, then **Add plan**. Plans have a title, notes, date, optional local
+time, color and completion state. Changing the date moves the plan to that day.
+On narrow screens, day cells show plan counts and the editable day agenda sits
+below the calendar. These are personal plans, without reminders or external
+calendar synchronization.
+
+Apply `supabase/migrations/20261013215641_workspace_planner.sql` before deploying
+the updated app. It creates `workspace_planner`, owner-scoped RLS, restricted
+column grants and validation/version triggers. Planner API requests use the
+verified owner's session token. Other owners, non-admin accounts and anonymous
+visitors cannot access these records. Version checks reject stale changes;
+stable creation IDs prevent duplicate cards after a lost response. Data is
+stored in Supabase, not browser storage. Drafts require Save before leaving.
+Reads show up to 500 board cards and 1,000 plans per month, with a visible notice
+if the limit is reached.
+
+Verification: `node --test tests/planner.test.js` exercises the real migration
+in isolated PGlite/Postgres plus HTTP validation, ownership, retries and
+concurrency. `npm run test:browser -- tests/browser/planner.spec.js` covers the
+browser-to-API-to-database flow at desktop and mobile widths. Its upstream
+adapter emulates Supabase Auth/PostgREST only; the application and SQL are real.
+
 ## Isolation
 
 Owner sessions use HttpOnly, SameSite=Strict cookies scoped to `/api/admin`

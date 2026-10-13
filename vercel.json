@@ -33,6 +33,7 @@
     }
   ],
   "rewrites": [
+    {"source": "/admin/planner", "destination": "/admin/index.html"},
     {"source": "/api/shop", "destination": "/api/site-events?route=shop"},
     {"source": "/shop", "destination": "/shop/index.html"},
     {"source": "/shop/", "destination": "/shop/index.html"},

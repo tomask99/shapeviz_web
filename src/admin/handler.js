@@ -1,4 +1,5 @@
 import {handleShop,shopActions,shopReadActions} from '../shop/catalog.js';
+import {handlePlanner,plannerActions} from './planner.js';
 import {createProductPreviews} from '../shop/previews.js';
 import { randomUUID, createHash } from 'node:crypto';
 import { handleCrm } from '../crm/handler.js';
@@ -107,7 +108,7 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
       if(action===MCP_ACTION&&req.method!=='POST')throw fail(405,'Use POST for the stateless MCP endpoint.');
       if(OAUTH_ADMIN_ACTIONS.includes(action)&&req.method!==(action==='oauth-connections'?'GET':'POST'))throw fail(405,'Use the required connection method.');
       if(action==='crm-tools-list'&&req.method!=='GET'||action==='crm-tools-call'&&req.method!=='POST')throw fail(405,'Use GET for the tool catalog and POST for tool calls.');
-      const readActions=[...shopReadActions,...timeReads,...fileReadActions,'me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary','crm-tools-list',...researchReadActions];
+      const readActions=['planner-list',...shopReadActions,...timeReads,...fileReadActions,'me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary','crm-tools-list',...researchReadActions];
       if(req.method==='GET' && ![...readActions,'crm-note-summaries','oauth-connections','crm-global-search','crm-sales-report','crm-clients','crm-client','crm-client-tasks','crm-project','crm-project-tasks','crm-project-notes','crm-projects','crm-workspace-projects','crm-saved-views','crm-overview','crm-recent-activity','crm-recipients','crm-recipient-stats','crm-signals','tracking-gate'].includes(action)) throw fail(405,'Use POST for this action.');
       if(req.method==='POST' && !/^application\/json\b/i.test(req.headers['content-type']||'')) throw fail(415,'JSON is required.');
       // A JSON string is escaped inside the transport envelope; the research validator
@@ -140,6 +141,7 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
         return;
       }
       const {user,token}=await session(req,res);
+      if(plannerActions.includes(action)){if(req.method!==(action==='planner-list'?'GET':'POST'))throw fail(405,'Use the required planner method.');reply(200,await handlePlanner({action,body,url,user,token,call}));return;}
       if(shopActions.includes(action)){const catalog=await handleShop({action,body,call});reply(200,action==='shop-preview'?await shopPreviews(catalog):catalog);return;}
       if(fileActions.includes(action)){reply(200,await handleClientFiles({action,body,url:new URL(req.url,requestOrigin(req,env)),user,token,call}));return;}
       if(OAUTH_ADMIN_ACTIONS.includes(action)){reply(200,await handleOAuthAdmin({action,body,url,req,res,user,token,env,call}));return;}
