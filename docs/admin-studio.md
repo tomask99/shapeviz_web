@@ -172,12 +172,19 @@ with both one-time and monthly values retain both until the billing is changed.
 
 ## Personal planner
 
-Open **Workspace / Planner** at `/admin/planner`. The board contains personal
-sticky notes and to-do lists, separate from client and project tasks. Cards stay
-on the board while you edit their title, text, color and checklist. Use **Save**
-on each card, including after checking off a task. The card shows unsaved,
-saving and error states; failed saves keep the entered text. Delete asks for
-confirmation. Refresh reloads server data and asks before discarding drafts.
+Open **Workspace / Planner** at `/admin/planner` and choose **New project**.
+Each personal project card combines its title, notes, editable to-do list,
+priority and completion bar. These projects are separate from client CRM
+projects. Cards stay on the board while you edit them; old notes and lists
+also open as combined project cards without losing content.
+
+Cards sort by Urgent, High, Normal, then Low priority, with newer cards first
+within the same priority. Use **Save** for text edits and new projects. On saved
+cards, changing priority or checking a task automatically saves the valid card.
+The bottom bar shows completed tasks divided by total tasks (0% for no tasks).
+Adding/removing/checking tasks updates progress immediately. Save and error
+states are explicit; failed saves keep entered text. Delete asks for confirmation.
+Refresh reloads server data and asks before discarding drafts.
 
 The Monday-first monthly calendar supports previous/next month and **Today**.
 Select a day, then **Add plan**. Plans have a title, notes, date, optional local
@@ -186,8 +193,9 @@ On narrow screens, day cells show plan counts and the editable day agenda sits
 below the calendar. These are personal plans, without reminders or external
 calendar synchronization.
 
-Apply `supabase/migrations/20261013215641_workspace_planner.sql` before deploying
-the updated app. It creates `workspace_planner`, owner-scoped RLS, restricted
+Apply `supabase/migrations/20261013221657_workspace_planner.sql` and
+`supabase/migrations/20261013222024_planner_project_priority.sql` before deploying
+the updated app. They create `workspace_planner`, priority ordering, owner-scoped RLS, restricted
 column grants and validation/version triggers. Planner API requests use the
 verified owner's session token. Other owners, non-admin accounts and anonymous
 visitors cannot access these records. Version checks reject stale changes;
@@ -201,6 +209,9 @@ in isolated PGlite/Postgres plus HTTP validation, ownership, retries and
 concurrency. `npm run test:browser -- tests/browser/planner.spec.js` covers the
 browser-to-API-to-database flow at desktop and mobile widths. Its upstream
 adapter emulates Supabase Auth/PostgREST only; the application and SQL are real.
+The opt-in `LIVE_PLANNER=true` test in `tests/browser/planner-live.spec.js` checks
+real Supabase Auth/PostgREST persistence with an isolated temporary owner deleted
+in `finally`. Set `LIVE_PLANNER_URL` to verify an already deployed app.
 
 ## Isolation
 

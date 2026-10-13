@@ -8,7 +8,8 @@ export async function plannerDatabase(){
  create table auth.users(id uuid primary key);insert into auth.users values('${owner}'),('${other}'),('${regular}');
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
  create table public.presentation_admins(user_id uuid primary key,role text);insert into public.presentation_admins values('${owner}','owner'),('${other}','owner');grant select on public.presentation_admins to authenticated;`);
- await db.exec(await readFile(new URL('../../supabase/migrations/20261013215641_workspace_planner.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../../supabase/migrations/20261013221657_workspace_planner.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../../supabase/migrations/20261013222024_planner_project_priority.sql',import.meta.url),'utf8'));
  await db.exec(`set role authenticated;set request.jwt.claim.sub='${owner}';`);
  return db;
 }
@@ -32,7 +33,7 @@ export async function plannerFixture(){
     const match=/^(eq|gte|lte)\.(.*)$/.exec(value);if(!match)throw Error('Unsupported filter');params.push(match[2]);where.push(`${key}${{eq:'=',gte:'>=',lte:'<='}[match[1]]}$${params.length}`);
    }
    const filter=where.length?' where '+where.join(' and '):'';
-   if(method==='GET')return json((await db.query('select * from public.workspace_planner'+filter+' order by created_at desc,id limit '+Number(u.searchParams.get('limit')||1001),params)).rows);
+   if(method==='GET')return json((await db.query('select * from public.workspace_planner'+filter+' order by priority desc,created_at desc,id limit '+Number(u.searchParams.get('limit')||1001),params)).rows);
    if(method==='DELETE')return json((await db.query('delete from public.workspace_planner'+filter+' returning *',params)).rows);
    const keys=Object.keys(body);if(keys.some(k=>!/^[a-z_]+$/.test(k)))throw Error('Invalid field');const values=keys.map(k=>k==='checklist'?JSON.stringify(body[k]):body[k]);
    if(method==='POST'){

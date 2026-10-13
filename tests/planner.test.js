@@ -8,7 +8,7 @@ const note=()=>({id:randomUUID(),version:0,kind:'note',title:'Personal note',con
 test('planner validates dates, time, task types and leap-year month boundaries',()=>{
  assert.equal(plannerDate('2028-02-29'),true);assert.equal(plannerDate('2026-02-29'),false);assert.equal(plannerDate('2026-13-01'),false);
  assert.deepEqual(monthDays('2028-02'),{offset:1,last:29});assert.deepEqual(monthDays('2026-03'),{offset:6,last:31});assert.equal(localDay(new Date(2026,0,1,0)), '2026-01-01');
- for(const override of [{title:''},{color:'red'},{kind:'event',planned_date:null},{kind:'event',planned_date:'2026-02-30'},{planned_time:'25:00'},{completed:'true'},{checklist:[{id:randomUUID(),text:'x',done:false}]}])assert.throws(()=>plannerValues({...note(),...override}),{status:400});
+ for(const override of [{priority:4},{priority:-1},{priority:'2'},{priority:1.5},{title:''},{color:'red'},{kind:'event',planned_date:null},{kind:'event',planned_date:'2026-02-30'},{planned_time:'25:00'},{completed:'true'},{checklist:[{id:randomUUID(),text:'x',done:false}]}])assert.throws(()=>plannerValues({...note(),...override}),{status:400});
 });
 test('planner HTTP persistence, ownership, optimistic concurrency, retry and origin protection',async()=>{
  const f=await plannerFixture();
@@ -26,6 +26,9 @@ test('planner HTTP persistence, ownership, optimistic concurrency, retry and ori
   const october=await (await request('planner-list&month=2026-10')).json();assert.equal(october.board.length,1);assert.equal(october.events.length,0);
   const november=await (await request('planner-list&month=2026-11')).json();assert.equal(november.events.length,1);
   assert.equal((await request('planner-delete',{id:item.id,version:updated.version,confirm:'delete'})).status,200);
+  const low={...note(),priority:0},high={...note(),kind:'checklist',content:'Addon development notes',priority:3,checklist:[{id:randomUUID(),text:'Build the UI',done:true}]};
+  assert.equal((await request('planner-save',high)).status,200);assert.equal((await request('planner-save',low)).status,200);
+  const sorted=await (await request('planner-list&month=2026-10')).json();assert.deepEqual(sorted.board.map(p=>p.priority),[3,0]);assert.equal(sorted.board[0].content,high.content);assert.equal(sorted.board[0].checklist[0].done,true);
   assert.equal((await request('planner-list',{month:'2026-10'})).status,405);
  }finally{await f.close();}
 });

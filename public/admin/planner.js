@@ -13,7 +13,7 @@ export function mountPlanner({root,api,notify}){
  const cards=new Map();
  root.innerHTML=`<div class="planner"><div class="page-heading"><div><p class="eyebrow">YOUR WORKSPACE</p><h1>Planner<span>.</span></h1><p class="fine">A little space for your ideas, to-dos and days ahead.</p></div><button class="secondary" type="button" data-refresh>${svgIcon('refresh')} Refresh</button></div>
  <p role="alert" data-planner-error></p><p role="status" class="fine" data-loading>Loading your planner…</p>
- <section class="planner-board-section" aria-labelledby="board-title"><div class="section-title"><div><p class="eyebrow">KEEP IT IN SIGHT</p><h2 id="board-title">My board</h2></div><div class="planner-actions"><button class="secondary" data-new="note" disabled>${svgIcon('plus')} New note</button><button class="primary" data-new="checklist" disabled>${svgIcon('plus')} New to-do list</button></div></div><p class="fine">Edit cards here and press Save to keep your changes.</p><div class="planner-board" data-board></div></section>
+ <section class="planner-board-section" aria-labelledby="board-title"><div class="section-title"><div><p class="eyebrow">KEEP IT IN SIGHT</p><h2 id="board-title">My board</h2></div><div class="planner-actions"><button class="primary" data-new="checklist" disabled>${svgIcon('plus')} New project</button></div></div><p class="fine">A project, its notes and to-dos in one card. Highest priority first. Save text edits; checkboxes and priority save automatically.</p><div class="planner-board" data-board></div></section>
  <section class="planner-calendar-section" aria-labelledby="calendar-title"><div class="section-title"><div><p class="eyebrow">MAKE ROOM FOR WHAT MATTERS</p><h2 id="calendar-title">Monthly calendar</h2></div><button class="secondary" data-today>Today</button></div><div class="planner-calendar-layout"><div class="planner-month"><div class="planner-month-heading"><button class="quiet icon-button" data-month="-1" aria-label="Previous month">${svgIcon('arrowLeft')}</button><h3 data-month-title aria-live="polite"></h3><button class="quiet icon-button" data-month="1" aria-label="Next month">${svgIcon('arrowRight')}</button></div><div class="planner-weekdays" aria-hidden="true">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<span>${d}</span>`).join('')}</div><div class="planner-days" data-days></div><p class="fine">Select a day to view or edit its plans. Times follow your local calendar.</p></div><section class="planner-agenda" aria-labelledby="agenda-title"><div class="planner-agenda-heading"><h3 id="agenda-title"></h3><button class="secondary" data-new="event" disabled>${svgIcon('plus')} Add plan</button></div><div data-agenda></div></section></div></section></div>`;
  const board=root.querySelector('[data-board]'),agenda=root.querySelector('[data-agenda]'),error=root.querySelector('[data-planner-error]');
  const activeCards=()=>[...cards.values()].filter(c=>c.form.isConnected);
@@ -21,6 +21,11 @@ export function mountPlanner({root,api,notify}){
  const dirty=(eventsOnly=false)=>activeCards().some(c=>(!eventsOnly||agenda.contains(c.form))&&c.isDirty());
  function mayDiscard(eventsOnly=false){if(pending()){notify('Wait for the planner to finish saving.');return false;}return !dirty(eventsOnly)||confirm('Discard unsaved planner changes?');}
  function updateControls(){root.querySelectorAll('[data-new]').forEach(b=>b.disabled=!loaded||loading);root.querySelector('[data-today]').disabled=loading;root.querySelector('[data-refresh]').disabled=loading;}
+ function sortBoard(){
+  const focus=document.activeElement,ordered=[...board.querySelectorAll('.planner-card')].sort((a,b)=>Number(b.dataset.priority)-Number(a.dataset.priority)||b.dataset.created.localeCompare(a.dataset.created)||a.dataset.id.localeCompare(b.dataset.id));
+  ordered.forEach((card,index)=>{if(board.children[index]!==card)board.insertBefore(card,board.children[index]||null);});
+  if(board.contains(focus)&&!focus.disabled)focus.focus({preventScroll:true});
+ }
  function drawCalendar(){
   const {offset,last}=monthDays(month),today=localDay();
   root.querySelector('[data-month-title]').textContent=new Date(month+'-01T12:00:00').toLocaleDateString('en-GB',{month:'long',year:'numeric'});
@@ -34,6 +39,7 @@ export function mountPlanner({root,api,notify}){
   target.querySelector('[data-empty]')?.remove();
   const card=plannerCard(item,{changed:updateControls,save:async values=>{
    const data=await api('planner-save',values);if(disposed)return data.item;
+   if(item.kind!=='event')sortBoard();
    if(item.kind==='event'){events=events.filter(e=>e.id!==item.id);if(data.item.planned_date.startsWith(month))events.push(data.item);drawCalendar();if(data.item.planned_date!==selected){card.form.remove();cards.delete(item.id);notify('Plan saved for '+dayTitle(data.item.planned_date)+'.');emptyAgenda();}}
    return data.item;
   },remove:async current=>{
@@ -41,7 +47,7 @@ export function mountPlanner({root,api,notify}){
    cards.delete(current.id);events=events.filter(e=>e.id!==current.id);card.form.remove();drawCalendar();emptyBoard();emptyAgenda();
   }});cards.set(item.id,card);target.append(card.form);return card;
  }
- function emptyBoard(){if(!board.children.length)board.innerHTML='<div class="planner-empty" data-empty><span>'+svgIcon('edit')+'</span><h3>A clear space, a fresh start.</h3><p>Pin a note or make your first to-do list.</p></div>';}
+ function emptyBoard(){if(!board.children.length)board.innerHTML='<div class="planner-empty" data-empty><span>'+svgIcon('edit')+'</span><h3>A clear space, a fresh start.</h3><p>Create a personal project, add notes and break it into tasks.</p></div>';}
  function emptyAgenda(){if(!agenda.children.length)agenda.innerHTML='<p class="planner-empty" data-empty>No plans for this day yet. Add one when you are ready.</p>';}
  function drawAgenda(){for(const [id,card] of cards)if(agenda.contains(card.form))cards.delete(id);agenda.replaceChildren();root.querySelector('#agenda-title').textContent=dayTitle(selected);events.filter(e=>e.planned_date===selected).sort((a,b)=>(a.planned_time||'').localeCompare(b.planned_time||'')).forEach(item=>addCard(item,agenda));emptyAgenda();}
  async function load(resetBoard=true){
@@ -49,13 +55,13 @@ export function mountPlanner({root,api,notify}){
   // Keep existing drafts on a failed read, but prevent edits racing a refresh.
   const controls=activeCards().flatMap(card=>[...card.form.elements].map(el=>({el,disabled:el.disabled})));controls.forEach(({el})=>el.disabled=true);
   try{const data=await api('planner-list',null,{month});if(disposed||ticket!==sequence)return;events=data.events;loaded=true;if(data.truncated)error.textContent='Showing up to 500 board cards and 1,000 plans per month. Remove old items and refresh to see more.';
-   if(resetBoard){cards.clear();board.replaceChildren();data.board.forEach(item=>addCard(item,board));emptyBoard();}drawAgenda();
+   if(resetBoard){cards.clear();board.replaceChildren();data.board.forEach(item=>addCard(item,board));sortBoard();emptyBoard();}drawAgenda();
   }catch(e){if(!disposed&&ticket===sequence){loaded=false;error.textContent=e.message+' Use Refresh to retry.';events=[];agenda.replaceChildren();}}
   finally{if(!disposed&&ticket===sequence){controls.forEach(({el,disabled})=>{if(el.isConnected)el.disabled=disabled;});loading=false;root.querySelector('[data-loading]').textContent='';updateControls();drawCalendar();}}
  }
  root.querySelector('[data-refresh]').onclick=()=>{if(!loading&&mayDiscard())load();};
  root.querySelectorAll('[data-new]').forEach(button=>button.onclick=()=>{
-  if(!loaded||loading)return;const kind=button.dataset.new,item={id:crypto.randomUUID(),version:0,kind,title:'',content:'',checklist:[],color:kind==='checklist'?'sage':'sand',planned_date:kind==='event'?selected:null,planned_time:null,completed:false};
+  if(!loaded||loading)return;const kind=button.dataset.new,item={id:crypto.randomUUID(),version:0,kind,title:'',content:'',checklist:[],color:kind==='checklist'?'sage':'sand',priority:1,planned_date:kind==='event'?selected:null,planned_time:null,completed:false};
   const card=addCard(item,kind==='event'?agenda:board);card.form.elements.title.focus();
  });
  root.querySelector('[data-days]').onclick=e=>{const button=e.target.closest('[data-day]');if(!button||button.disabled||button.dataset.day===selected||!mayDiscard(true))return;selected=button.dataset.day;drawCalendar();drawAgenda();root.querySelector(`[data-day="${selected}"]`).focus({preventScroll:true});};
