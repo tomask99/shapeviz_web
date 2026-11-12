@@ -11,6 +11,7 @@
       "maxDuration": 60
     },
     "api/site-events.js": {
+      "includeFiles": "public/{index.html,shop/index.html}",
       "maxDuration": 30
     },
     "api/admin.js": {
@@ -26,6 +27,13 @@
     }
   },
   "redirects": [
+    {"source": "/index.html", "destination": "/", "permanent": true},
+    {"source": "/shop/index.html", "destination": "/shop", "permanent": true},
+    {"source": "/shop/", "destination": "/shop", "permanent": true},
+    {"source": "/:locale(sk|en)/", "destination": "/:locale", "permanent": true},
+    {"source": "/:locale(sk|en)/shop/", "destination": "/:locale/shop", "permanent": true},
+    {"source": "/sk/sluzby/:service/", "destination": "/sk/sluzby/:service", "permanent": true},
+    {"source": "/en/services/:service/", "destination": "/en/services/:service", "permanent": true},
     {
       "source": "/p/:slug/",
       "destination": "/p/:slug",
@@ -33,10 +41,21 @@
     }
   ],
   "rewrites": [
+    {"source": "/sk/sluzby/:service", "destination": "/api/site-events?route=page&locale=sk&service=:service"},
+    {"source": "/sk/sluzby/:service/", "destination": "/api/site-events?route=page&locale=sk&service=:service"},
+    {"source": "/en/services/:service", "destination": "/api/site-events?route=page&locale=en&service=:service"},
+    {"source": "/en/services/:service/", "destination": "/api/site-events?route=page&locale=en&service=:service"},
+    {"source": "/", "destination": "/api/site-events?route=page"},
+    {"source": "/index.html", "destination": "/api/site-events?route=page"},
+    {"source": "/:locale(sk|en)", "destination": "/api/site-events?route=page&locale=:locale"},
+    {"source": "/:locale(sk|en)/", "destination": "/api/site-events?route=page&locale=:locale"},
+    {"source": "/:locale(sk|en)/shop", "destination": "/api/site-events?route=page&page=shop&locale=:locale"},
+    {"source": "/:locale(sk|en)/shop/", "destination": "/api/site-events?route=page&page=shop&locale=:locale"},
+    {"source": "/shop/index.html", "destination": "/api/site-events?route=page&page=shop"},
     {"source": "/admin/planner", "destination": "/admin/index.html"},
     {"source": "/api/shop", "destination": "/api/site-events?route=shop"},
-    {"source": "/shop", "destination": "/shop/index.html"},
-    {"source": "/shop/", "destination": "/shop/index.html"},
+    {"source": "/shop", "destination": "/api/site-events?route=page&page=shop"},
+    {"source": "/shop/", "destination": "/api/site-events?route=page&page=shop"},
     {"source": "/admin/shop", "destination": "/admin/index.html"},
     {"source": "/admin/cloud-storage", "destination": "/admin/index.html"},
     {"source": "/admin/projects", "destination": "/admin/index.html"},

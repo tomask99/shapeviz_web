@@ -5,6 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createContactHandler } from './src/contact.js';
 import { createWebsiteHandler } from './src/website/handler.js';
+import {createPublicPageHandler} from './src/website/page.js';
+import {sitemapXml,robotsText} from './src/website/seo.js';
 import { createAdminHandler } from './src/admin/handler.js';
 import {createOAuthHandler,OAUTH_ROUTES} from './src/oauth/handler.js';
 import { createPresentationEventHandler } from './src/presentations/events.js';
@@ -54,7 +56,8 @@ async function serveFile(req, res, filename, pathname, extraHeaders = {}) {
 export function createApp({ publicDir = path.join(root, 'public'), presentationsDir = path.join(root, 'presentations'), builtPresentations = false, templatesRoot, env = process.env, send = fetch } = {}) {
   const contact = createContactHandler({ env, send });
   const files = createFilesHandler({ env, send });
-  const website = createWebsiteHandler({ env, send });
+  const website = createWebsiteHandler({ env, send, publicDir });
+  const publicPage = createPublicPageHandler({publicDir, env});
   const admin = createAdminHandler({ env, send, templatesRoot });
   const oauth = createOAuthHandler({env,send});
   const presentationEvent = createPresentationEventHandler({ env, send, presentationsRoot: presentationsDir });
@@ -67,13 +70,18 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
     let pathname;
     try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
     catch { res.writeHead(400).end('Bad request'); return; }
-    if (pathname === '/api/shop' || pathname === '/api/site-events') { await website(req,res);return; }
-    if (pathname === '/shop' || pathname === '/shop/' || pathname === '/shop/index.html') {
-      if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405,{Allow:'GET, HEAD'}).end();return; }
-      res.setHeader('Content-Security-Policy', siteCsp.replace("script-src 'self'", "script-src 'self' https://gumroad.com https://assets.gumroad.com").replace("img-src 'self' data:", "img-src 'self' data: https://public-files.gumroad.com https://assets.gumroad.com") + "; frame-src https://gumroad.com https://*.gumroad.com");
-      res.setHeader('X-Robots-Tag','noindex, nofollow');
-      await serveFile(req,res,path.join(publicDir,'shop/index.html'),pathname,{'Cache-Control':'no-store'});return;
+    const canonicalPath = pathname === '/index.html' ? '/' : pathname === '/shop/index.html' ? '/shop'
+      : /^\/(?:sk|en)(?:\/shop|\/(?:sluzby|services)\/[a-z0-9-]+)?\/$/.test(pathname) || pathname === '/shop/' ? pathname.slice(0,-1) : null;
+    if (canonicalPath && ['GET','HEAD'].includes(req.method)) {
+      res.writeHead(308, {Location:canonicalPath+new URL(req.url,'http://localhost').search}).end();return;
     }
+    if (pathname === '/sitemap.xml' || pathname === '/robots.txt') {
+      if (!['GET','HEAD'].includes(req.method)) {res.writeHead(405,{Allow:'GET, HEAD'}).end();return;}
+      const sitemap = pathname === '/sitemap.xml';
+      res.writeHead(200,{'Content-Type':sitemap?'application/xml; charset=utf-8':'text/plain; charset=utf-8','Cache-Control':'public, max-age=3600'}).end(req.method==='HEAD'?undefined:sitemap?sitemapXml():robotsText());return;
+    }
+    if (pathname === '/api/shop' || pathname === '/api/site-events') { await website(req,res);return; }
+    if (['/', '/index.html', '/shop', '/shop/', '/shop/index.html'].includes(pathname) || /^\/(sk|en)(\/shop)?\/?$/.test(pathname) || /^\/(sk|en)\/(sluzby|services)\/[a-z0-9-]+\/?$/.test(pathname)) {await publicPage(req,res);return;}
     if (pathname === '/api/contact') { await contact(req, res); return; }
     if (pathname === '/api/files') { await files(req, res); return; }
     if (pathname.startsWith('/files/')) {

@@ -1,8 +1,9 @@
+import {t,publicPath} from '../i18n/runtime.js';
 export function setShopNavigation(launched) {
   for(const item of document.querySelectorAll('[data-shop-nav]')){
-    const next=document.createElement(launched?'a':'span');next.dataset.shopNav='';next.className='shop-nav';next.textContent='Shop';
-    if(launched){next.href='/shop';if(location.pathname==='/shop')next.setAttribute('aria-current','page');}
-    else{next.setAttribute('aria-disabled','true');const badge=document.createElement('small');badge.textContent='Coming soon';next.append(badge);}
+    const next=document.createElement(launched?'a':'span');next.dataset.shopNav='';next.className='shop-nav';next.textContent=t('Shop');
+    if(launched){next.href=publicPath('/shop');if(/\/shop\/?$/.test(location.pathname))next.setAttribute('aria-current','page');}
+    else{next.setAttribute('aria-disabled','true');const badge=document.createElement('small');badge.textContent=t('Coming soon');next.append(badge);}
     item.replaceWith(next);
   }
 }

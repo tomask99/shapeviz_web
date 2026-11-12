@@ -15,7 +15,7 @@ test('hourly rates and manual durations use exact cents with comma and dot suppo
  const p=projectInput({name:'Design',status:'ACTIVE',billing_type:'HOURLY',amount:'60,00'});assert.equal(p.hourly_rate_cents,6000);assert.equal(p.project_value,null);assert.equal(p.monthly_value,null);assert.equal(projectPrice(p),'€60.00/h');
 });
 
-test('timer and manual SQL lifecycle, retries, snapshots, totals, scope and deletion protection',async()=>{
+test('timer and manual SQL lifecycle, retries, current project rates, totals, scope and deletion protection',async()=>{
  const {db,rpc}=await timeDatabase();
  const command=(action,data,request=randomUUID())=>rpc('crm_time_command',{p_action:action,p_data:data,p_request:request});
  async function advance(id,seconds){await db.exec(`reset role;update public.crm_time_sessions set started_at=started_at-interval '${seconds} seconds' where id='${id}';update public.crm_time_segments set started_at=started_at-interval '${seconds} seconds' where session_id='${id}' and ended_at is null;set role authenticated;`);}
@@ -34,11 +34,11 @@ test('timer and manual SQL lifecycle, retries, snapshots, totals, scope and dele
   await db.exec(`reset role;delete from public.crm_time_segments where session_id='${id}';update public.crm_time_sessions set started_at='2026-10-01 08:00Z',ended_at='2026-10-01 11:15Z' where id='${id}';insert into public.crm_time_segments(session_id,owner_id,started_at,ended_at) values('${id}','${owner}','2026-10-01 08:00Z','2026-10-01 11:15Z');set role authenticated;`);
   const manualData={project_id:project,company_id:company,work_date:'2026-10-01',duration_seconds:9000,description:'Manual'},manualKey=randomUUID();
   const manual=await command('manual_save',manualData,manualKey);await command('manual_save',manualData,manualKey);
-  const totals=await rpc('crm_project_time',{p_project:project,p_company:company});assert.deepEqual(totals,{tracked_seconds:11700,manual_seconds:9000,earned_cents:'34500',open_seconds:0,open_earned_cents:'0'});
+  const totals=await rpc('crm_project_time',{p_project:project,p_company:company});assert.deepEqual(totals,{hourly_rate_cents:6000,tracked_seconds:11700,manual_seconds:9000,earned_cents:'34500',open_seconds:0,open_earned_cents:'0'});
   await db.exec(`update public.crm_projects set hourly_rate_cents=9000 where id='${project}'`);
   await command('manual_save',{...manualData,id:manual.id,version:1,duration_seconds:3600});
   const newer=await command('manual_save',{...manualData,duration_seconds:3600});
-  const entries=await rpc('crm_time_history',{p_project:project});assert.equal(entries.items.length,3);assert.equal(entries.items.find(e=>e.id===manual.id).rate_cents,6000);assert.equal(entries.items.find(e=>e.id===newer.id).rate_cents,9000);
+  const entries=await rpc('crm_time_history',{p_project:project});assert.equal(entries.items.length,3);assert.equal(entries.items.find(e=>e.id===manual.id).rate_cents,9000);assert.equal(entries.items.find(e=>e.id===newer.id).rate_cents,9000);
   await assert.rejects(command('manual_save',{...manualData,duration_seconds:0}),/check constraint/);await assert.rejects(command('manual_save',{...manualData,duration_seconds:86401}),/check constraint/);
   await assert.rejects(command('manual_save',{...manualData,project_id:other}),/hourly project/);
   await assert.rejects(db.exec(`delete from public.crm_projects where id='${project}'`),/foreign key/);

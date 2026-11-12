@@ -1,8 +1,9 @@
-import { cp, mkdir, rm, stat } from 'node:fs/promises';
+import { cp, mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { discoverProjects } from '../src/presentations/registry.js';
 import { validateUiIcons } from './validate-ui-icons.js';
 import {buildPresentationBundles} from './lib/presentation-bundles.js';
+import {sitemapXml,robotsText} from '../src/website/seo.js';
 await validateUiIcons();
 const required = ['public/index.html', 'public/styles.css', 'public/app.js', 'public/media/milenium-interior-720.webp', 'public/media/milenium-interior-1440.webp', 'public/media/milenium-motion.mp4', 'public/media/milenium-motion-poster.webp', 'public/media/shapeviz-logo.webp'];
 for (const file of required) await stat(file);
@@ -10,6 +11,8 @@ const projects = process.env.PRESENTATIONS_REMOTE === 'true' ? [] : await discov
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
 await cp('public', 'dist', { recursive: true });
+await writeFile('dist/sitemap.xml', sitemapXml());
+await writeFile('dist/robots.txt', robotsText());
 await buildPresentationBundles();
 await mkdir('dist/files/vendor', { recursive: true });
 await cp('node_modules/megajs/dist/main.browser-es.mjs','dist/files/vendor/megajs.mjs');

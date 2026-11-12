@@ -1,6 +1,18 @@
 import { readJson, requestOrigin } from './http.js';
 import nodemailer from 'nodemailer';
-export const services = ['Visual identity', 'CGI & 3D', 'Motion & content', 'Something else'];
+// Accept legacy values from forms opened before the public offering was updated.
+export const services = [
+  'High-end 3D modeling',
+  'Product & interior visualization',
+  'Architectural 3D modeling',
+  'Video production & animation',
+  'Marketing & digital presence',
+  'Websites & applications',
+  'Something else',
+  'Visual identity',
+  'CGI & 3D',
+  'Motion & content',
+];
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateContact(body) {

@@ -1,12 +1,9 @@
+import {t} from './i18n/runtime.js';
 const toggle = document.querySelector('#gallery-toggle');
 const gallery = document.querySelector('#expanded-gallery');
 
 function loadMedia(panel) {
-  panel.querySelectorAll('[data-gallery-src]').forEach(image => {
-    image.srcset = image.dataset.gallerySrcset;
-    image.src = image.dataset.gallerySrc;
-    delete image.dataset.gallerySrc;
-  });
+  // Images use native src/srcset and loading=lazy so URLs are crawlable in HTML.
   panel.querySelectorAll('[data-gallery-poster]').forEach(video => {
     video.poster = video.dataset.galleryPoster;
     delete video.dataset.galleryPoster;
@@ -19,7 +16,7 @@ function setExpanded(expanded) {
   }
   gallery.hidden = !expanded;
   toggle.setAttribute('aria-expanded', String(expanded));
-  toggle.querySelector('span').textContent = expanded ? 'CLOSE GALLERY' : 'EXPAND GALLERY';
+  toggle.querySelector('span').textContent = expanded ? t('CLOSE GALLERY') : t('EXPAND GALLERY');
   if (expanded) loadMedia(gallery);
   else toggle.focus({ preventScroll: true });
   dispatchEvent(new Event('resize'));

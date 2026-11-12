@@ -20,7 +20,9 @@ while its tab is closed; both running and paused sessions restore from the serve
 The project's **Time & earnings** panel supports adding and editing manual time.
 Enter a work date, start time to the minute, and separate hours and minutes
 (up to 24 hours per entry). Older entries retain their unknown start time and
-exact seconds until explicitly edited. Existing entries retain their saved rate.
+exact seconds until explicitly edited. Entry prices use the current project hourly
+rate. Editing time or changing the project rate automatically recalculates existing
+entries and totals.
 
 Use **Delete time** on any manual or tracked history row, in either the project
 or Time Tracker. Confirmation removes that entry, its segments, and its earned
@@ -61,7 +63,7 @@ An offline pause does not pretend to have stopped the server timer. Unconfirmed
 manual saves retain their payload for the next Save time attempt.
 
 Overview's **Revenue / One-time projects** includes agreed one-time prices plus
-finished hourly timers and manual time entries at their saved rates. The card
+finished hourly timers and manual time entries at the current project rate. The card
 shows the hourly contribution separately. Running and paused timers enter revenue
 after **Finish**. Each project is counted once regardless of its number of time
 entries. Cancelled projects and archived clients remain excluded; monthly revenue
@@ -82,8 +84,10 @@ Entry details and Projects: `supabase/migrations/20261007214855_time_entry_detai
   one open segment per session, optimistic versions and a private retry ledger.
   Late retries cannot pause or finish a newer segment. All command timestamps
   originate in Postgres, at whole-second precision.
-- Captures the rate on creation. Editing a manual entry keeps its original rate;
-  changing a project rate applies to new records only. Money uses integer cents
+- Captures the original rate on creation for audit. Displayed rates and earnings
+  use the current project rate for all existing and new records, including open
+  timers. Editing manual time recalculates its value immediately. Rate changes
+  refresh the timer, history and revenue across tabs. Money uses integer cents
   and PostgreSQL numeric arithmetic, rounded once per record; totals sum those
   cents. Browser estimates use BigInt. Earned value is separate from payments.
 - Preserves history with restrictive project foreign keys. The private retry
@@ -94,6 +98,23 @@ No new dependency, paid service, API credential or environment variable is neede
 Future environments must apply the migrations before deploying the updated app.
 At this verification, local and remote histories contained the same 64 versions
 (MD5 of sorted comma-separated versions: `5674611b8d26ba7fd5420f8789e8a233`).
+
+## Automatic recalculation (12 November 2026)
+
+Apply `supabase/migrations/20261112111248_current_project_time_rates.sql` before
+deploying the UI update. It replaces the two invoker views used by time history,
+project totals and revenue. Stored time, original rate snapshots, retry records
+and entry versions are preserved; existing work immediately uses current project
+pricing. `crm_project_time` also returns the current rate so refreshed totals
+and the rate label agree across tabs. No new grants or elevated functions are added.
+
+Focused database and desktop/mobile browser tests cover rate increases and
+decreases, edits to existing duration, completed and open timers, revenue, retries,
+owner isolation and cross-tab refresh. The opt-in live test expects this migration.
+Verification: 18 focused database/API tests and 7 browser scenarios passed, along
+with build and SVG icon validation. Desktop and mobile screenshots were reviewed.
+This follow-up is local only; its migration has not been applied to hosted Supabase
+and the application has not been deployed.
 
 ## Changed files
 

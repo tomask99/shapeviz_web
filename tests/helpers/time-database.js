@@ -25,6 +25,7 @@ export async function timeDatabase(){
  await db.exec(await readFile(new URL(revenueMigration,migrations),'utf8'));
  const detailsMigration=(await readdir(migrations)).find(file=>file.endsWith('_time_entry_details_and_projects.sql'));
  await db.exec(await readFile(new URL(detailsMigration,migrations),'utf8'));
+ await db.exec(await readFile(new URL('20261112111248_current_project_time_rates.sql',migrations),'utf8'));
  await db.exec(`update public.crm_projects set hourly_rate_cents=6000 where id='${project}';set role authenticated;set request.jwt.claim.sub='${owner}';`);
  const rpc=async(name,args={})=>{if(!/^crm_(time_[a-z_]+|project_time|project_revenue|workspace_projects)$/.test(name))throw new Error('Unexpected RPC '+name);const keys=Object.keys(args);const {rows}=await db.query(`select public.${name}(${keys.map((k,i)=>`${k}=>$${i+1}`).join(',')}) as data`,Object.values(args));return rows[0].data;};
  return {db,rpc};

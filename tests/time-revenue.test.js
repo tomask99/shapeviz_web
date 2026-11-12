@@ -5,7 +5,7 @@ import {timeDatabase,owner,other,company,project} from './helpers/time-database.
 import {projectRevenueMarkup} from '../public/admin/crm-project-revenue.js';
 import {formatPipelineEUR} from '../public/admin/crm-pipeline-value.js';
 
-test('revenue includes completed tracked and manual earnings once, at saved rates',async()=>{
+test('revenue includes completed tracked and manual earnings once, at the current project rate',async()=>{
  const {db,rpc}=await timeDatabase();try{
   const fixed=randomUUID(),monthly=randomUUID(),session=randomUUID(),open=randomUUID(),custom=randomUUID();
   await db.exec(`reset role;
@@ -26,12 +26,27 @@ test('revenue includes completed tracked and manual earnings once, at saved rate
   const entry=await command('manual_save',body,key);await command('manual_save',body,key);
   const revenue=()=>rpc('crm_project_revenue');
   assert.deepEqual(await revenue(),{currency:'EUR',one_time:{amount:'1345.25',count:2,hourly_amount:'345.00',hourly_count:1},monthly:{amount:'500.00',count:1}});
-  await db.exec(`update public.crm_projects set hourly_rate_cents=9000 where id='${project}'`);assert.equal((await revenue()).one_time.amount,'1345.25');
-  const newer=await command('manual_save',{...body,duration_seconds:3600});assert.equal((await revenue()).one_time.amount,'1435.25');assert.equal((await revenue()).one_time.count,2);
-  await command('manual_save',{...body,id:entry.id,version:1,duration_seconds:3600});assert.equal((await revenue()).one_time.amount,'1345.25');
-  await command('manual_delete',{company_id:company,project_id:project,id:newer.id,version:1});assert.equal((await revenue()).one_time.amount,'1255.25');
+  await db.exec(`update public.crm_projects set hourly_rate_cents=9000 where id='${project}'`);assert.equal((await revenue()).one_time.amount,'1517.75');
+  const totals=await rpc('crm_project_time',{p_project:project,p_company:company});
+  assert.deepEqual(totals,{hourly_rate_cents:9000,tracked_seconds:11700,manual_seconds:9000,earned_cents:'51750',open_seconds:3600,open_earned_cents:'9000'});
+  const current=(await rpc('crm_time_open')).item;
+  assert.equal(current.rate_cents,9000);assert.equal(current.earned_cents,'9000');assert.equal(current.version,1);
+  const detail=(await rpc('crm_time_detail',{p_id:session})).item;
+  assert.equal(detail.rate_cents,9000);assert.equal(detail.earned_cents,'29250');assert.equal(detail.duration_seconds,11700);
+  const history=(await rpc('crm_time_history',{p_project:project})).items;
+  assert.ok(history.every(row=>row.rate_cents===9000));
+  assert.equal((await rpc('crm_time_detail',{p_id:custom})).item.earned_cents,null);
+  // A delayed retry must not restore the original rate or duplicate the entry.
+  assert.equal((await command('manual_save',body,key)).replayed,true);
+  assert.equal((await revenue()).one_time.amount,'1517.75');
+  const newer=await command('manual_save',{...body,duration_seconds:3600});assert.equal((await revenue()).one_time.amount,'1607.75');assert.equal((await revenue()).one_time.count,2);
+  await command('manual_save',{...body,id:entry.id,version:1,duration_seconds:3600});assert.equal((await revenue()).one_time.amount,'1472.75');
+  await command('manual_delete',{company_id:company,project_id:project,id:newer.id,version:1});assert.equal((await revenue()).one_time.amount,'1382.75');
+  await db.exec(`update public.crm_projects set hourly_rate_cents=4550 where id='${project}'`);
+  assert.equal((await revenue()).one_time.hourly_amount,'193.38');
+  await db.exec(`update public.crm_projects set hourly_rate_cents=9000 where id='${project}'`);
   await db.exec(`update public.crm_projects set status='CANCELLED' where id='${project}'`);assert.equal((await revenue()).one_time.amount,'1000.25');assert.equal((await revenue()).one_time.hourly_count,0);
-  await db.exec(`update public.crm_projects set status='COMPLETED' where id='${project}';update public.crm_projects set status='ON_HOLD' where id='${monthly}'`);assert.equal((await revenue()).one_time.amount,'1255.25');assert.equal((await revenue()).monthly.amount,'0');
+  await db.exec(`update public.crm_projects set status='COMPLETED' where id='${project}';update public.crm_projects set status='ON_HOLD' where id='${monthly}'`);assert.equal((await revenue()).one_time.amount,'1382.75');assert.equal((await revenue()).monthly.amount,'0');
   await db.exec(`update public.crm_companies set archived_at=now() where id='${company}'`);assert.equal((await revenue()).one_time.amount,'0');
   await db.exec(`set request.jwt.claim.sub='${other}'`);assert.equal((await revenue()).one_time.amount,'100.00');assert.equal((await revenue()).one_time.hourly_amount,'0');
   await db.exec('reset role;set role anon');await assert.rejects(revenue(),/permission denied/);

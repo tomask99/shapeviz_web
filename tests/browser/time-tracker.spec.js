@@ -46,6 +46,11 @@ for(const width of [1440,390])test(`Hourly billing and persistent timer complete
   await expect(page.locator('[data-totals]')).toContainText('02:30:00');await expect(page.locator('[data-totals]')).toContainText('€150.00');
   await page.locator('[data-view=all]').click();await expect(page.locator('[data-revenue=one_time] strong')).toHaveText('€150.00');await expect(page.locator('[data-hourly-revenue]')).toHaveText('Includes €150.00 of hourly work');await page.locator('.business-revenue').screenshot({path:`.cache/hourly-revenue-${width}.png`});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);await page.goBack();
   await page.getByRole('button',{name:'Edit time',exact:true}).click();await page.getByRole('dialog').getByLabel('Hours',{exact:true}).fill('3');await page.getByRole('dialog').getByLabel('Minutes',{exact:true}).fill('0');await page.getByRole('dialog').getByRole('button',{name:'Save time',exact:true}).click();await expect(page.locator('[data-totals]')).toContainText('€180.00');
+  await page.getByRole('button',{name:'Edit project',exact:true}).click();await expect(editor.locator('[data-hourly-help]')).toBeVisible();await editor.getByLabel('Hourly rate (EUR/h)',{exact:true}).fill('75');await editor.getByRole('button',{name:'Save project',exact:true}).click();
+  await expect(page.locator('[data-totals]')).toContainText('€225.00');await expect(page.locator('.time-entry')).toContainText('€75.00/h');
+  await page.getByRole('button',{name:'Edit time',exact:true}).click();const edited=page.getByRole('dialog',{name:'Edit manual time.',exact:true});await edited.getByLabel('Hours',{exact:true}).fill('2');await edited.getByLabel('Minutes',{exact:true}).fill('30');await expect(edited.locator('[data-preview]')).toContainText('€187.50');await edited.getByRole('button',{name:'Save time',exact:true}).click();
+  await expect(page.locator('[data-totals]')).toContainText('€187.50');await expect(page.locator('[data-totals]')).toContainText('02:30:00');
+  await page.locator('[data-view=all]').click();await expect(page.locator('[data-revenue=one_time] strong')).toHaveText('€187.50');await page.goBack();
   await page.locator('.time-project').screenshot({path:`.cache/hourly-project-${width}.png`});
   page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Delete time',exact:true}).click();await expect(page.locator('[data-totals]')).toContainText('€0.00');
   await page.getByRole('link',{name:'Start tracking',exact:true}).click();await expect(page.getByLabel('Hourly project',{exact:true})).toHaveValue(/.+/);
@@ -104,6 +109,27 @@ test('Project popup keyboard, retry and status conflict keep the workspace intac
   await f.db.exec(`update public.crm_projects set status='ON_HOLD',version=version+1 where id='${project}';`);
   const status=card.locator('[data-status-toggle]');await status.click();await card.getByRole('button',{name:'Done',exact:true}).click();await expect(card.getByRole('alert')).toContainText('Project changed');await expect(status).toContainText('Active');await expect(status).toBeEnabled();
   await card.getByRole('button',{name:'Refresh projects',exact:true}).click();await expect(status).toContainText('Paused');await expect(detail).toBeHidden();expect(errors).toEqual([]);
+ }finally{await f.close();}
+});
+
+test('project rate changes refresh an open timer and history across tabs',async({page,context})=>{
+ const f=await fixture(context);
+ try{
+  const command=(action,data)=>f.rpc('crm_time_command',{p_action:action,p_request:randomUUID(),p_data:data});
+  await command('manual_save',{company_id:company,project_id:project,work_date:'2026-10-07',duration_seconds:3600});
+  const session=await command('start',{kind:'project',company_id:company,project_id:project});
+  await f.db.exec(`reset role;update public.crm_time_sessions set started_at=started_at-interval '1 hour' where id='${session.id}';update public.crm_time_segments set started_at=started_at-interval '1 hour' where session_id='${session.id}';set role authenticated;`);
+  await command('pause',{id:session.id,version:1});
+  const tracker=await context.newPage();await tracker.goto(f.origin+'/admin/time-tracker');await expect(tracker.locator('[data-current]')).toContainText('€60.00/h');
+  await page.goto(f.origin+'/admin/clients/'+company+'?project='+project);
+  await page.getByRole('button',{name:'Edit project',exact:true}).click();const editor=page.locator('#project-editor');await editor.getByLabel('Hourly rate (EUR/h)',{exact:true}).fill('90');await editor.getByRole('button',{name:'Save project',exact:true}).click();
+  await expect(page.locator('[data-totals]')).toContainText('€90.00');
+  await expect(tracker.locator('[data-current]')).toContainText('€90.00/h');await expect(tracker.locator('.time-entry').first()).toContainText('€90.00/h');
+  await expect(tracker.getByRole('button',{name:'Resume',exact:true})).toBeVisible();
+  const open=(await f.rpc('crm_time_open')).item;expect(open.version).toBe(2);expect(open.rate_cents).toBe(9000);
+  await tracker.getByRole('button',{name:'Finish',exact:true}).click();await expect(tracker.getByRole('button',{name:'Start tracking',exact:true})).toBeVisible();
+  await expect(page.locator('[data-live-estimate]')).toBeEmpty();
+  await tracker.close();
  }finally{await f.close();}
 });
 

@@ -1,6 +1,6 @@
 // First-party, per-tab sessions. No fingerprint, IP storage or cross-site identifier.
 async function start(attempt=0) {
-  if(!['/','/index.html'].includes(location.pathname) || navigator.doNotTrack==='1' || navigator.globalPrivacyControl || /bot|crawler|spider|preview/i.test(navigator.userAgent))return;
+  if((!['/','/index.html','/sk','/sk/','/en','/en/'].includes(location.pathname) && !/^\/(?:sk\/sluzby|en\/services)\/[a-z0-9-]+\/?$/.test(location.pathname)) || navigator.doNotTrack==='1' || navigator.globalPrivacyControl || /bot|crawler|spider|preview/i.test(navigator.userAgent))return;
   // A slow admin-status endpoint must not permanently disable this visit.
   // Keep owner exclusion fail-closed, retrying without recording until verified.
   const controller=new AbortController(), timeout=setTimeout(()=>controller.abort(),5000);

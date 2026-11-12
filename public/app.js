@@ -1,3 +1,4 @@
+import {t} from './i18n/runtime.js';
 import {svgIcon} from './ui/icons.js';
 import './gallery.js';
 import './dialog-dismiss.js';
@@ -102,10 +103,10 @@ function syncVideo(video) {
 function updateVideoControls(video) {
   const controls = video.parentElement.querySelector('.video-controls');
   const play = controls.querySelector('.video-play');
-  play.setAttribute('aria-label', video.paused ? 'Play video' : 'Pause video');
+  play.setAttribute('aria-label', video.paused ? t('Play video') : t('Pause video'));
   play.firstElementChild.innerHTML = svgIcon(video.paused ? 'play' : 'pause');
   const sound = controls.querySelector('.video-sound');
-  sound.setAttribute('aria-label', video.muted ? 'Unmute video' : 'Mute video');
+  sound.setAttribute('aria-label', video.muted ? t('Unmute video') : t('Mute video'));
   sound.setAttribute('aria-pressed', String(!video.muted));
 }
 const videoObserver = new IntersectionObserver(entries => {
@@ -193,7 +194,7 @@ form.addEventListener('submit', async event => {
   submit.disabled = true;
   form.setAttribute('aria-busy', 'true');
   formStatus.dataset.error = 'false';
-  formStatus.textContent = 'Sending your inquiry…';
+  formStatus.textContent = t('Sending your inquiry…');
   try {
     const response = await fetch('/api/contact', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -201,12 +202,15 @@ form.addEventListener('submit', async event => {
       signal: AbortSignal.timeout(15_000),
     });
     const result = await response.json();
-    if (!response.ok || !result.ok) throw new Error(result.message || 'Your message could not be sent. Please try again.');
-    formStatus.textContent = result.message;
+    if (!response.ok || !result.ok) throw new Error(t(result.message) || t('Your message could not be sent. Please try again.'));
+    formStatus.textContent = t(result.message);
+    form.querySelectorAll('input[name="services"]').forEach(input => {
+      input.defaultChecked = false;
+    });
     form.reset();
   } catch (error) {
     formStatus.dataset.error = 'true';
-    formStatus.textContent = error.name === 'TypeError' || error.name === 'TimeoutError' ? 'We couldn’t reach the studio. Your details are still here — please try again.' : error.message;
+    formStatus.textContent = error.name === 'TypeError' || error.name === 'TimeoutError' ? t('We couldn’t reach the studio. Your details are still here — please try again.') : error.message;
   } finally {
     submit.disabled = false;
     form.removeAttribute('aria-busy');

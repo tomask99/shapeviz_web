@@ -6,7 +6,7 @@ test('hero, anchors and all client names are available without browser errors', 
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
   await expect(page).toHaveTitle(/SHAPEVIZ/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName('SHAPEVIZ');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName('High-end 3D modeling, visualization & video production.');
   await expect(page.locator('.client-name')).toHaveText(clients);
   await expect(page.locator('.client-number')).toHaveText(clients.map((_,index)=>String(index+1).padStart(2,'0')));
   await page.getByRole('link', { name: 'Studio', exact: true }).click();
@@ -113,7 +113,7 @@ async function fillForm(page) {
   await page.goto('/#project-form');
   await page.getByLabel('Your name').fill('Test Visitor');
   await page.getByLabel('Email address').fill('visitor@example.com');
-  await page.getByLabel('CGI & 3D', { exact: true }).check();
+  await page.getByLabel('High-end 3D modeling', { exact: true }).check();
   await page.getByLabel('A little about your project').fill('We are planning a new visual identity and motion campaign.');
   await page.getByLabel('You may use my name').check();
 }
@@ -129,7 +129,7 @@ test('form validates required fields and clears only after a confirmed success',
   let calls = 0;
   await page.route('**/api/contact', async route => {
     calls++;
-    expect(route.request().postDataJSON().services).toEqual(['CGI & 3D']);
+    expect(route.request().postDataJSON().services).toEqual(['High-end 3D modeling']);
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, message: 'Thank you. Your inquiry is on its way.' }) });
   });
   await page.goto('/#project-form');
