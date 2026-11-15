@@ -56,5 +56,5 @@ export function sitemapXml() {
 
 export function robotsText() {
   // Keep noindex pages crawlable so crawlers can read their existing directives.
-  return `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /oauth/\n\nSitemap: ${SITE_ORIGIN}/sitemap.xml\n`;
+  return `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /oauth/\n\nSitemap: ${SITE_ORIGIN}/sitemap.xml\nSitemap: ${SITE_ORIGIN}/sitemap-products.xml\n`;
 }

@@ -27,6 +27,7 @@
     }
   },
   "redirects": [
+    {"source":"/shop/:product([a-z0-9-]+)/","destination":"/shop/:product","permanent":true},
     {"source": "/index.html", "destination": "/", "permanent": true},
     {"source": "/shop/index.html", "destination": "/shop", "permanent": true},
     {"source": "/shop/", "destination": "/shop", "permanent": true},
@@ -41,6 +42,8 @@
     }
   ],
   "rewrites": [
+    {"source":"/sitemap-products.xml","destination":"/api/site-events?route=shop-sitemap"},
+    {"source":"/shop/:product([a-z0-9-]+)","destination":"/api/site-events?route=product&product=:product"},
     {"source": "/sk/sluzby/:service", "destination": "/api/site-events?route=page&locale=sk&service=:service"},
     {"source": "/sk/sluzby/:service/", "destination": "/api/site-events?route=page&locale=sk&service=:service"},
     {"source": "/en/services/:service", "destination": "/api/site-events?route=page&locale=en&service=:service"},
@@ -121,7 +124,7 @@
     }
   ],
   "headers": [
-    {"source":"/shop/:path*","headers":[{"key":"Cache-Control","value":"no-store"},{"key":"X-Robots-Tag","value":"noindex, nofollow"},{"key":"Content-Security-Policy","value":"default-src 'self'; script-src 'self' https://gumroad.com https://assets.gumroad.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://public-files.gumroad.com https://assets.gumroad.com; connect-src 'self'; frame-src https://gumroad.com https://*.gumroad.com; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"}]},
+    {"source":"/shop/:path*","headers":[{"key":"Cache-Control","value":"no-store"},{"key":"Content-Security-Policy","value":"default-src 'self'; script-src 'self' https://gumroad.com https://assets.gumroad.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://public-files.gumroad.com https://assets.gumroad.com; connect-src 'self'; frame-src https://gumroad.com https://*.gumroad.com; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"}]},
     {
       "source": "/presentation-media/:path*",
       "headers": [

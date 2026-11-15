@@ -4,7 +4,12 @@ import {gumroadUrl} from '../../public/shop/url.js';
 const maximumBytes = 1024 * 1024;
 export function productPreview(html) {
   const metadata = new Map();
+  let product;
   function visit(node) {
+    const page = node.attrs?.find(a => a.name === 'data-page');
+    if (page) {
+      try { product = JSON.parse(page.value).props?.product; } catch {}
+    }
     if (node.tagName === 'meta') {
       const attrs = Object.fromEntries(node.attrs.map(({name,value}) => [name,value]));
       const key = attrs.property || attrs.name;
@@ -20,7 +25,11 @@ export function productPreview(html) {
     if (url.protocol === 'https:' && !url.username && !url.password && !url.port &&
         ['public-files.gumroad.com','assets.gumroad.com'].includes(url.hostname)) image = url.href;
   } catch {}
-  return {title:title || null, image};
+  const result = {title:title || null, image};
+  if (product && Number.isSafeInteger(product.price_cents) && product.price_cents >= 0 && /^[a-z]{3}$/i.test(product.currency_code) && product.is_published === true) {
+    result.offer = {price:product.price_cents / 100, currency:product.currency_code.toUpperCase(), minimum:product.pwyw === true};
+  }
+  return result;
 }
 
 async function readPreview(url, send, signal) {

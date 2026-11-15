@@ -1,0 +1,28 @@
+{
+  "id": "sv-textures",
+  "provider": "gumroad",
+  "url": "https://tomaskrajcovic.gumroad.com/l/ukuffg",
+  "categoryId": "blender-addons",
+  "visible": true,
+  "name": "SV Textures",
+  "seo": {
+    "enabled": true,
+    "slug": "sv-textures-blender-pbr-generator",
+    "heading": "SV Textures — PBR Creation and Editing for Blender",
+    "title": "SV Textures: Blender PBR Texture Generator & Editor",
+    "description": "Create seamless PBR textures in Blender with SV Textures. Balance lighting, generate and edit material maps, then export textures up to 4K from one workspace.",
+    "focusPhrase": "Blender PBR texture generator",
+    "image": "https://public-files.gumroad.com/cunsjelt9ivv5ym30w8n7kk7uu6s",
+    "imageAlt": "SV Textures add-on for PBR texture creation and editing in Blender",
+    "body": "SV Textures is a Blender PBR texture generator and editor that brings texture preparation, seamless tiling and material-map editing into one workspace. Start with a diffuse image or import an existing PBR set, then work on a preview plane or your selected model. Texture processing runs locally, with GPU acceleration.\n\nPrepare the source before generating your maps. Light Balance reduces broad lighting and color differences with adjustable radius and strength controls. The Seamless workflow lets you tune the seam width and compare the original, balanced and seamless versions. Tile Preview helps you inspect repetition before applying the material to a scene.\n\nBuild a material from your image using the SV Basic workflow to generate roughness, height and normal maps, or use the filter-based SV Legacy workflow. Generate textures up to 4K, derive ambient occlusion from height and choose a constant metallic value. Preview individual channels to inspect diffuse, roughness, metallic, height, normal, ambient occlusion or opacity independently.\n\nRefine the result inside Blender. Adjust contrast and gamma, tune five frequency bands with the Detail Mixer, and control normal strength and relief. Use the 2D editor and 3D preview to judge changes on the material. Channel-dependent painting tools include clone, smooth, smear and fill. You can also paint a diffuse texture in Blender before generating its PBR maps.\n\nExport the finished maps with automatic file naming. Choose PNG or TIFF at 8 or 16 bits, or JPEG at 8 bits, and select OpenGL or DirectX normal-map conventions for your destination workflow. If you already have a material set, import its maps together or bring in individual channels for further editing.",
+    "features": "Light Balance with radius and strength controls and live GPU preview\nSeamless tiling with adjustable seam width and Tile Preview\nPBR map generation up to 4K using SV Basic or the filter-based SV Legacy workflow\nHeight-derived ambient occlusion and a configurable constant metallic value\nPer-channel contrast and gamma, a five-band Detail Mixer and normal strength controls\n2D texture editing and 3D material preview on a plane or selected model\nChannel-dependent clone, smooth, smear and fill painting tools\nImport complete PBR sets or individual texture channels\nExport PNG and TIFF at 8 or 16 bits, or JPEG at 8 bits\nOpenGL and DirectX normal-map export with automatic naming",
+    "compatibility": "The current Gumroad listing specifies Blender 5.0.0–5.2.2 LTS on Windows x64.\n\nThe SV Basic workflow requires a GPU compatible with DirectML. Check the current requirements on Gumroad before purchasing.",
+    "faqs": [
+      {"question": "Can I generate PBR maps from a single diffuse texture?", "answer": "Yes. Start with a diffuse image, prepare it with Light Balance and Seamless, then generate roughness, height and normal maps using SV Basic or the filter-based SV Legacy workflow. Ambient occlusion can be derived from the height map."},
+      {"question": "Can SV Textures make a texture seamless?", "answer": "Yes. The Seamless workflow includes adjustable seam width, comparisons between the original, balanced and seamless image, and Tile Preview to inspect repetition."},
+      {"question": "Can I edit a PBR material that I already have?", "answer": "Yes. Import a complete PBR set or individual channels, then adjust the maps in the 2D editor while checking the material in the 3D preview."},
+      {"question": "Which file formats can I export?", "answer": "SV Textures exports PNG and TIFF at 8 or 16 bits and JPEG at 8 bits. Normal maps can use OpenGL or DirectX conventions, with automatic naming for the exported maps."},
+      {"question": "Does texture processing run locally?", "answer": "Yes. Texture processing runs locally. The SV Basic workflow uses GPU acceleration and requires DirectML-compatible hardware on Windows x64."}
+    ]
+  }
+}

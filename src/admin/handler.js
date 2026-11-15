@@ -116,7 +116,7 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
       // A JSON string is escaped inside the transport envelope; the research validator
       // independently enforces the 500,000-byte source limit after decoding.
       if(req.method==='POST'){
-        try{body=await readJson(req,action==='crm-tools-call'||action===MCP_ACTION?MAX_IMPORT_TOOL_REQUEST_BYTES:READ_TOOL_ACTIONS.includes(action)||OAUTH_ADMIN_ACTIONS.includes(action)?MAX_TOOL_REQUEST_BYTES:action.startsWith('crm-research-')?3_100_000:action.startsWith('crm-import-')?500_000:action==='crm-project-brief-save'?310_000:['site-content-save','site-gallery-save'].includes(action)?300_000:100_000);}
+        try{body=await readJson(req,action==='crm-tools-call'||action===MCP_ACTION?MAX_IMPORT_TOOL_REQUEST_BYTES:READ_TOOL_ACTIONS.includes(action)||OAUTH_ADMIN_ACTIONS.includes(action)?MAX_TOOL_REQUEST_BYTES:action==='shop-save'?5_000_000:action.startsWith('crm-research-')?3_100_000:action.startsWith('crm-import-')?500_000:action==='crm-project-brief-save'?310_000:['site-content-save','site-gallery-save'].includes(action)?300_000:100_000);}
         catch(error){if(action===MCP_ACTION&&error instanceof SyntaxError)throw Object.assign(fail(400,'Invalid JSON.'),{rpcCode:-32700});
           if(OAUTH_ADMIN_ACTIONS.includes(action)&&error instanceof SyntaxError)throw fail(400,'Invalid JSON.');
           if(READ_TOOL_ACTIONS.includes(action)&&error instanceof SyntaxError)throw fail(400,'Tool request must be valid JSON.');throw error;}
@@ -154,6 +154,11 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
         return;
       }
       if(plannerActions.includes(action)){if(req.method!==(action==='planner-list'?'GET':'POST'))throw fail(405,'Use the required planner method.');reply(200,await handlePlanner({action,body,url,user,token,call}));return;}
+      if(action==='shop-metadata'){
+        const {gumroadUrl}=await import('../../public/shop/url.js');
+        const result=await shopPreviews({products:[{url:gumroadUrl(body.url)}]});
+        reply(200,result.products[0].preview);return;
+      }
       if(shopActions.includes(action)){const catalog=await handleShop({action,body,call});reply(200,action==='shop-preview'?await shopPreviews(catalog):catalog);return;}
       if(fileActions.includes(action)){reply(200,await handleClientFiles({action,body,url:new URL(req.url,requestOrigin(req,env)),user,token,call}));return;}
       if(OAUTH_ADMIN_ACTIONS.includes(action)){reply(200,await handleOAuthAdmin({action,body,url,req,res,user,token,env,call}));return;}

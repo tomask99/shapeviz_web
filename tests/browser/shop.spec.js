@@ -59,7 +59,7 @@ test('Catalog has four desktop columns, sidebar counts and accessible mobile fil
   await expect(page.locator('.shop-result-count')).toHaveText('6 products');
   await page.getByRole('button',{name:'Blender Add-ons',exact:true}).click();await expect(page.locator('.shop-product:visible')).toHaveCount(2);await expect(page.locator('.shop-result-count')).toHaveText('2 products');
   await page.getByRole('button',{name:'3ds Max Scripts',exact:true}).click();await expect(page.locator('.shop-empty')).toBeVisible();
-  await page.getByRole('button',{name:'View all products',exact:true}).click();await expect(page.locator('.shop-product:visible')).toHaveCount(6);expect(reads).toBe(1);
+  await page.getByRole('button',{name:'View all products',exact:true}).click();await expect(page.locator('.shop-product:visible')).toHaveCount(6);expect(reads).toBe(0); // Server-rendered catalog needs no duplicate API request.
   await page.setViewportSize({width:390,height:844});
   const toggle=page.locator('.shop-filter-toggle');await expect(toggle).toHaveAttribute('aria-expanded','false');await expect(page.locator('.shop-filters')).toBeHidden();
   await toggle.click();await expect(toggle).toHaveAttribute('aria-expanded','true');await page.getByRole('button',{name:'3D Models',exact:true}).click();await expect(page.locator('.shop-product:visible')).toHaveCount(4);

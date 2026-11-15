@@ -1,6 +1,7 @@
 import {t,productCount} from '../i18n/runtime.js';
 import {gumroadUrl} from './url.js';
 import {svgIcon} from '../ui/icons.js';
+import {productPagePath} from './seo-fields.js';
 let scriptRequested = false;
 export function loadGumroad() {
   if (scriptRequested) return;
@@ -61,14 +62,15 @@ export function mountCatalog(root, data) {
   const cards=[];
   for(const product of data.products){
     const article=document.createElement('article');article.className='shop-product';article.dataset.category=product.categoryId;
-    const title=product.preview?.title || gumroadUrl(product.url).split('/').at(-1);
-    const button=document.createElement('button');button.type='button';button.className='shop-product-card';button.setAttribute('aria-haspopup','dialog');
+    const title=product.seo?.heading || product.preview?.title || gumroadUrl(product.url).split('/').at(-1), pagePath=productPagePath(product);
+    const button=document.createElement(pagePath?'a':'button');button.className='shop-product-card';
+    if(pagePath)button.href=pagePath;else{button.type='button';button.setAttribute('aria-haspopup','dialog');}
     const cover=document.createElement('span');cover.className='shop-product-cover';
     const missing=document.createElement('span');missing.className='shop-image-missing';missing.innerHTML=`${svgIcon('overview')}<span>${t("Preview unavailable")}</span>`;missing.setAttribute('aria-hidden','true');cover.append(missing);
-    if(product.preview?.image){const img=document.createElement('img');img.src=product.preview.image;img.alt='';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';missing.hidden=true;img.onerror=()=>{img.hidden=true;missing.hidden=false;};cover.append(img);}
+    if(product.seo?.image||product.preview?.image){const img=document.createElement('img');img.src=product.seo?.image||product.preview.image;img.alt=product.seo?.imageAlt||'';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';missing.hidden=true;img.onerror=()=>{img.hidden=true;missing.hidden=false;};cover.append(img);}
     const name=document.createElement('span');name.className='shop-product-title';name.textContent=title;name.title=title;
     button.append(cover,name);
-    button.onclick=()=>{returnFocus=button;detail.querySelector('h2').textContent=title;clearDetail?.();clearDetail=mountProduct(detail.querySelector('.shop-detail-content'),product);detail.showModal();document.body.classList.add('modal-open');};
+    if(!pagePath)button.onclick=()=>{returnFocus=button;detail.querySelector('h2').textContent=title;clearDetail?.();clearDetail=mountProduct(detail.querySelector('.shop-detail-content'),product);detail.showModal();document.body.classList.add('modal-open');};
     article.append(button);list.append(article);cards.push(article);
   }
   const buttons=[];

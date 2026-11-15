@@ -8,6 +8,9 @@ import {services as serviceDefinitions, servicePath, findService} from './servic
 import {renderServicePage} from './service-page.js';
 import {loadPublicContent, renderCompanies} from './content.js';
 import {renderGallery} from './gallery.js';
+import {loadShopCatalog} from '../shop/handler.js';
+import {createProductPreviews} from '../shop/previews.js';
+import {renderCatalogFallback} from '../shop/pages.js';
 
 export function renderPublicPage(source, locale, {shop = false, explicit = false, interest = null, companies = null, gallery = null} = {}) {
   const document = parse(source, {scriptingEnabled: false});
@@ -96,6 +99,7 @@ export function renderPublicPage(source, locale, {shop = false, explicit = false
 }
 
 export function createPublicPageHandler({publicDir = path.resolve('public'), env = process.env, send = fetch} = {}) {
+  const previews=createProductPreviews({send});
   return async (req, res) => {
     if (!['GET', 'HEAD'].includes(req.method)) {res.writeHead(405, {Allow: 'GET, HEAD'}).end(); return;}
     const url = new URL(req.url, 'http://localhost');
@@ -112,10 +116,21 @@ export function createPublicPageHandler({publicDir = path.resolve('public'), env
     }
     try {
       const content = service || shop ? null : await loadPublicContent({env, send});
-      const body = service ? renderServicePage(service, locale) : renderPublicPage(await readFile(path.join(publicDir, shop ? 'shop/index.html' : 'index.html'), 'utf8'), locale, {shop, explicit: !!explicit, interest: url.searchParams.get('interest'), ...content});
+      const catalog=shop&&url.searchParams.get('preview')!=='1'?await previews(await loadShopCatalog({env,send})):null;
+      let body = service ? renderServicePage(service, locale) : renderPublicPage(await readFile(path.join(publicDir, shop ? 'shop/index.html' : 'index.html'), 'utf8'), locale, {shop, explicit: !!explicit, interest: url.searchParams.get('interest'), ...content});
+      if(catalog?.launched){
+        body=body.replace(/<section id="shop-catalog"[^>]*><\/section>/,()=>`<section id="shop-catalog" aria-label="Shop products">${renderCatalogFallback(catalog)}</section>`)
+          .replace('id="shop-coming"','hidden id="shop-coming"')
+          .replace(/<span class="shop-nav" data-shop-nav[^>]*>[\s\S]*?<\/span>/,`<a class="shop-nav" data-shop-nav href="/${locale}/shop">Shop</a>`)
+          .replace(/(<span[^>]*id="shop-state-label"[^>]*>)[^<]*/,`$1${translate('MADE FOR CREATORS',locale)}`)
+          .replace(/(id="shop-checkout-note"[^>]*?) hidden=""/,'$1')
+          .replace(/<noscript>[\s\S]*?<\/noscript>/,'')
+          .replace('</body>',()=>`<script id="shop-initial-data" type="application/json">${JSON.stringify(catalog).replace(/</g,'\\u003c')}</script></body>`);
+        if(env.VERCEL_ENV!=='preview')body=body.replace('content="noindex,nofollow"','content="index,follow,max-image-preview:large"');
+      }
       const headers = {'Content-Type': 'text/html; charset=utf-8', 'Content-Language': locale, 'Cache-Control': 'private, no-store', Vary: 'Cookie, Accept-Language, X-Vercel-IP-Country', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin'};
       if (explicit) headers['Set-Cookie'] = `sv_language=${locale}; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly${env.VERCEL === '1' ? '; Secure' : ''}`;
-      if (shop || env.VERCEL_ENV === 'preview') headers['X-Robots-Tag'] = 'noindex, nofollow';
+      if ((shop&&!catalog?.launched) || env.VERCEL_ENV === 'preview') headers['X-Robots-Tag'] = 'noindex, nofollow';
       headers['Content-Security-Policy'] = shop
         ? "default-src 'self'; script-src 'self' https://gumroad.com https://assets.gumroad.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://public-files.gumroad.com https://assets.gumroad.com; media-src 'self'; connect-src 'self'; frame-src https://gumroad.com https://*.gumroad.com; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
         : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";

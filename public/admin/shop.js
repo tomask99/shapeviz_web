@@ -1,12 +1,13 @@
 ﻿import {svgIcon} from '../ui/icons.js';
 import {gumroadUrl,productKey} from '../shop/url.js';
 import {mountProduct} from '../shop/embed.js';
+import {mountShopSeo} from './shop-seo.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function mountShopAdmin({root,api,notify}) {
   let catalog,disposed=false,pending=false,editing=null,cleanupPreview;
   const dialog=document.createElement('dialog');dialog.className='shop-editor';dialog.setAttribute('aria-labelledby','shop-editor-title');
   dialog.innerHTML=`<form><div class="dialog-head"><div><p class="eyebrow">SHOP / GUMROAD</p><h2 id="shop-editor-title">Add product.</h2></div><button type="button" data-close aria-label="Close product editor">${svgIcon('close')}</button></div>
-    <p class="fine">Manage images, prices, descriptions and downloads on Gumroad. Add only the product link here.</p>
+    <p class="fine">Manage checkout and downloads on Gumroad. Add your product link and create its searchable page below.</p>
     <label>Gumroad product URL<input name="url" type="url" required maxlength="512" placeholder="https://creator.gumroad.com/l/product"></label>
     <div class="two-columns"><label>Category<select name="categoryId" required></select></label><label>Internal name (optional)<input name="name" maxlength="100" placeholder="Only shown in admin"></label></div>
     <label class="check"><input type="checkbox" name="visible">Visible in catalog</label><p class="fine">Hidden items are drafts. Visible items stay private until the shop is launched.</p>
@@ -14,10 +15,11 @@ export function mountShopAdmin({root,api,notify}) {
     <p data-editor-error role="alert"></p><div data-product-preview></div></form>`;
   document.body.append(dialog);
   const form=dialog.querySelector('form'),editorError=dialog.querySelector('[data-editor-error]');
+  const seoEditor=mountShopSeo(form,api);
   const error=message=>{const el=root.querySelector('[data-shop-error]');if(el)el.textContent=message;notify(message);};
   async function task(fn){
     if(pending)return;pending=true;dialog.dataset.dismissPending='true';
-    const controls=[...root.querySelectorAll('button,input,select'),...dialog.querySelectorAll('button,input,select')].map(el=>[el,el.disabled]);controls.forEach(([el])=>el.disabled=true);
+    const controls=[...root.querySelectorAll('button,input,select,textarea'),...dialog.querySelectorAll('button,input,select,textarea')].map(el=>[el,el.disabled]);controls.forEach(([el])=>el.disabled=true);
     try{await fn();}catch(e){if(!disposed){editorError.textContent=e.message;error(e.message);}}
     finally{pending=false;delete dialog.dataset.dismissPending;controls.forEach(([el,disabled])=>el.disabled=disabled);}
   }
@@ -27,7 +29,7 @@ export function mountShopAdmin({root,api,notify}) {
     dialog.querySelector('h2').textContent=product?'Edit product.':'Add product.';
     form.elements.categoryId.innerHTML=catalog.categories.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
     if(product){form.elements.url.value=product.url;form.elements.name.value=product.name;form.elements.categoryId.value=product.categoryId;form.elements.visible.checked=product.visible;}
-    dialog.showModal();if(product)preview();
+    seoEditor.open(product);dialog.showModal();
   }
   function preview(){try{const url=gumroadUrl(form.elements.url.value);cleanupPreview?.();cleanupPreview=mountProduct(dialog.querySelector('[data-product-preview]'),{url});editorError.textContent='';}catch(e){editorError.textContent=e.message;}}
   dialog.querySelector('[data-close]').onclick=()=>dialog.close();dialog.querySelector('[data-preview]').onclick=preview;
@@ -37,7 +39,7 @@ export function mountShopAdmin({root,api,notify}) {
   form.onsubmit=event=>{event.preventDefault();task(async()=>{
     const url=gumroadUrl(form.elements.url.value);
     if(catalog.products.some(p=>p.id!==editing?.id&&productKey(p.url)===productKey(url)))throw new Error('This Gumroad product is already in the catalog. Edit the existing item.');
-    const next=structuredClone(catalog),product={id:editing?.id||crypto.randomUUID(),url,categoryId:form.elements.categoryId.value,visible:form.elements.visible.checked,name:form.elements.name.value};
+    const next=structuredClone(catalog),product={id:editing?.id||crypto.randomUUID(),url,categoryId:form.elements.categoryId.value,visible:form.elements.visible.checked,name:form.elements.name.value,seo:seoEditor.value()};
     if(editing)next.products[next.products.findIndex(p=>p.id===editing.id)]=product;else next.products.push(product);
     await save(next);if(!disposed)dialog.close();
   });};
