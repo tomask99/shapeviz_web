@@ -3,6 +3,7 @@ import {createProductPreviews} from './previews.js';
 import {SITE_ORIGIN} from '../website/seo.js';
 import {productPagePath} from '../../public/shop/seo-fields.js';
 import {svgIcon} from '../../public/ui/icons.js';
+import {renderProductGallery} from './gallery.js';
 export const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const json=value=>JSON.stringify(value).replace(/</g,'\\u003c');
 const paragraphs=value=>String(value||'').split(/\n\s*\n/).filter(Boolean).map(p=>`<p>${escapeHtml(p).replace(/\n/g,'<br>')}</p>`).join('');
@@ -20,10 +21,14 @@ export function renderProductPage(product,catalog,{noindex=false}={}) {
     {'@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Shop',item:SITE_ORIGIN+'/en/shop'},{'@type':'ListItem',position:2,name:s.heading,item:canonical}]}
   ]};
   const related=catalog.products.filter(p=>p.id!==product.id&&productPagePath(p));
+  const gallery=s.gallery||[];
+  const images=[...new Set([image,...gallery.map(item=>item.full)].filter(Boolean))];
+  if(images.length)structured['@graph'][0].image=images;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(s.title)}</title><meta name="description" content="${escapeHtml(s.description)}"><meta name="robots" content="${noindex?'noindex,nofollow':'index,follow,max-image-preview:large'}"><link rel="canonical" href="${canonical}"><meta property="og:type" content="product"><meta property="og:site_name" content="Shapeviz"><meta property="og:locale" content="en_US"><meta property="og:url" content="${canonical}"><meta property="og:title" content="${escapeHtml(s.title)}"><meta property="og:description" content="${escapeHtml(s.description)}"><meta name="twitter:card" content="summary_large_image">${image?`<meta property="og:image" content="${escapeHtml(image)}"><meta property="og:image:alt" content="${escapeHtml(s.imageAlt||s.heading)}">`:''}<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/shop/product.css"><script type="application/ld+json">${json(structured)}</script></head>
     <body class="product-page"><a class="skip-link" href="#product">Skip to content</a><header class="product-header section-shell"><a href="/en" aria-label="Shapeviz home"><img src="/media/shapeviz-logo.webp" alt="Shapeviz" width="180" height="38"></a><nav aria-label="Main navigation"><a href="/en/shop">All products</a><a href="/en#contact">Contact</a></nav></header>
     <main id="product" class="section-shell"><nav class="product-breadcrumb" aria-label="Breadcrumb"><a href="/en/shop">Shop</a><span>/</span><span>${escapeHtml(catalog.categories.find(c=>c.id===product.categoryId)?.name||'Products')}</span></nav>
     <section class="product-hero"><div><p class="micro accent">SHAPEVIZ / CREATOR TOOLS</p><h1>${escapeHtml(s.heading)}</h1><p class="product-summary">${escapeHtml(s.description)}</p>${price?`<p class="product-price">${offer.minimum?'From ':''}${escapeHtml(price)} <small>on Gumroad</small></p>`:''}<a class="product-buy" href="${escapeHtml(product.url)}" rel="noopener">Get it on Gumroad ${svgIcon('arrowUpRight')}</a><p class="product-note">Secure checkout and downloads on Gumroad. Final price and taxes are shown at checkout.</p></div>${image?`<img class="product-cover" src="${escapeHtml(image)}" alt="${escapeHtml(s.imageAlt||s.heading)}" fetchpriority="high" decoding="async">`:''}</section>
+    ${renderProductGallery(gallery)}${gallery.length?'<script type="module" src="/shop/product-gallery.js"></script>':''}
     <div class="product-content"><section aria-labelledby="about-product"><p class="micro accent">THE WORKFLOW</p><h2 id="about-product">About ${escapeHtml(s.heading)}</h2>${paragraphs(s.body)}</section>
     ${s.features?`<section><h2>Key features</h2><ul class="product-features">${s.features.split('\n').filter(line=>line.trim()).map(line=>`<li>${escapeHtml(line)}</li>`).join('')}</ul></section>`:''}
     ${s.compatibility?`<section><h2>Compatibility &amp; requirements</h2>${paragraphs(s.compatibility)}</section>`:''}
@@ -50,7 +55,7 @@ export function createProductPageHandler({env=process.env,send=fetch}={}) {
       if(url.pathname.endsWith('/')){res.writeHead(308,{Location:productPagePath(product)+url.search}).end();return;}
       const decorated=await previews({products:[product]});
       const noindex=env.VERCEL_ENV==='preview';
-      res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Language':'en','X-Robots-Tag':noindex?'noindex, nofollow':'index, follow, max-image-preview:large','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https://public-files.gumroad.com https://assets.gumroad.com; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"}).end(req.method==='HEAD'?undefined:renderProductPage(decorated.products[0],catalog,{noindex}));
+      res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Language':'en','X-Robots-Tag':noindex?'noindex, nofollow':'index, follow, max-image-preview:large','Content-Security-Policy':`default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https://public-files.gumroad.com https://assets.gumroad.com ${env.SUPABASE_URL ? new URL(env.SUPABASE_URL).origin : ''}; base-uri 'self'; frame-ancestors 'none'; form-action 'self'`}).end(req.method==='HEAD'?undefined:renderProductPage(decorated.products[0],catalog,{noindex}));
     }catch{res.writeHead(503,{'X-Robots-Tag':'noindex','Retry-After':'60'}).end(req.method==='HEAD'?undefined:'Product unavailable. Please try again.');}
   };
 }

@@ -11,6 +11,7 @@ export async function shopFixture({livePreviews=false}={}){
   if(u.hostname==='gumroad.com'||u.hostname.endsWith('.gumroad.com'))return livePreviews?fetch(input,options):new Response('<meta property="og:title" content="Sample product"><meta property="og:image" content="https://public-files.gumroad.com/test-preview">',{headers:{'Content-Type':'text/html'}});
   if(u.pathname==='/auth/v1/user')return options.headers.Authorization==='Bearer owner'?Response.json({id:'11111111-1111-4111-8111-111111111111',email:'owner@example.test'}):options.headers.Authorization==='Bearer visitor'?Response.json({id:'visitor'}):Response.json({error:'Denied'},{status:401});
   if(u.pathname==='/rest/v1/presentation_admins')return Response.json(u.searchParams.get('user_id')==='eq.11111111-1111-4111-8111-111111111111'?[{role:'owner'}]:[]);
+  if(u.pathname.startsWith('/storage/v1/object/upload/sign/site-gallery/'))return Response.json({url:u.pathname.replace('/storage/v1','')+'?token=test'});
   if(u.pathname==='/rest/v1/shop_catalog'){
    if(options.method==='PATCH'){
     const version=Number(u.searchParams.get('version').slice(3));

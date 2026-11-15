@@ -1,5 +1,5 @@
 // Reorder the existing nodes so pointer capture and keyboard focus survive a move.
-export function gallerySort({grid, move, changed, announce, disabled}) {
+export function gallerySort({grid, move, changed, announce, disabled, scrollContainer = null, ghostRoot = document.body}) {
   let drag = null;
   let frame = 0;
   const settling = new Set();
@@ -71,9 +71,9 @@ export function gallerySort({grid, move, changed, announce, disabled}) {
     let speed = 0;
     if (y < edge && y < drag.startY - 12) speed = -Math.min(1, (edge - y) / edge);
     if (y > innerHeight - edge && y > drag.startY + 12) speed = Math.min(1, (y - innerHeight + edge) / edge);
-    if (speed) window.scrollBy({top:speed * elapsed * .6, behavior:'instant'});
+    if (speed) (scrollContainer || window).scrollBy({top:speed * elapsed * .6, behavior:'instant'});
     const pageX = x + window.scrollX;
-    const pageY = y + window.scrollY;
+    const pageY = y + window.scrollY + (scrollContainer ? scrollContainer.scrollTop - drag.scrollTop : 0);
     // Hit-test the original slots, independent of cards animating across the pointer.
     // Using their immutable indices also prevents a stationary pointer from sorting twice.
     const target = drag.slots.find(slot => {
@@ -98,6 +98,7 @@ export function gallerySort({grid, move, changed, announce, disabled}) {
     const gridRect = grid.getBoundingClientRect();
     const slots = [...grid.children].map((node, index) => ({index, left:gridRect.left + window.scrollX + node.offsetLeft, top:gridRect.top + window.scrollY + node.offsetTop, width:node.offsetWidth, height:node.offsetHeight}));
     drag = {card, handle, pointerId:event.pointerId, pointerActive:true, x:event.clientX, y:event.clientY, startX:event.clientX, startY:event.clientY, offsetX:event.clientX - rect.left, offsetY:event.clientY - rect.top, order:[...grid.children].map(node => node.dataset.id), slots, targetIndex:[...grid.children].indexOf(card), lastTime:performance.now(), active:false};
+    drag.scrollTop = scrollContainer?.scrollTop || 0;
     handle.setPointerCapture(event.pointerId);
   };
   const pointerMove = event => {
@@ -113,7 +114,7 @@ export function gallerySort({grid, move, changed, announce, disabled}) {
       drag.ghost.inert = true;
       drag.ghost.style.width = `${rect.width}px`;
       drag.ghost.style.height = `${rect.height}px`;
-      document.body.append(drag.ghost);
+      ghostRoot.append(drag.ghost);
       drag.card.classList.add('is-moving');
       drag.handle.setAttribute('aria-pressed', 'true');
       grid.classList.add('is-sorting');

@@ -1,10 +1,14 @@
 import {seoFields} from '../../public/shop/seo-fields.js';
+import {validateGallery} from '../website/gallery.js';
 
 const fail = message => Object.assign(new Error(message), {status:400});
-export function validateProductSeo(value) {
+export function validateProductSeo(value, env = {}) {
   if (value == null) return undefined;
   if (typeof value !== 'object' || Array.isArray(value) || typeof value.enabled !== 'boolean') throw fail('Check the product page settings.');
   const seo = {enabled:value.enabled};
+  if (!Array.isArray(value.gallery ?? []) || (value.gallery?.length ?? 0) > 24) throw fail('Use up to 24 product gallery images.');
+  seo.gallery = validateGallery(value.gallery ?? [], env);
+  if (seo.gallery.some(item => item.type !== 'image')) throw fail('Use images in the product gallery.');
   for (const field of seoFields) {
     const text = value[field.name] ?? '';
     if (typeof text !== 'string' || text.length > field.max) throw fail(`${field.label} must contain at most ${field.max} characters.`);

@@ -1,5 +1,7 @@
 # Product SEO
 
+Each product editor includes **Product gallery**. Upload up to 24 JPG, PNG, WebP or AVIF images (25 MB each). Images are optimized to WebP and uploaded through the existing owner-only signed upload flow. Drag images to reorder them, edit descriptions and captions, or remove them, then **Save product**. The public page displays a responsive gallery with a keyboard-accessible image viewer. Empty galleries are omitted. Removing an image from a product does not delete the shared storage object.
+
 In **Admin > Shop > Add product / Edit**, add the Gumroad URL and use **Load name and cover from Gumroad**. This fills empty name, title, address and cover fields. Write the page description, features, compatibility and optional questions in English. The target search phrase is a private writing aid, not a meta-keywords tag.
 
 Enable **Publish product page**, mark the product **Visible in catalog**, and save. The shop must also be live. Publishing requires a name, unique lowercase address, SEO title, meta description and main description. The address is locked while the page is published to protect existing links. Keep it unchanged when temporarily unpublishing a page.

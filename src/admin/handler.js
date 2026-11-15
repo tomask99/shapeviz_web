@@ -159,7 +159,7 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
         const result=await shopPreviews({products:[{url:gumroadUrl(body.url)}]});
         reply(200,result.products[0].preview);return;
       }
-      if(shopActions.includes(action)){const catalog=await handleShop({action,body,call});reply(200,action==='shop-preview'?await shopPreviews(catalog):catalog);return;}
+      if(shopActions.includes(action)){const catalog=await handleShop({action,body,call,env});reply(200,action==='shop-preview'?await shopPreviews(catalog):catalog);return;}
       if(fileActions.includes(action)){reply(200,await handleClientFiles({action,body,url:new URL(req.url,requestOrigin(req,env)),user,token,call}));return;}
       if(OAUTH_ADMIN_ACTIONS.includes(action)){reply(200,await handleOAuthAdmin({action,body,url,req,res,user,token,env,call}));return;}
       if(action===MCP_ACTION){await handleReadMcp({req,res,body,url,user,token,scopes:[...ADMIN_READ_SCOPES],call,audit:toolAudit});return;}
