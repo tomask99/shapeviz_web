@@ -13,6 +13,12 @@ export function installStudioShell(){
  const storageLabel=document.createElement('span');storageLabel.className='eyebrow crm-nav-label';storageLabel.textContent='Cloud storage';
  const storage=nav.querySelector('#nav-cloud-storage');storage.innerHTML=svgIcon('cloud')+'<span>Cloud storage</span>';nav.append(storageLabel,storage);
  const shop=nav.querySelector('#nav-shop');shop.innerHTML=svgIcon('folder')+'<span>Shop</span>';const shopLabel=document.createElement('span');shopLabel.className='eyebrow crm-nav-label';shopLabel.textContent='Shop';nav.append(shopLabel,shop);
+ const siteEditing = nav.querySelector('#nav-site-editing');
+ siteEditing.innerHTML = svgIcon('edit') + '<span>Site Editing</span>';
+ const websiteLabel = document.createElement('span');
+ websiteLabel.className = 'eyebrow crm-nav-label';
+ websiteLabel.textContent = 'Website';
+ nav.append(websiteLabel, siteEditing);
  const search=nav.querySelector('button.secondary');
  if(search){search.className='quiet studio-search';search.setAttribute('aria-label','Search / Ctrl+K');search.innerHTML=svgIcon('search')+'<span>Search workspace</span><kbd>Ctrl K</kbd>';document.querySelector('.workspace>header .eyebrow').replaceWith(search);}
  const account=document.querySelector('.aside-bottom'),details=document.createElement('details');details.className='studio-account';

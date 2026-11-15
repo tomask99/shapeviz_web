@@ -6,8 +6,9 @@ import {preferredLanguage, supportedLanguages} from './language.js';
 import {seoMarkup} from './seo.js';
 import {services as serviceDefinitions, servicePath, findService} from './services.js';
 import {renderServicePage} from './service-page.js';
+import {loadPublicCompanies, renderCompanies} from './content.js';
 
-export function renderPublicPage(source, locale, {shop = false, explicit = false, interest = null} = {}) {
+export function renderPublicPage(source, locale, {shop = false, explicit = false, interest = null, companies = null} = {}) {
   const document = parse(source, {scriptingEnabled: false});
   const suffix = shop ? '/shop' : '';
   const prefix = explicit || locale === 'sk' ? '/' + locale : '';
@@ -34,6 +35,17 @@ export function renderPublicPage(source, locale, {shop = false, explicit = false
     if (node.content) walk(node.content);
   }
   walk(document);
+  if (!shop && companies !== null) {
+    function replaceCompanies(node) {
+      if (node.attrs?.some(attr => attr.name === 'class' && attr.value.split(/\s+/).includes('client-list'))) {
+        node.childNodes = parseFragment(renderCompanies(companies, locale)).childNodes;
+        for (const child of node.childNodes) child.parentNode = node;
+        return;
+      }
+      node.childNodes?.forEach(replaceCompanies);
+    }
+    replaceCompanies(document);
+  }
   const html = document.childNodes.find(n => n.tagName === 'html');
   const head = html.childNodes.find(n => n.tagName === 'head');
   const text = node => node?.nodeName === '#text' ? node.value : (node?.childNodes || []).map(text).join('');
@@ -62,7 +74,7 @@ export function renderPublicPage(source, locale, {shop = false, explicit = false
   return serialize(document);
 }
 
-export function createPublicPageHandler({publicDir = path.resolve('public'), env = process.env} = {}) {
+export function createPublicPageHandler({publicDir = path.resolve('public'), env = process.env, send = fetch} = {}) {
   return async (req, res) => {
     if (!['GET', 'HEAD'].includes(req.method)) {res.writeHead(405, {Allow: 'GET, HEAD'}).end(); return;}
     const url = new URL(req.url, 'http://localhost');
@@ -78,7 +90,8 @@ export function createPublicPageHandler({publicDir = path.resolve('public'), env
       res.writeHead(404, {'Content-Type':'text/plain; charset=utf-8','X-Robots-Tag':'noindex','Cache-Control':'no-store'}).end(req.method==='HEAD'?undefined:'Not found');return;
     }
     try {
-      const body = service ? renderServicePage(service, locale) : renderPublicPage(await readFile(path.join(publicDir, shop ? 'shop/index.html' : 'index.html'), 'utf8'), locale, {shop, explicit: !!explicit, interest: url.searchParams.get('interest')});
+      const companies = service || shop ? null : await loadPublicCompanies({env, send});
+      const body = service ? renderServicePage(service, locale) : renderPublicPage(await readFile(path.join(publicDir, shop ? 'shop/index.html' : 'index.html'), 'utf8'), locale, {shop, explicit: !!explicit, interest: url.searchParams.get('interest'), companies});
       const headers = {'Content-Type': 'text/html; charset=utf-8', 'Content-Language': locale, 'Cache-Control': 'private, no-store', Vary: 'Cookie, Accept-Language, X-Vercel-IP-Country', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin'};
       if (explicit) headers['Set-Cookie'] = `sv_language=${locale}; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly${env.VERCEL === '1' ? '; Secure' : ''}`;
       if (shop || env.VERCEL_ENV === 'preview') headers['X-Robots-Tag'] = 'noindex, nofollow';

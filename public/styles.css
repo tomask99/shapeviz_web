@@ -194,9 +194,12 @@ figcaption .accent { margin-inline: 6px; }
 .client-list { list-style: none; margin: 0; padding: 0; }
 .client-list li { display: grid; grid-template-columns: 55px 1fr 70px; align-items: center; gap: 20px; padding: 27px 0 23px; border-top: 1px solid var(--line); }
 .client-list li:last-child { border-bottom: 1px solid var(--line); }
-.client-name { font-size: clamp(52px, 8.4vw, 144px); font-weight: 700; line-height: .96; letter-spacing: -.065em; overflow-wrap: normal; }
+.client-name { min-width: 0; font-size: clamp(52px, 8.4vw, 144px); font-weight: 700; line-height: .96; letter-spacing: -.065em; overflow-wrap: anywhere; }
 .client-number { color: var(--muted); font-size: 10px; align-self: start; padding-top: 10px; }
 .client-mark { font-size: 45px; font-weight: 400; color: var(--accent); justify-self: end; opacity: .8; }
+.client-list a.client-mark { display: inline-flex; align-items: center; justify-content: flex-end; min-width: 44px; min-height: 44px; }
+.client-list a.client-mark:hover, .client-list a.client-mark:focus-visible { opacity: 1; }
+.client-list a.client-mark:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
 .collaboration-note { font-size: 12px; color: var(--muted); line-height: 1.6; margin-top: 25px; }
 
 .contact { padding-bottom: 110px; }

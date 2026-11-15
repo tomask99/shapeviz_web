@@ -57,6 +57,8 @@
     {"source": "/shop", "destination": "/api/site-events?route=page&page=shop"},
     {"source": "/shop/", "destination": "/api/site-events?route=page&page=shop"},
     {"source": "/admin/shop", "destination": "/admin/index.html"},
+    {"source": "/admin/site-editing", "destination": "/admin/index.html"},
+    {"source": "/admin/site-editing/", "destination": "/admin/index.html"},
     {"source": "/admin/cloud-storage", "destination": "/admin/index.html"},
     {"source": "/admin/projects", "destination": "/admin/index.html"},
     {"source": "/admin/time-tracker", "destination": "/admin/index.html"},
