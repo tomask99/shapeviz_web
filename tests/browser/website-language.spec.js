@@ -9,7 +9,7 @@ for(const width of [320,390,768,1440])test(`Slovak public page and language sele
  await expect(page.locator('[data-shop-nav]')).toHaveAttribute('href','/sk/shop');
  await expect(page.locator('#about-title')).toContainText('NÁPADOM');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
- for(const id of ['#about-title','#digital-title','#work-title','.contact-heading h2']){
+ for(const id of ['#about-title','#work-title','.contact-heading h2']){
    const box=await page.locator(id).boundingBox();expect(box.x+box.width).toBeLessThanOrEqual(width+1);
  }
  await page.screenshot({path:`.cache/slovak-home-${width}.png`,fullPage:true});

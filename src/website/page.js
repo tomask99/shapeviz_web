@@ -6,9 +6,10 @@ import {preferredLanguage, supportedLanguages} from './language.js';
 import {seoMarkup} from './seo.js';
 import {services as serviceDefinitions, servicePath, findService} from './services.js';
 import {renderServicePage} from './service-page.js';
-import {loadPublicCompanies, renderCompanies} from './content.js';
+import {loadPublicContent, renderCompanies} from './content.js';
+import {renderGallery} from './gallery.js';
 
-export function renderPublicPage(source, locale, {shop = false, explicit = false, interest = null, companies = null} = {}) {
+export function renderPublicPage(source, locale, {shop = false, explicit = false, interest = null, companies = null, gallery = null} = {}) {
   const document = parse(source, {scriptingEnabled: false});
   const suffix = shop ? '/shop' : '';
   const prefix = explicit || locale === 'sk' ? '/' + locale : '';
@@ -35,6 +36,26 @@ export function renderPublicPage(source, locale, {shop = false, explicit = false
     if (node.content) walk(node.content);
   }
   walk(document);
+  if (!shop && gallery !== null) {
+    function replaceGallery(node) {
+      const classes = node.attrs?.find(attr => attr.name === 'class')?.value.split(/\s+/) || [];
+      let markup;
+      if (classes.includes('gallery-grid')) markup = renderGallery(gallery, locale);
+      if (classes.includes('gallery-count')) {
+        const images = gallery.filter(item => item.type === 'image').length;
+        const films = gallery.length - images;
+        markup = `${String(images).padStart(2, '0')} ${locale === 'sk' ? 'OBRAZOV' : 'IMAGES'} / ${String(films).padStart(2, '0')} ${locale === 'sk' ? 'FILMOV' : 'FILMS'}`;
+      }
+      if (classes.includes('gallery-edition')) markup = `${translate('SELECTED WORKS', locale)} <span class="accent">/</span> ${gallery.length ? '01 &mdash; ' : ''}${String(gallery.length).padStart(2, '0')}`;
+      if (markup !== undefined) {
+        node.childNodes = parseFragment(markup).childNodes;
+        for (const child of node.childNodes) child.parentNode = node;
+        return;
+      }
+      node.childNodes?.forEach(replaceGallery);
+    }
+    replaceGallery(document);
+  }
   if (!shop && companies !== null) {
     function replaceCompanies(node) {
       if (node.attrs?.some(attr => attr.name === 'class' && attr.value.split(/\s+/).includes('client-list'))) {
@@ -90,14 +111,15 @@ export function createPublicPageHandler({publicDir = path.resolve('public'), env
       res.writeHead(404, {'Content-Type':'text/plain; charset=utf-8','X-Robots-Tag':'noindex','Cache-Control':'no-store'}).end(req.method==='HEAD'?undefined:'Not found');return;
     }
     try {
-      const companies = service || shop ? null : await loadPublicCompanies({env, send});
-      const body = service ? renderServicePage(service, locale) : renderPublicPage(await readFile(path.join(publicDir, shop ? 'shop/index.html' : 'index.html'), 'utf8'), locale, {shop, explicit: !!explicit, interest: url.searchParams.get('interest'), companies});
+      const content = service || shop ? null : await loadPublicContent({env, send});
+      const body = service ? renderServicePage(service, locale) : renderPublicPage(await readFile(path.join(publicDir, shop ? 'shop/index.html' : 'index.html'), 'utf8'), locale, {shop, explicit: !!explicit, interest: url.searchParams.get('interest'), ...content});
       const headers = {'Content-Type': 'text/html; charset=utf-8', 'Content-Language': locale, 'Cache-Control': 'private, no-store', Vary: 'Cookie, Accept-Language, X-Vercel-IP-Country', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin'};
       if (explicit) headers['Set-Cookie'] = `sv_language=${locale}; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly${env.VERCEL === '1' ? '; Secure' : ''}`;
       if (shop || env.VERCEL_ENV === 'preview') headers['X-Robots-Tag'] = 'noindex, nofollow';
       headers['Content-Security-Policy'] = shop
         ? "default-src 'self'; script-src 'self' https://gumroad.com https://assets.gumroad.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://public-files.gumroad.com https://assets.gumroad.com; media-src 'self'; connect-src 'self'; frame-src https://gumroad.com https://*.gumroad.com; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
         : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+      if (!shop && env.SUPABASE_URL) headers['Content-Security-Policy'] = headers['Content-Security-Policy'].replace("img-src 'self' data:;", "img-src 'self' data: " + new URL(env.SUPABASE_URL).origin + ";");
       res.writeHead(200, headers).end(req.method === 'HEAD' ? undefined : body);
     } catch {res.writeHead(500, {'Cache-Control': 'no-store'}).end('Page unavailable');}
   };

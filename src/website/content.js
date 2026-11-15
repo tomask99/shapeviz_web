@@ -1,5 +1,6 @@
 import {companyProjectUrl} from '../../public/site/company-url.js';
 import {svgIcon} from '../../public/ui/icons.js';
+import {validateGallery} from './gallery.js';
 
 const fail = (status, message) => Object.assign(new Error(message), {status});
 const conflict = () => fail(409, 'The company list changed in another window. Reload the saved list before saving again.');
@@ -46,16 +47,20 @@ export async function handleSiteContent({action, body, call}) {
   return saved[0];
 }
 
-export async function loadPublicCompanies({env, send}) {
+export async function loadPublicContent({env, send}) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) return null;
   try {
-    const response = await send(`${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/site_content?id=eq.1&select=companies`, {
+    const response = await send(`${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/site_content?id=eq.1&select=companies,gallery`, {
       headers: {apikey: env.SUPABASE_SECRET_KEY},
       signal: AbortSignal.timeout(5000)
     });
     if (!response.ok) return null;
     const rows = await response.json();
-    return rows?.[0] ? validateCompanies(rows[0].companies) : null;
+    if (!rows?.[0]) return null;
+    const companies = validateCompanies(rows[0].companies);
+    let gallery = null;
+    try { if (rows[0].gallery != null) gallery = validateGallery(rows[0].gallery, env); } catch { /* Keep the built-in gallery available. */ }
+    return {companies, gallery};
   } catch {
     // Keep the original public list available during a database outage.
     return null;
