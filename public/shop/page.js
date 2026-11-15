@@ -1,6 +1,7 @@
 import {t} from '../i18n/runtime.js';
 import {setShopNavigation} from './nav.js';
 import {mountCatalog} from './embed.js';
+import '../admin/cursor.js';
 const $=s=>document.querySelector(s), preview=new URLSearchParams(location.search).get('preview')==='1';
 let cleanup;
 let initialData=document.getElementById('shop-initial-data');

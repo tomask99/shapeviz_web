@@ -168,6 +168,7 @@ export const sk = {
   'Back to Shop admin': 'Späť do správy obchodu',
   'SHAPEVIZ / SHOP': 'SHAPEVIZ / OBCHOD',
   'TOOLS FOR': 'NÁSTROJE PRE',
+  'TOOLS & ASSETS': 'NÁSTROJE & ASSETY',
   'YOUR NEXT IDEA.': 'VÁŠ ĎALŠÍ NÁPAD.',
   '3D assets and tools for creators.': '3D modely a nástroje pre tvorcov.',
   'Built to bring your next project to life.': 'Aby váš ďalší projekt ožil.',
