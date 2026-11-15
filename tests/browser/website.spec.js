@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+test.beforeEach(async({context})=>{await context.addCookies([{name:'sv_analytics',value:`1.yes.${Date.now()}`,domain:'127.0.0.1',path:'/'}]);});
 
 test('website tracking recovers after status failure and supports browsers without AbortSignal.timeout',async({page})=>{
  const events=[];let checks=0;

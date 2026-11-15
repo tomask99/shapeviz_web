@@ -1,3 +1,4 @@
+import {withLegalFooter} from './legal.js';
 import {services, servicePath} from './services.js';
 import {seoMarkup} from './seo.js';
 
@@ -12,7 +13,7 @@ export function renderServicePage(service, locale) {
   const inquiryUrl = `${home}?interest=${service.id}#project-form`;
   const paragraph = value => `<p>${escape(value)}</p>`;
   const link = (href, text, className='') => `<a${className ? ` class="${className}"` : ''} href="${href}">${escape(text)}</a>`;
-  return `<!doctype html>
+  return withLegalFooter(`<!doctype html>
 <html lang="${locale}"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#000000">
 <title>${escape(copy.title)}</title><meta name="description" content="${escape(copy.description)}">
@@ -43,5 +44,5 @@ ${link('#main',ui.skip,'skip-link')}
 <section class="service-section" aria-labelledby="related-title"><h2 id="related-title">${ui.related}</h2><nav class="service-columns service-related" aria-label="${ui.related}">${services.filter(item=>item.id!==service.id).map(item=>link(servicePath(item,locale),item[locale].name)).join('')}</nav></section>
 <section class="service-section service-cta"><h2>${ui.end}</h2>${paragraph(ui.endText)}${link(inquiryUrl,ui.cta,'primary-button')}</section>
 </main><footer class="site-footer section-shell"><span>© SHAPEVIZ</span>${link(home+'#services',ui.services)}${link(inquiryUrl,ui.contact)}</footer>
-</body></html>`;
+</body></html>`, locale);
 }

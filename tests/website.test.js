@@ -13,12 +13,12 @@ test('website records independently, strips referral details and sends Telegram 
  const ids=new Set(),messages=[],records=[];
  const send=async(url,options)=>{
   const body=JSON.parse(options.body);
-  if(url.endsWith('/rpc/record_website_visit')){records.push(body);const fresh=!ids.has(body.p_id);ids.add(body.p_id);return Response.json(fresh);}
+  if(url.endsWith('/rpc/record_consented_website_visit')){records.push(body);const fresh=!ids.has(body.p_id);ids.add(body.p_id);return Response.json(fresh);}
   assert.match(url,/api.telegram.org/);messages.push(body);return Response.json({ok:true});
  };
  await serve(createWebsiteEventHandler({env,send}),async origin=>{
   const sessionId=randomUUID();
-  const post=seconds=>fetch(origin,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','User-Agent':'iPhone Mobile'},body:JSON.stringify({sessionId,seconds,referrer:'https://example.org/private?secret=123'})});
+  const post=seconds=>fetch(origin,{method:'POST',headers:{Origin:origin,Cookie:`sv_analytics=1.yes.${Date.now()}`,'Content-Type':'application/json','User-Agent':'iPhone Mobile'},body:JSON.stringify({sessionId,seconds,referrer:'https://example.org/private?secret=123'})});
   const responses=await Promise.all([post(0),post(0),post(15)]);
   assert.ok(responses.every(r=>r.status===204));assert.equal(messages.length,1);
   assert.match(messages[0].text,/Niekto otvoril tvoj web/);assert.match(messages[0].text,/iPhone/);
@@ -28,7 +28,7 @@ test('website records independently, strips referral details and sends Telegram 
 });
 test('website rejects invalid origins, payloads and methods; respects privacy and bots',async()=>{
  await serve(createWebsiteEventHandler({env,send:()=>{throw new Error('No network expected');}}),async origin=>{
-  const post=(body,headers={})=>fetch(origin,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...headers},body:JSON.stringify(body)});
+  const post=(body,headers={})=>fetch(origin,{method:'POST',headers:{Origin:origin,Cookie:`sv_analytics=1.yes.${Date.now()}`,'Content-Type':'application/json',...headers},body:JSON.stringify(body)});
   assert.equal((await fetch(origin)).status,405);
   assert.equal((await post({}, {Origin:'null'})).status,403);
   assert.equal((await post({}, {Origin:'https://elsewhere.test'})).status,403);

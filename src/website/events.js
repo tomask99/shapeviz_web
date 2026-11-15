@@ -1,3 +1,4 @@
+import {readConsent} from '../../public/privacy/consent.js';
 import {readJson, requestOrigin} from '../http.js';
 import {deviceLabel, locationLabel, notifyWebsiteOpened} from '../presentations/telegram.js';
 
@@ -18,6 +19,8 @@ export function createWebsiteEventHandler({env=process.env, send=fetch}={}) {
     if(!origin || req.headers.origin!==origin || req.headers['sec-fetch-site']==='cross-site'){res.writeHead(403).end();return;}
     if(!/^(application\/json|text\/plain)(;|$)/i.test(req.headers['content-type']||'')){res.writeHead(415).end();return;}
     if(req.headers.dnt==='1' || req.headers['sec-gpc']==='1' || /bot|crawler|spider|preview/i.test(req.headers['user-agent']||'')){res.writeHead(204).end();return;}
+    const consent=readConsent(req.headers.cookie);
+    if(consent?.analytics!==true){res.writeHead(204).end();return;}
     const now=Date.now(), peer=env.VERCEL==='1' ? req.headers['x-vercel-forwarded-for'] || req.socket?.remoteAddress : req.socket?.remoteAddress;
     for(const [key,value] of limits)if(value.until<now)limits.delete(key);
     const limit=limits.get(peer)||{count:0,until:now+60_000};
@@ -27,9 +30,9 @@ export function createWebsiteEventHandler({env=process.env, send=fetch}={}) {
       const body=await readJson(req,4096);
       if(!body || !uuid.test(body.sessionId||'') || !Number.isInteger(body.seconds) || body.seconds<0 || body.seconds>604800){res.writeHead(400).end();return;}
       if(!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY){res.writeHead(204,{'X-Analytics-Status':'not-configured'}).end();return;}
-      const response=await send(`${env.SUPABASE_URL.replace(/\/$/,'')}/rest/v1/rpc/record_website_visit`,{
+      const response=await send(`${env.SUPABASE_URL.replace(/\/$/,'')}/rest/v1/rpc/record_consented_website_visit`,{
         method:'POST',headers:{apikey:env.SUPABASE_SECRET_KEY,'Content-Type':'application/json'},signal:AbortSignal.timeout(8000),
-        body:JSON.stringify({p_id:body.sessionId,p_seconds:body.seconds,p_device:deviceLabel(req.headers),p_location:locationLabel(req.headers,env),p_source:referralSource(body.referrer,origin)})
+        body:JSON.stringify({p_id:body.sessionId,p_consent_version:consent.version,p_consent_chosen_at:new Date(consent.time).toISOString(),p_seconds:body.seconds,p_device:deviceLabel(req.headers),p_location:locationLabel(req.headers,env),p_source:referralSource(body.referrer,origin)})
       });
       if(!response.ok)throw new Error('record failed');
       if(await response.json()===true)await notifyWebsiteOpened({env,send,headers:req.headers});

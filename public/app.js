@@ -198,7 +198,7 @@ form.addEventListener('submit', async event => {
   try {
     const response = await fetch('/api/contact', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: data.get('name'), email: data.get('email'), company: data.get('company'), services: data.getAll('services'), message: data.get('message'), website: data.get('website'), consent: data.get('consent') === 'on' }),
+      body: JSON.stringify({ name: data.get('name'), email: data.get('email'), company: data.get('company'), services: data.getAll('services'), message: data.get('message'), website: data.get('website') }),
       signal: AbortSignal.timeout(15_000),
     });
     const result = await response.json();

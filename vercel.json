@@ -42,6 +42,10 @@
     }
   ],
   "rewrites": [
+    {"source":"/sk/pravne-informacie","destination":"/api/site-events?route=page&locale=sk&legal=legal"},
+    {"source":"/sk/ochrana-osobnych-udajov","destination":"/api/site-events?route=page&locale=sk&legal=privacy"},
+    {"source":"/en/legal","destination":"/api/site-events?route=page&locale=en&legal=legal"},
+    {"source":"/en/privacy","destination":"/api/site-events?route=page&locale=en&legal=privacy"},
     {"source":"/sitemap-products.xml","destination":"/api/site-events?route=shop-sitemap"},
     {"source":"/shop/:product([a-z0-9-]+)","destination":"/api/site-events?route=product&product=:product"},
     {"source": "/sk/sluzby/:service", "destination": "/api/site-events?route=page&locale=sk&service=:service"},

@@ -1,3 +1,4 @@
+import {legalRoute} from './src/website/legal.js';
 import http from 'node:http';
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
@@ -81,7 +82,7 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
       res.writeHead(200,{'Content-Type':sitemap?'application/xml; charset=utf-8':'text/plain; charset=utf-8','Cache-Control':'public, max-age=3600'}).end(req.method==='HEAD'?undefined:sitemap?sitemapXml():robotsText());return;
     }
     if (pathname === '/api/shop' || pathname === '/api/site-events' || pathname === '/sitemap-products.xml' || /^\/shop\/[a-z0-9-]+\/?$/.test(pathname)) { await website(req,res);return; }
-    if (['/', '/index.html', '/shop', '/shop/', '/shop/index.html'].includes(pathname) || /^\/(sk|en)(\/shop)?\/?$/.test(pathname) || /^\/(sk|en)\/(sluzby|services)\/[a-z0-9-]+\/?$/.test(pathname)) {await publicPage(req,res);return;}
+    if (legalRoute(pathname) || ['/', '/index.html', '/shop', '/shop/', '/shop/index.html'].includes(pathname) || /^\/(sk|en)(\/shop)?\/?$/.test(pathname) || /^\/(sk|en)\/(sluzby|services)\/[a-z0-9-]+\/?$/.test(pathname)) {await publicPage(req,res);return;}
     if (pathname === '/api/contact') { await contact(req, res); return; }
     if (pathname === '/api/files') { await files(req, res); return; }
     if (pathname.startsWith('/files/')) {

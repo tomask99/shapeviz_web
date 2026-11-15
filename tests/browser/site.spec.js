@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+test.beforeEach(async({context})=>{await context.addCookies([{name:'sv_analytics',value:`1.no.${Date.now()}`,domain:'127.0.0.1',path:'/'}]);});
 const clients = ['PRADA', 'PUCCI', 'MAZDA', 'MILENIUM', 'MCM', 'BERO', 'BRAVE MMA', 'TATRABANKA', 'TOLICCI'];
 
 test('hero, anchors and all client names are available without browser errors', async ({ page }) => {
@@ -86,7 +87,7 @@ test('lightbox traps keyboard focus, closes with Escape, and returns focus', asy
   await page.goto('/');
   const trigger = page.getByRole('button', { name: 'Enlarge Milenium interior visual' });
   await trigger.click();
-  const modal = page.getByRole('dialog');
+  const modal = page.getByRole('dialog', { name: 'Enlarged project image' });
   await expect(modal).toBeVisible();
   await page.keyboard.press('Tab');
   expect(await page.evaluate(() => document.querySelector('dialog').contains(document.activeElement))).toBe(true);
@@ -115,7 +116,7 @@ async function fillForm(page) {
   await page.getByLabel('Email address').fill('visitor@example.com');
   await page.getByLabel('High-end 3D modeling', { exact: true }).check();
   await page.getByLabel('A little about your project').fill('We are planning a new visual identity and motion campaign.');
-  await page.getByLabel('You may use my name').check();
+
 }
 test('form preserves the inquiry when delivery is unavailable', async ({ page }) => {
   await page.route('**/api/contact', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ ok: false, message: 'Your message has not been sent. Please try again later.' }) }));

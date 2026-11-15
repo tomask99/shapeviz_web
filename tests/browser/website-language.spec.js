@@ -39,7 +39,7 @@ test('browser language selects Slovak, contact feedback and media controls stay 
   await page.getByRole('button',{name:'Pozastaviť video',exact:true}).first().click();
   await page.getByLabel('Vaše meno').fill('Jana Nováková');await page.getByLabel('E-mailová adresa').fill('jana@example.test');
   await page.getByLabel('High-end 3D modelovanie',{exact:true}).check();await page.getByLabel('Pár slov o vašom projekte').fill('Potrebujeme detailný 3D model nášho produktu.');
-  await page.locator('[name=consent]').check();
+
   let payload;await page.route('**/api/contact',route=>{payload=route.request().postDataJSON();return route.fulfill({status:503,json:{ok:false,message:'The contact form is not accepting messages yet. Your message has not been sent. Please try again later.'}});});
   await page.getByRole('button',{name:'ODOSLAŤ DOPYT'}).click();await expect(page.locator('.form-status')).toContainText('Vaša správa nebola odoslaná');
   expect(payload.services).toEqual(['High-end 3D modeling']);expect(payload.name).toBe('Jana Nováková');await expect(page.getByLabel('Vaše meno')).toHaveValue('Jana Nováková');

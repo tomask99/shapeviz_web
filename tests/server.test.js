@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createApp } from '../server.js';
-const inquiry = { name: 'Test Visitor', email: 'visitor@example.com', company: 'Example', services: ['CGI & 3D'], message: 'A test inquiry about a new visual identity project.', consent: true, website: '' };
+const inquiry = { name: 'Test Visitor', email: 'visitor@example.com', company: 'Example', services: ['CGI & 3D'], message: 'A test inquiry about a new visual identity project.', website: '' };
 const configured = { RESEND_API_KEY: 'test-key', CONTACT_TO_EMAIL: 'studio@example.com', CONTACT_FROM_EMAIL: 'website@example.com', SITE_URL: 'https://example.com' };
 async function withServer(options, run) {
   const server = createApp(options);
@@ -38,10 +38,9 @@ test('unconfigured contact does not pretend to send', async () => {
     assert.equal((await response.json()).ok, false);
   });
 });
-test('rejects malformed fields, missing consent and cross-origin requests', async () => {
+test('rejects malformed fields and cross-origin requests', async () => {
   await withServer({ env: configured, send: () => assert.fail('Invalid inquiries must not reach delivery') }, async origin => {
     assert.equal((await post(origin, { ...inquiry, email: 'invalid' })).status, 400);
-    assert.equal((await post(origin, { ...inquiry, consent: false })).status, 400);
     assert.equal((await post(origin, { ...inquiry, services: ['Injected service'] })).status, 400);
     assert.equal((await post(origin, { ...inquiry, website: 'bot' })).status, 400);
     assert.equal((await post(origin, inquiry, { Origin: 'https://unrelated.example' })).status, 403);
@@ -49,7 +48,7 @@ test('rejects malformed fields, missing consent and cross-origin requests', asyn
 });
 test('rate limits repeated requests', async () => {
   await withServer({ env: {} }, async origin => {
-    for (let i = 0; i < 5; i++) await post(origin, { ...inquiry, consent: false });
+    for (let i = 0; i < 5; i++) await post(origin, { ...inquiry, email: 'invalid' });
     const response = await post(origin);
     assert.equal(response.status, 429);
     assert.ok(Number(response.headers.get('retry-after')) > 0);

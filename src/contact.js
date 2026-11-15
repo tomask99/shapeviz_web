@@ -22,7 +22,6 @@ export function validateContact(body) {
   if (typeof body.company !== 'string' || body.company.length > 150) return 'Please keep the company name under 150 characters.';
   if (!Array.isArray(body.services) || body.services.length > services.length || body.services.some(value => !services.includes(value))) return 'Please choose one of the listed services.';
   if (typeof body.message !== 'string' || body.message.trim().length < 20 || body.message.length > 5000) return 'Tell us a little more about your project (20–5,000 characters).';
-  if (body.consent !== true) return 'Please allow us to use your details to respond to this inquiry.';
   return null;
 }
 
@@ -75,7 +74,7 @@ export function createContactHandler({ env, send, createTransport = nodemailer.c
             to: [{ address: env.CONTACT_TO_EMAIL.trim() }],
             replyTo: { address: body.email.trim() },
             subject: `Shapeviz inquiry — ${body.name.trim()}`,
-            text: `Name: ${body.name.trim()}\nEmail: ${body.email.trim()}\nCompany: ${body.company.trim() || 'Not specified'}\nInterested in: ${body.services.join(', ') || 'Let’s discuss'}\n\n${body.message.trim()}\n\nPermission to respond: yes`,
+            text: `Name: ${body.name.trim()}\nEmail: ${body.email.trim()}\nCompany: ${body.company.trim() || 'Not specified'}\nInterested in: ${body.services.join(', ') || 'Let’s discuss'}\n\n${body.message.trim()}\n\nSource: website project inquiry`,
           });
           if (!receipt.accepted?.some(address => address.toLowerCase() === env.CONTACT_TO_EMAIL.trim().toLowerCase())) throw new Error('Recipient not accepted');
         } finally { transport.close(); }
@@ -90,7 +89,7 @@ export function createContactHandler({ env, send, createTransport = nodemailer.c
           to: [env.CONTACT_TO_EMAIL],
           reply_to: body.email.trim(),
           subject: `Shapeviz inquiry — ${body.name.trim()}`,
-          text: `Name: ${body.name.trim()}\nEmail: ${body.email.trim()}\nCompany: ${body.company.trim() || 'Not specified'}\nInterested in: ${body.services.join(', ') || 'Let’s discuss'}\n\n${body.message.trim()}\n\nPermission to respond: yes`,
+          text: `Name: ${body.name.trim()}\nEmail: ${body.email.trim()}\nCompany: ${body.company.trim() || 'Not specified'}\nInterested in: ${body.services.join(', ') || 'Let’s discuss'}\n\n${body.message.trim()}\n\nSource: website project inquiry`,
         }),
         signal: AbortSignal.timeout(10_000),
       });

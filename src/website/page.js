@@ -11,6 +11,7 @@ import {renderGallery} from './gallery.js';
 import {loadShopCatalog} from '../shop/handler.js';
 import {createProductPreviews} from '../shop/previews.js';
 import {renderCatalogFallback} from '../shop/pages.js';
+import {legalRoute, legalPaths, renderLegalPage, withLegalFooter} from './legal.js';
 
 export function renderPublicPage(source, locale, {shop = false, explicit = false, interest = null, companies = null, gallery = null} = {}) {
   const document = parse(source, {scriptingEnabled: false});
@@ -30,6 +31,7 @@ export function renderPublicPage(source, locale, {shop = false, explicit = false
       if (node.tagName === 'html' && attr.name === 'lang') attr.value = locale;
       if (attr.name === 'href' && !node.attrs.some(a => a.name === 'data-language')) {
         if (attr.value === '/' || attr.value.startsWith('/#')) attr.value = prefix + (attr.value === '/' ? '' : attr.value.slice(1)) || '/';
+        if (node.attrs.some(a => a.name === 'data-privacy-notice')) attr.value = legalPaths[locale].privacy;
         if (attr.value === '/shop') attr.value = prefix + '/shop';
         const serviceId = node.attrs.find(a => a.name === 'data-service-link')?.value;
         if (serviceId) attr.value = servicePath(serviceDefinitions.find(service=>service.id===serviceId), locale);
@@ -95,7 +97,7 @@ export function renderPublicPage(source, locale, {shop = false, explicit = false
     node.childNodes?.forEach(markSwitch);
   }
   markSwitch(document);
-  return serialize(document);
+  return withLegalFooter(serialize(document), locale);
 }
 
 export function createPublicPageHandler({publicDir = path.resolve('public'), env = process.env, send = fetch} = {}) {
@@ -103,6 +105,12 @@ export function createPublicPageHandler({publicDir = path.resolve('public'), env
   return async (req, res) => {
     if (!['GET', 'HEAD'].includes(req.method)) {res.writeHead(405, {Allow: 'GET, HEAD'}).end(); return;}
     const url = new URL(req.url, 'http://localhost');
+    const legal = legalRoute(url.pathname) || (url.searchParams.get('route')==='page' && legalPaths[url.searchParams.get('locale')]?.[url.searchParams.get('legal')] ? {locale:url.searchParams.get('locale'),page:url.searchParams.get('legal')} : null);
+    if (legal) {
+      const body = renderLegalPage(legal.locale, legal.page);
+      res.writeHead(200, {'Content-Type':'text/html; charset=utf-8','Content-Language':legal.locale,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY','Referrer-Policy':'strict-origin-when-cross-origin','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"}).end(req.method==='HEAD'?undefined:body);
+      return;
+    }
     const route = /^\/(sk|en)(\/shop)?\/?$/.exec(url.pathname);
     const serviceRoute = /^\/(sk|en)\/(sluzby|services)\/([a-z0-9-]+)\/?$/.exec(url.pathname);
     const isApi = url.pathname === '/api/site-events' && url.searchParams.get('route') === 'page';
