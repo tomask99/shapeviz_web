@@ -31,7 +31,7 @@ export function renderPublicPage(source, locale, {shop = false, explicit = false
       if (node.tagName === 'html' && attr.name === 'lang') attr.value = locale;
       if (attr.name === 'href' && !node.attrs.some(a => a.name === 'data-language')) {
         if (attr.value === '/' || attr.value.startsWith('/#')) attr.value = prefix + (attr.value === '/' ? '' : attr.value.slice(1)) || '/';
-        if (node.attrs.some(a => a.name === 'data-privacy-notice')) attr.value = legalPaths[locale].privacy;
+        if (node.attrs.some(a => a.name === 'data-privacy-notice')) attr.value = legalPaths[locale].legal+'#privacy';
         if (attr.value === '/shop') attr.value = prefix + '/shop';
         const serviceId = node.attrs.find(a => a.name === 'data-service-link')?.value;
         if (serviceId) attr.value = servicePath(serviceDefinitions.find(service=>service.id===serviceId), locale);
@@ -107,6 +107,7 @@ export function createPublicPageHandler({publicDir = path.resolve('public'), env
     const url = new URL(req.url, 'http://localhost');
     const legal = legalRoute(url.pathname) || (url.searchParams.get('route')==='page' && legalPaths[url.searchParams.get('locale')]?.[url.searchParams.get('legal')] ? {locale:url.searchParams.get('locale'),page:url.searchParams.get('legal')} : null);
     if (legal) {
+      if (legal.page==='privacy') {res.writeHead(308,{Location:legalPaths[legal.locale].legal}).end();return;}
       const body = renderLegalPage(legal.locale, legal.page);
       res.writeHead(200, {'Content-Type':'text/html; charset=utf-8','Content-Language':legal.locale,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY','Referrer-Policy':'strict-origin-when-cross-origin','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"}).end(req.method==='HEAD'?undefined:body);
       return;

@@ -3,18 +3,18 @@ import {CONSENT_COOKIE, CONSENT_VERSION, CONSENT_MAX_AGE, readConsent} from './c
 const sk = document.documentElement.lang === 'sk';
 const copy = sk ? {
   title:'Meranie návštevnosti',
-  body:'S tvojím súhlasom meriame návštevy, čas na webe, typ zariadenia, približnú polohu a zdroj návštevy. Odmietnutie neobmedzí používanie webu. Voľbu môžeš kedykoľvek zmeniť v pätičke.',
+  body:'S tvojím súhlasom meriame návštevy, čas na webe, typ zariadenia, približnú polohu a zdroj návštevy. Odmietnutie neobmedzí používanie webu. Voľbu môžeš kedykoľvek zmeniť cez Právne informácie v pätičke.',
   accept:'Povoliť analytiku', reject:'Odmietnuť analytiku', close:'Zavrieť', privacy:'Ochrana osobných údajov',
 } : {
   title:'Website analytics',
-  body:'With your consent, we measure visits, time on the site, device type, approximate location and referral source. Declining does not limit access to the site. You can change your choice in the footer at any time.',
+  body:'With your consent, we measure visits, time on the site, device type, approximate location and referral source. Declining does not limit access to the site. You can change your choice through Legal information in the footer at any time.',
   accept:'Allow analytics', reject:'Decline analytics', close:'Close', privacy:'Privacy notice',
 };
 const dialog = document.createElement('dialog');
 dialog.className = 'privacy-dialog';
 dialog.setAttribute('aria-labelledby', 'privacy-title');
 dialog.setAttribute('aria-describedby', 'privacy-description');
-dialog.innerHTML = `<h2 id="privacy-title">${copy.title}</h2><p id="privacy-description">${copy.body}</p><a href="${sk ? '/sk/ochrana-osobnych-udajov' : '/en/privacy'}">${copy.privacy}</a><div class="privacy-actions"><button type="button" data-choice="no">${copy.reject}</button><button type="button" data-choice="yes">${copy.accept}</button></div><button type="button" class="privacy-close" aria-label="${copy.close}">${copy.close}</button>`;
+dialog.innerHTML = `<h2 id="privacy-title">${copy.title}</h2><p id="privacy-description">${copy.body}</p><a href="${sk ? '/sk/pravne-informacie' : '/en/legal'}#privacy">${copy.privacy}</a><div class="privacy-actions"><button type="button" data-choice="no">${copy.reject}</button><button type="button" data-choice="yes">${copy.accept}</button></div><button type="button" class="privacy-close" aria-label="${copy.close}">${copy.close}</button>`;
 document.body.append(dialog);
 function choose(analytics) {
   document.cookie = `${CONSENT_COOKIE}=${CONSENT_VERSION}.${analytics ? 'yes' : 'no'}.${Date.now()}; Path=/; Max-Age=${CONSENT_MAX_AGE}; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;

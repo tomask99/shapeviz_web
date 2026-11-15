@@ -27,6 +27,8 @@
     }
   },
   "redirects": [
+    {"source":"/sk/ochrana-osobnych-udajov","destination":"/sk/pravne-informacie","permanent":true},
+    {"source":"/en/privacy","destination":"/en/legal","permanent":true},
     {"source":"/shop/:product([a-z0-9-]+)/","destination":"/shop/:product","permanent":true},
     {"source": "/index.html", "destination": "/", "permanent": true},
     {"source": "/shop/index.html", "destination": "/shop", "permanent": true},
