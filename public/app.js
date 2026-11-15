@@ -7,6 +7,9 @@ const finePointer = matchMedia('(pointer: fine)');
 const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 const smooth = value => { const t = clamp(value); return t * t * (3 - 2 * t); };
 const heroStage = document.querySelector('.hero-stage');
+const heroBackdrop = document.querySelector('.hero-backdrop');
+const heroWireframe = document.querySelector('.hero-wireframe');
+const studioIntro = document.querySelector('.about .section-label');
 const letters = [...document.querySelectorAll('#hero-title span')];
 const heroDetails = [...document.querySelectorAll('.hero-fade')];
 const dissolving = [...document.querySelectorAll('[data-dissolve]')];
@@ -18,6 +21,12 @@ const dialog = document.querySelector('.lightbox');
 let pointerX = innerWidth * .72, pointerY = innerHeight * .28;
 let headX = pointerX, headY = pointerY, tailX = headX, tailY = headY;
 let lastPointer = 0, lastFrame = 0, frame = 0, scrollDirty = true;
+let pointerPresent = false;
+heroWireframe?.addEventListener('load', () => heroWireframe.classList.add('is-loaded'));
+function hideWireframe() {
+  pointerPresent = false;
+  heroWireframe?.classList.remove('is-active');
+}
 
 function drawScroll() {
   const height = innerHeight;
@@ -25,7 +34,14 @@ function drawScroll() {
   progressBar.style.transform = `scaleX(${range > 0 ? clamp(scrollY / range) : 0})`;
   if (reducedMotion.matches) return;
   const rect = heroStage.getBoundingClientRect();
-  const progress = clamp(-rect.top / Math.max(1, rect.height - height));
+  // The extra 20svh in the stage holds the image after the original text exit.
+  const imageHoldDistance = height * .2;
+  const progress = clamp(-rect.top / Math.max(1, rect.height - height - imageHoldDistance));
+  if (heroBackdrop) {
+    const imageFade = smooth((height - studioIntro.getBoundingClientRect().top) / (height * .35));
+    heroBackdrop.style.setProperty('--hero-image-opacity', 1 - imageFade);
+    heroBackdrop.style.setProperty('--hero-image-blur', `${imageFade * 22}px`);
+  }
   letters.forEach((letter, index) => {
     const amount = smooth((progress - .12 - index * .024) / .65);
     letter.style.opacity = 1 - amount;
@@ -52,7 +68,7 @@ function render(time) {
   frame = 0;
   if (document.hidden) return;
   if (scrollDirty) { drawScroll(); scrollDirty = false; }
-  if (!finePointer.matches || reducedMotion.matches || dialog.open) return;
+  if (!finePointer.matches || reducedMotion.matches || dialog.open) { hideWireframe(); return; }
   const elapsed = lastFrame ? clamp((time - lastFrame) / 16.667, .25, 3) : 1;
   lastFrame = time;
   const previousX = headX, previousY = headY;
@@ -69,15 +85,31 @@ function render(time) {
   tail.style.opacity = moving ? .22 : .16;
   head.style.transform = `translate3d(${headX}px,${headY}px,0) rotate(${angle}rad) scale(${1 + Math.min(.34, speed * .013)},${1 - Math.min(.13, speed * .0048)})`;
   tail.style.transform = `translate3d(${tailX}px,${tailY}px,0) rotate(${tailAngle}rad) scale(${1.06 + Math.min(.72, distance / 340)},${.94 - Math.min(.18, distance / 1500)})`;
+  if (heroWireframe && pointerPresent) {
+    // Share the glow's smoothed head and trailing motion; both renders keep the same crop.
+    heroWireframe.style.setProperty('--wire-head-x', `${headX}px`);
+    heroWireframe.style.setProperty('--wire-head-y', `${headY}px`);
+    heroWireframe.style.setProperty('--wire-tail-x', `${tailX}px`);
+    heroWireframe.style.setProperty('--wire-tail-y', `${tailY}px`);
+    heroWireframe.classList.add('is-active');
+  }
   if (moving || Math.hypot(pointerX - headX, pointerY - headY) > .1 || distance > .1) requestFrame();
 }
 function requestFrame() { if (!frame && !document.hidden) frame = requestAnimationFrame(render); }
 addEventListener('scroll', () => { scrollDirty = true; requestFrame(); }, { passive: true });
 addEventListener('resize', () => { scrollDirty = true; requestFrame(); }, { passive: true });
 addEventListener('pointermove', event => {
-  if (!finePointer.matches || reducedMotion.matches || event.pointerType === 'touch') return;
+  if (!finePointer.matches || reducedMotion.matches || event.pointerType === 'touch') { hideWireframe(); return; }
+  if (!pointerPresent) { headX = tailX = event.clientX; headY = tailY = event.clientY; }
+  pointerPresent = true;
+  if (heroWireframe && !heroWireframe.hasAttribute('src')) {
+    heroWireframe.srcset = heroWireframe.dataset.srcset;
+    heroWireframe.src = heroWireframe.dataset.src;
+  }
   pointerX = event.clientX; pointerY = event.clientY; lastPointer = performance.now(); requestFrame();
 }, { passive: true });
+document.documentElement.addEventListener('pointerleave', hideWireframe);
+addEventListener('blur', hideWireframe);
 
 const revealObserver = new IntersectionObserver(entries => {
   entries.forEach(entry => {
@@ -172,6 +204,7 @@ dialog.addEventListener('close', () => {
 });
 
 function motionPreferenceChanged() {
+  hideWireframe();
   scrollDirty = true;
   if (reducedMotion.matches) {
     [...letters, ...heroDetails, ...dissolving].forEach(element => { element.style.opacity = ''; element.style.filter = ''; element.style.transform = ''; });
@@ -182,7 +215,7 @@ function motionPreferenceChanged() {
 }
 reducedMotion.addEventListener('change', motionPreferenceChanged);
 finePointer.addEventListener('change', motionPreferenceChanged);
-document.addEventListener('visibilitychange', () => { videos.forEach(syncVideo); lastFrame = 0; scrollDirty = true; requestFrame(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) hideWireframe(); videos.forEach(syncVideo); lastFrame = 0; scrollDirty = true; requestFrame(); });
 
 const form = document.querySelector('#project-form');
 const formStatus = form.querySelector('.form-status');
