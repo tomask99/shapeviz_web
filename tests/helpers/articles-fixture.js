@@ -10,8 +10,10 @@ export async function articlesFixture({seed=false,preview=false}={}) {
   await db.exec(await readFile(new URL('../../supabase/migrations/'+migration,import.meta.url),'utf8'));
   const languageMigration=(await readdir(new URL('../../supabase/migrations/',import.meta.url))).find(name=>/_article_language\.sql$/.test(name));
   await db.exec(await readFile(new URL('../../supabase/migrations/'+languageMigration,import.meta.url),'utf8'));
+  const translationsMigration=(await readdir(new URL('../../supabase/migrations/',import.meta.url))).find(name=>/_article_translations\.sql$/.test(name));
+  await db.exec(await readFile(new URL('../../supabase/migrations/'+translationsMigration,import.meta.url),'utf8'));
   let unavailable=false;
-  const columns=new Set(['language','id','slug','title','excerpt','seo_title','seo_description','cover','content','status','version','created_at','updated_at','published_at']);
+  const columns=new Set(['translation_group','language','id','slug','title','excerpt','seo_title','seo_description','cover','content','status','version','created_at','updated_at','published_at']);
   const send=async(input,options={})=>{
     const url=new URL(input),method=options.method||'GET';
     if(url.pathname==='/auth/v1/user')return options.headers.Authorization==='Bearer owner'?Response.json({id:'11111111-1111-4111-8111-111111111111',email:'owner@example.test'}):options.headers.Authorization==='Bearer visitor'?Response.json({id:'visitor'}):Response.json({}, {status:401});

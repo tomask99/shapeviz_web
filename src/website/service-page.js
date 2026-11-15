@@ -25,7 +25,7 @@ ${seoMarkup({locale,title:copy.title,description:copy.description,service})}
 ${link('#main',ui.skip,'skip-link')}
 <header class="site-header">
 <a class="brand" href="${home}" aria-label="Shapeviz — ${ui.home}"><img src="/media/shapeviz-logo.webp" alt="Shapeviz" width="1515" height="314"></a>
-<nav aria-label="${ui.nav}">${link(home+'#services',ui.services)}${link(home+'#work',ui.work)}${link('/articles','Articles')}${link(inquiryUrl,ui.contact,'nav-contact')}</nav>
+<nav aria-label="${ui.nav}">${link(home+'#services',ui.services)}${link(home+'#work',ui.work)}${link(locale==='sk'?'/articles?lang=sk':'/articles',locale==='sk'?'Články':'Articles')}${link(inquiryUrl,ui.contact,'nav-contact')}</nav>
 <div class="language-switch" role="group" aria-label="${ui.language}">${['sk','en'].map(lang=>`<a href="${servicePath(service,lang)}" data-language="${lang}" lang="${lang}" hreflang="${lang}" aria-label="${lang==='sk'?'Slovenčina':'English'}"${lang===locale?' aria-current="true"':''}>${lang.toUpperCase()}</a>`).join('')}</div>
 </header>
 <main id="main" class="section-shell">

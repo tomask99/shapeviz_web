@@ -33,6 +33,7 @@ export function renderPublicPage(source, locale, {shop = false, explicit = false
         if (attr.value === '/' || attr.value.startsWith('/#')) attr.value = prefix + (attr.value === '/' ? '' : attr.value.slice(1)) || '/';
         if (node.attrs.some(a => a.name === 'data-privacy-notice')) attr.value = legalPaths[locale].legal+'#privacy';
         if (attr.value === '/shop') attr.value = prefix + '/shop';
+        if (attr.value === '/articles' && locale === 'sk') attr.value = '/articles?lang=sk';
         const serviceId = node.attrs.find(a => a.name === 'data-service-link')?.value;
         if (serviceId) attr.value = servicePath(serviceDefinitions.find(service=>service.id===serviceId), locale);
       }

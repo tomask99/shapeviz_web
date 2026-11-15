@@ -1,6 +1,6 @@
 .article-prose{font-size:19px;line-height:1.8;color:#d5d0c7;overflow-wrap:anywhere}
 .article-prose h2,.article-prose h3{text-transform:none}
-.article-prose p > a:only-child:is([href^="/shop/"],[href^="/sk/sluzby/"],[href="/sk#contact"]) {
+.article-prose p > a:only-child:is([href^="/shop/"],[href^="/sk/sluzby/"],[href^="/en/services/"],[href="/sk#contact"],[href="/en#contact"]) {
   display:inline-block;
   padding:16px 24px;
   border-radius:12px;
@@ -10,7 +10,7 @@
   line-height:1.4;
   text-decoration:none;
 }
-.article-prose p > a:only-child:is([href^="/shop/"],[href^="/sk/sluzby/"],[href="/sk#contact"]):hover {
+.article-prose p > a:only-child:is([href^="/shop/"],[href^="/sk/sluzby/"],[href^="/en/services/"],[href="/sk#contact"],[href="/en#contact"]):hover {
   background:#e8af70;
   color:#111;
 }

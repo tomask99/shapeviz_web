@@ -3,8 +3,40 @@ import assert from 'node:assert/strict';
 import {articlesFixture} from './helpers/articles-fixture.js';
 import {firstArticle} from '../src/articles/first-article.js';
 import {productVisualizationArticle} from '../src/articles/product-visualization-article.js';
+import {productVisualizationArticleEn} from '../src/articles/product-visualization-article-en.js';
 import {validateDocument,renderDocument,safeLink} from '../public/articles/content.js';
 import {robotsText,sitemapXml} from '../src/website/seo.js';
+
+test('published translations have reciprocal language links, unique groups and one card per topic',async()=>{
+  const f=await articlesFixture({seed:true});
+  try {
+    const save=async data=>{const r=await f.request('articles-save',data);assert.equal(r.status,200);return (await r.json()).article;};
+    const sk=await save(productVisualizationArticle);
+    let en=await save({...productVisualizationArticleEn,status:'draft'});
+    let html=await(await fetch(f.origin+'/articles/'+sk.slug)).text();
+    assert.doesNotMatch(html,new RegExp(en.slug));
+    en=await save({...en,status:'published'});
+    assert.equal((await f.request('articles-save',{...productVisualizationArticleEn,slug:'duplicate-translation'})).status,409);
+    assert.equal((await f.request('articles-save',{...productVisualizationArticleEn,translation_group:'Bad group'})).status,400);
+    for(const article of [sk,en]) {
+      html=await(await fetch(f.origin+'/articles/'+article.slug)).text();
+      for(const sibling of [sk,en])assert.ok(html.includes(`rel="alternate" hreflang="${sibling.language}" href="https://www.shapeviz.com/articles/${sibling.slug}"`));
+      assert.ok(html.includes(`rel="canonical" href="https://www.shapeviz.com/articles/${article.slug}"`));
+    }
+    for(const [query,article,other]of [['',en,sk],['?lang=sk',sk,en]]) {
+      const response=await fetch(f.origin+'/articles'+query);html=await response.text();
+      assert.equal(response.headers.get('content-language'),article.language);
+      assert.equal((html.match(/class="article-public-card/g)||[]).length,2);
+      assert.ok(html.includes(article.title));assert.ok(!html.includes(other.title));
+    }
+    const sitemap=await(await fetch(f.origin+'/sitemap-articles.xml')).text();
+    assert.ok(sitemap.includes(sk.slug)&&sitemap.includes(en.slug));
+    const {translation_group,...legacy}=en;
+    const preserved=await save(legacy);assert.equal(preserved.translation_group,translation_group);
+    await save({...preserved,status:'draft'});
+    html=await(await fetch(f.origin+'/articles/'+sk.slug)).text();assert.doesNotMatch(html,new RegExp(en.slug));
+  }finally{await f.close();}
+});
 
 test('Slovak articles preserve language through editing and expose matching SEO',async()=>{
   const f=await articlesFixture();

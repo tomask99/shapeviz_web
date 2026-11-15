@@ -8,6 +8,7 @@ const list = (...items) => ({type:'bulletList',content:items.map(item=>({type:'l
 const image = (name,alt,title,width,height) => ({type:'image',attrs:{src:`/media/articles/${name}.webp`,alt,title,width,height}});
 export const productVisualizationArticle = {
   language:'sk',
+  translation_group:'product-visualization-vs-photography',
   slug:'3d-vizualizacia-produktu-vs-produktova-fotografia',
   title:'3D vizualizácia produktu vs. produktová fotografia: čo sa oplatí pre vašu značku?',
   excerpt:'Nový produkt, viac farebných variantov alebo celá kolekcia nábytku? Pozrite sa, kedy dáva zmysel produktová fotografia, kedy 3D vizualizácia a čo si pripraviť pred zadaním výroby vizuálov.',

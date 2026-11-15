@@ -2,6 +2,40 @@ import {test,expect} from '@playwright/test';
 import {articlesFixture} from '../helpers/articles-fixture.js';
 import {readFile} from 'node:fs/promises';
 import {productVisualizationArticle} from '../../src/articles/product-visualization-article.js';
+import {productVisualizationArticleEn} from '../../src/articles/product-visualization-article-en.js';
+
+for(const width of [390,1440])test(`Article translations switch and remain editable at ${width}px`,async({browser})=>{
+  const f=await articlesFixture({seed:true});
+  const context=await browser.newContext({viewport:{width,height:1000},reducedMotion:'reduce'});
+  try {
+    for(const article of [productVisualizationArticle,productVisualizationArticleEn])expect((await f.request('articles-save',article)).status).toBe(200);
+    const page=await context.newPage();
+    await page.goto(f.origin+'/articles');
+    await expect(page.locator('.article-public-card')).toHaveCount(2);
+    await expect(page.getByRole('heading',{name:productVisualizationArticleEn.title,exact:true})).toBeVisible();
+    await page.locator('.article-languages').getByRole('link',{name:'Slovenčina',exact:true}).click();
+    await expect(page.locator('html')).toHaveAttribute('lang','sk');
+    await expect(page.locator('.article-public-card')).toHaveCount(2);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await page.getByRole('heading',{name:productVisualizationArticle.title,exact:true}).click();
+    await page.locator('.article-languages').getByRole('link',{name:'English',exact:true}).click();
+    await expect(page.locator('html')).toHaveAttribute('lang','en');
+    await expect(page.locator('h1')).toHaveText(productVisualizationArticleEn.title);
+    await expect(page.locator('.article-prose')).toContainText('Photography and 3D can work together');
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await page.screenshot({path:`.cache/article-translation-${width}.png`});
+    await page.getByRole('link',{name:'Explore product and interior visualization',exact:true}).click();
+    expect(new URL(page.url()).pathname).toBe('/en/services/product-interior-visualization');
+    await context.addCookies([{name:'sv_access',value:'owner',url:f.origin+'/api/admin'}]);
+    await page.goto(f.origin+'/admin/site-editing#articles');
+    await page.getByRole('button',{name:'Edit '+productVisualizationArticleEn.title,exact:true}).click();
+    await expect(page.getByLabel('Article language',{exact:true})).toHaveValue('en');
+    await expect(page.getByLabel('Translation group (optional)',{exact:true})).toHaveValue(productVisualizationArticleEn.translation_group);
+    await page.getByRole('button',{name:'Update live article',exact:true}).click();
+    await expect(page.locator('[data-editor-status]')).toHaveText('All changes saved');
+    await page.screenshot({path:`.cache/article-translation-admin-${width}.png`});
+  }finally{await context.close();await f.close();}
+});
 
 for(const width of [390,1440])test(`Slovak article and language editor work at ${width}px`,async({browser})=>{
   const f=await articlesFixture();

@@ -39,6 +39,7 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
       const timeRequest=url.startsWith('/rest/v1/rpc/crm_time_')||url.startsWith('/rest/v1/rpc/crm_project_time')||url.startsWith('/rest/v1/crm_projects');
       if(timeRequest&&/^PT(400|404|409)$/.test(data?.code||''))throw fail(Number(data.code.slice(2)),String(data.message).slice(0,500));
       if(url.startsWith('/rest/v1/crm_projects')&&data?.code==='23503')throw fail(409,'This project has time records. Keep it and mark it completed or cancelled to preserve its history.');
+      if(url.startsWith('/rest/v1/articles')&&data?.code==='23505'&&String(data.message).includes('articles_translation_language_idx'))throw fail(409,'This translation group already has an article in that language. Edit that version or choose a different group.');
       const status=[400,401,403,409,413,429].includes(response.status) ? response.status : 502;
       const researchConflict=url.startsWith('/rest/v1/rpc/crm_research_') && response.status===409;
       const reviewConflict=researchConflict && url!=='/rest/v1/rpc/crm_research_import';

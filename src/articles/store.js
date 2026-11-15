@@ -3,12 +3,15 @@ import {validateDocument,validateImage,documentText} from '../../public/articles
 const fail = (status,message) => Object.assign(new Error(message),{status});
 export const articleActions = ['articles-list','articles-get','articles-save','articles-delete','articles-upload'];
 export const articleReads = ['articles-list','articles-get'];
-export const articleListFields = 'id,slug,title,excerpt,cover,status,version,created_at,updated_at,published_at,language';
+export const articleListFields = 'id,slug,title,excerpt,cover,status,version,created_at,updated_at,published_at,language,translation_group';
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 export function validateArticle(input,env) {
   if (!input || !['draft','published'].includes(input.status)) throw fail(400,'Choose draft or published.');
   if (input.language !== undefined && !['en','sk'].includes(input.language)) throw fail(400,'Choose English or Slovak.');
   const result = {status:input.status,language:input.language||'en'};
+  const group=input.translation_group;
+  if (group != null && (typeof group !== 'string' || group.length>120 || group.trim()&&!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(group.trim()))) throw fail(400,'Use lowercase words separated by hyphens for the translation group.');
+  result.translation_group=group?.trim()||null;
   for (const [key,max] of Object.entries({title:180,slug:120,excerpt:500,seo_title:100,seo_description:320})) {
     if (typeof input[key] !== 'string' || input[key].length > max) throw fail(400,`Check the ${key.replaceAll('_',' ')} field.`);
     result[key] = input[key].trim();
@@ -45,7 +48,7 @@ export async function handleArticles({action,body={},url,call,env,user}) {
     if (!deleted?.length) throw conflict();
     return {deleted:true};
   }
-  const article = validateArticle({...body,language:body.language ?? current?.language ?? 'en'},env);
+  const article = validateArticle({...body,language:body.language ?? current?.language ?? 'en',translation_group:body.translation_group===undefined?current?.translation_group:body.translation_group},env);
   if (current?.published_at && article.slug !== current.slug) throw fail(400,'Published URLs stay fixed so existing links keep working.');
   const now=new Date().toISOString();
   const saved=await call('/rest/v1/articles'+filter,{method:current?'PATCH':'POST',headers:{Prefer:'return=representation'},body:{...article,...(!current?{id:randomUUID()}:{}),version:(current?.version||0)+1,updated_at:now,published_at:current?.published_at || (article.status==='published'?now:null)}});
