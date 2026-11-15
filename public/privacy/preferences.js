@@ -18,7 +18,8 @@ dialog.innerHTML = `<h2 id="privacy-title">${copy.title}</h2><p id="privacy-desc
 document.body.append(dialog);
 function choose(analytics) {
   document.cookie = `${CONSENT_COOKIE}=${CONSENT_VERSION}.${analytics ? 'yes' : 'no'}.${Date.now()}; Path=/; Max-Age=${CONSENT_MAX_AGE}; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
-  if (!analytics) { try { sessionStorage.removeItem('sv-website-session-v1'); } catch {} }
+  // A new decision starts a new visit; never reuse a pre-consent/legacy session.
+  try { sessionStorage.removeItem('sv-website-session-v1'); } catch {}
   dispatchEvent(new Event('shapeviz:consent'));
   dialog.close();
 }

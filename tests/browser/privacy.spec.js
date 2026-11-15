@@ -11,8 +11,10 @@ for(const width of [1440,390])test(`privacy controls and legal pages work at ${w
   expect(events).toHaveLength(0);expect(await page.evaluate(()=>sessionStorage.getItem('sv-website-session-v1'))).toBeNull();
   await page.getByRole('button',{name:'Odmietnuť analytiku'}).click();
   await page.reload();await expect(dialog).not.toBeVisible();expect(events).toHaveLength(0);
+  await page.evaluate(()=>sessionStorage.setItem('sv-website-session-v1',JSON.stringify({id:'8e098d4d-4507-4ba0-968d-8186fdf8ae35',seconds:120,lastActive:Date.now(),referrer:''})));
   await page.locator('footer [data-privacy-settings]').click();await expect(dialog).toBeVisible();
   await page.getByRole('button',{name:'Povoliť analytiku'}).click();await expect.poll(()=>events.length).toBe(1);
+  expect(events[0].sessionId).not.toBe('8e098d4d-4507-4ba0-968d-8186fdf8ae35');
   const id=events[0].sessionId;await page.clock.runFor(16000);expect(events.length).toBeGreaterThan(1);
   await page.locator('footer [data-privacy-settings]').click();await page.getByRole('button',{name:'Odmietnuť analytiku'}).click();
   const count=events.length;await page.clock.runFor(32000);await page.evaluate(()=>dispatchEvent(new Event('pagehide')));expect(events).toHaveLength(count);
