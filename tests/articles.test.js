@@ -2,8 +2,31 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {articlesFixture} from './helpers/articles-fixture.js';
 import {firstArticle} from '../src/articles/first-article.js';
+import {productVisualizationArticle} from '../src/articles/product-visualization-article.js';
 import {validateDocument,renderDocument,safeLink} from '../public/articles/content.js';
 import {robotsText,sitemapXml} from '../src/website/seo.js';
+
+test('Slovak articles preserve language through editing and expose matching SEO',async()=>{
+  const f=await articlesFixture();
+  try {
+    assert.equal((await f.request('articles-save',{...productVisualizationArticle,language:'invalid'})).status,400);
+    const saved=await f.request('articles-save',productVisualizationArticle);
+    assert.equal(saved.status,200);
+    const {article}=await saved.json();assert.equal(article.language,'sk');
+    const {language,...legacy}=article;
+    const updated=await f.request('articles-save',legacy);
+    assert.equal((await updated.json()).article.language,'sk');
+    const response=await fetch(f.origin+'/articles/'+article.slug),html=await response.text();
+    assert.equal(response.headers.get('content-language'),'sk');
+    assert.match(html,/<html lang="sk">/);
+    assert.match(html,/"inLanguage":"sk"/);
+    assert.match(html,/property="og:locale" content="sk_SK"/);
+    assert.match(html,/V TOMTO ČLÁNKU/);
+    assert.match(html,/href="\/sk\/sluzby\/produktove-interierove-vizualizacie"/);
+    assert.doesNotMatch(html,/SV Textures/);
+    assert.ok((await(await fetch(f.origin+'/sitemap-articles.xml')).text()).includes(article.slug));
+  } finally {await f.close();}
+});
 
 test('article lifecycle protects drafts, writes, concurrency and stable published URLs',async()=>{
   const f=await articlesFixture();

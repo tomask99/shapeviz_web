@@ -1,0 +1,9 @@
+{
+  "creator": "Shapeviz",
+  "notes": "Existing website portfolio images reused for the product visualization article. Resized without cropping and encoded as WebP, with 800px wide responsive variants.",
+  "images": [
+    {"name":"product-lifestyle","source":"public/media/milenium-interior-1440.webp","width":1440,"height":960},
+    {"name":"product-studio","source":"public/media/gallery/studio_01-1920.webp","width":1600,"height":1195},
+    {"name":"product-detail","source":"public/media/gallery/detail_02-1664.webp","width":1197,"height":1600}
+  ]
+}

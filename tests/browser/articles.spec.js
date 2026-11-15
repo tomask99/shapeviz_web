@@ -1,6 +1,43 @@
 import {test,expect} from '@playwright/test';
 import {articlesFixture} from '../helpers/articles-fixture.js';
 import {readFile} from 'node:fs/promises';
+import {productVisualizationArticle} from '../../src/articles/product-visualization-article.js';
+
+for(const width of [390,1440])test(`Slovak article and language editor work at ${width}px`,async({browser})=>{
+  const f=await articlesFixture();
+  const context=await browser.newContext({viewport:{width,height:1000},reducedMotion:'reduce'});
+  try {
+    expect((await f.request('articles-save',productVisualizationArticle)).status).toBe(200);
+    const page=await context.newPage();
+    await page.goto(f.origin+'/articles/'+productVisualizationArticle.slug);
+    await expect(page.locator('html')).toHaveAttribute('lang','sk');
+    await expect(page.getByRole('heading',{level:1})).toHaveText(productVisualizationArticle.title);
+    for(const image of await page.locator('main img').all()) {
+      await image.scrollIntoViewIfNeeded();
+      await expect.poll(()=>image.evaluate(img=>img.naturalWidth)).toBeGreaterThan(0);
+    }
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await page.evaluate(()=>scrollTo(0,0));
+    await page.screenshot({path:`.cache/article-products-${width}.png`,fullPage:true});
+    await page.getByRole('link',{name:'Pozrieť produktové a interiérové vizualizácie',exact:true}).click();
+    expect(new URL(page.url()).pathname).toBe('/sk/sluzby/produktove-interierove-vizualizacie');
+    await context.addCookies([{name:'sv_access',value:'owner',url:f.origin+'/api/admin'}]);
+    await page.goto(f.origin+'/admin/site-editing#articles');
+    await page.getByRole('button',{name:'Edit '+productVisualizationArticle.title,exact:true}).click();
+    const language=page.getByLabel('Article language',{exact:true});
+    await expect(language).toHaveValue('sk');
+    await language.selectOption('en');
+    await page.getByRole('button',{name:'Update live article',exact:true}).click();
+    await expect(page.locator('[data-editor-status]')).toHaveText('All changes saved');
+    await page.getByRole('button',{name:'Close article editor',exact:true}).click();
+    await page.getByRole('button',{name:'Edit '+productVisualizationArticle.title,exact:true}).click();
+    await expect(language).toHaveValue('en');
+    await language.selectOption('sk');
+    await page.getByRole('button',{name:'Update live article',exact:true}).click();
+    await expect(page.locator('[data-editor-status]')).toHaveText('All changes saved');
+    await page.screenshot({path:`.cache/article-language-editor-${width}.png`});
+  } finally {await context.close();await f.close();}
+});
 
 for(const width of [390,1440])test(`Articles editor publishes, previews, formats and unpublishes at ${width}px`,async({browser})=>{
   test.setTimeout(90000);
