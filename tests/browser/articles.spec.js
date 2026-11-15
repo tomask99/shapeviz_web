@@ -48,7 +48,7 @@ for(const width of [390,1440])test(`Articles editor publishes, previews, formats
     expect((await context.request.get(f.origin+'/articles/my-material-workflow')).status()).toBe(404);
     await editor.getByRole('button',{name:'Close article editor',exact:true}).click();
     page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Delete My material workflow',exact:true}).click();await expect(page.locator('.article-admin-card')).toHaveCount(1);
-    await page.locator('.article-admin-card [data-open]').click();await expect(editor.getByRole('textbox',{name:'Article content'}).locator('figure')).toHaveCount(3);
+    await page.locator('.article-admin-card [data-open]').click();await expect(editor.getByRole('textbox',{name:'Article content'}).locator('figure')).toHaveCount(4);
     await editor.getByRole('button',{name:'Update live article',exact:true}).click();await expect(editor.locator('[data-editor-status]')).toHaveText('All changes saved');
     await page.screenshot({path:`.cache/articles-first-editor-${width}.png`});await editor.getByRole('button',{name:'Close article editor',exact:true}).click();
     await publicPage.goto(f.origin+'/articles');await expect(publicPage.getByRole('heading',{name:'FIELD NOTES.'})).toBeVisible();await publicPage.screenshot({path:`.cache/articles-index-${width}.png`,fullPage:true});

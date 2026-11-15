@@ -62,8 +62,11 @@ export const firstArticle = {
     p('New to Blender? Start with the ready-made preview plane instead of building a scene. That gives you a manageable first workflow: load an image, inspect the material, adjust a channel and export. You do not need to begin by modeling an object or arranging a render scene.'),
     {type:'blockquote',content:[p('SV Textures is a Blender add-on, not a standalone application. You need Blender installed. The focused workspace makes it approachable for people who do not normally work in Blender, but there is still a short setup and learning step.')]},
     p('Before buying, check the current Blender, operating system and GPU requirements on the product page. The sample wood material shown here comes from ambientCG and is illustrative; it was not generated with SV Textures.'),
-    p(link('Explore SV Textures and its features','/shop/sv-textures-blender-pbr-generator'),' to see whether the workflow fits your next material.'),
     {type:'horizontalRule'},
     p('Image credits: ',link('WoodFloor051 by ambientCG','https://ambientcg.com/a/WoodFloor051'),', licensed under ',link('CC0 1.0 Universal','https://docs.ambientcg.com/license/'),'. Images have been resized and optimized for this guide. These web previews are illustrations, not production-ready texture downloads.'),
+    h('Create PBR maps faster with SV Textures'),
+    image('sv-textures','SV Textures for Blender, with previews of diffuse, roughness, normal and height maps','SV Textures by Shapeviz',1005,1005),
+    p('SV Textures speeds up the overall PBR creation process by bringing texture correction, seamless tiling, map generation and export into one workspace. Spend less time on repetitive setup and move from a source texture to a usable PBR set faster.'),
+    p(link('Get SV Textures in the Shapeviz shop','/shop/sv-textures-blender-pbr-generator')),
   ]}
 };
