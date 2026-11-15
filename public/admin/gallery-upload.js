@@ -1,6 +1,6 @@
 import {retryUpload} from './upload-retry.js';
 
-export async function uploadGalleryImage(file, api, progress) {
+export async function uploadGalleryImage(file, api, progress, action = 'site-gallery-upload') {
   if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) throw new Error('Choose a JPG, PNG, WebP or AVIF image.');
   if (file.size > 25 * 1024 * 1024) throw new Error('Choose an image smaller than 25 MB.');
   const bitmap = await createImageBitmap(file);
@@ -18,7 +18,7 @@ export async function uploadGalleryImage(file, api, progress) {
     const image = await encode(2400, .88);
     const thumb = await encode(800, .82);
     const id = crypto.randomUUID();
-    const signed = await api('site-gallery-upload', {uploadId:id});
+    const signed = await api(action, {uploadId:id});
     for (const [name, media] of [['image', image], ['thumb', thumb]]) {
       await retryUpload(async () => {
         const response = await fetch(signed[name].url, {method:'PUT', headers:{'Content-Type':'image/webp'}, body:media.blob, signal:AbortSignal.timeout(90_000)});

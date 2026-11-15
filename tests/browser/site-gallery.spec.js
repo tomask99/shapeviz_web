@@ -7,7 +7,7 @@ for (const width of [390, 1440]) {
     const fixture = await siteContentFixture();
     const context = await browser.newContext({viewport:{width, height:1000}, hasTouch:width === 390});
     try {
-      await context.addCookies([{name:'sv_access', value:'owner', url:fixture.origin + '/api/admin'}]);
+      await context.addCookies([{name:'sv_access', value:'owner', url:fixture.origin + '/api/admin'},{name:'sv_analytics',value:`1.no.${Date.now()}`,url:fixture.origin+'/'}]);
       const uploaded = new Map();
       await context.route('https://test.supabase.co/storage/v1/**', async route => {
         const request = route.request();

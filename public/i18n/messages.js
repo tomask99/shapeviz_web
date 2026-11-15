@@ -1,7 +1,7 @@
 // Translate only authored UI copy, never stored product names or visitor content.
 export const sk = {
-  'We use your details to respond to your inquiry.': 'Va?e ?daje pou??vame na vybavenie v??ho dopytu.',
-  'Privacy notice': 'Ochrana osobn?ch ?dajov',
+  'We use your details to respond to your inquiry.': 'Vaše údaje používame na vybavenie vášho dopytu.',
+  'Privacy notice': 'Ochrana osobných údajov',
   'SHAPEVIZ | 3D Modeling, Visualization & Video Production': 'SHAPEVIZ | 3D modelovanie, vizualizácie a tvorba videí',
   'High-end 3D modeling, product and architectural visualization, CGI animation and video production. Shapeviz turns your ideas into compelling visual content.': 'High-end 3D modelovanie, produktové a architektonické vizualizácie, CGI animácie a tvorba videí. Shapeviz premení vaše nápady na pôsobivý vizuálny obsah.',
   'High-end 3D modeling, visualization & video production.': 'High-end 3D modelovanie, vizualizácie a tvorba videí.',
@@ -35,6 +35,7 @@ export const sk = {
   'Services': 'Služby',
   'Work': 'Tvorba',
   'Shop': 'Obchod',
+  'Articles': 'Články',
   'Coming soon': 'Už čoskoro',
   'Let’s talk': 'Napíšte nám',
   'A VISUAL STUDIO': 'VIZUÁLNE ŠTÚDIO',

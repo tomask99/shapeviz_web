@@ -42,8 +42,8 @@ test('each language has absolute canonical/social metadata and truthful localize
  }
 });
 
-test('sitemap lists only indexable language URLs and contact accepts the new services',()=>{
- const xml=sitemapXml();assert.equal((xml.match(/<loc>/g)||[]).length,10);
+test('sitemap lists indexable language URLs and articles; contact accepts the new services',()=>{
+ const xml=sitemapXml();assert.equal((xml.match(/<loc>/g)||[]).length,11);assert.match(xml,/<loc>https:\/\/www.shapeviz.com\/articles<\/loc>/);
  for(const locale of ['sk','en'])assert.ok(xml.includes(`<loc>${SITE_ORIGIN}/${locale}</loc>`));
  assert.ok(!/admin|shop|\/files|\/p\//.test(xml));assert.ok(robotsText().includes(`Sitemap: ${SITE_ORIGIN}/sitemap.xml`));
  const selected=['High-end 3D modeling','Product & interior visualization','Architectural 3D modeling','Video production & animation','Marketing & digital presence','Websites & applications'];
@@ -74,7 +74,7 @@ test('service pages expose distinct localized copy, equivalent URLs and schema w
 });
 
 test('all sitemap destinations, service rewrites and missing pages return the correct HTTP response',async()=>{
- const server=createApp({env:{}});await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;
+ const server=createApp({env:{SUPABASE_URL:'https://test.supabase.co',SUPABASE_SECRET_KEY:'test'},send:async()=>Response.json([])});await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;
  try{
   for(const {1:url} of sitemapXml().matchAll(/<loc>(.*?)<\/loc>/g)){
    const response=await fetch(origin+new URL(url).pathname);assert.equal(response.status,200,url);

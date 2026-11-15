@@ -1,5 +1,6 @@
 import {handleShop,shopActions,shopReadActions} from '../shop/catalog.js';
 import {handleSiteContent} from '../website/content.js';
+import {handleArticles,articleActions,articleReads} from '../articles/store.js';
 import {handleGallery} from '../website/gallery.js';
 import {handlePlanner,plannerActions} from './planner.js';
 import {createProductPreviews} from '../shop/previews.js';
@@ -110,13 +111,13 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
       if(action===MCP_ACTION&&req.method!=='POST')throw fail(405,'Use POST for the stateless MCP endpoint.');
       if(OAUTH_ADMIN_ACTIONS.includes(action)&&req.method!==(action==='oauth-connections'?'GET':'POST'))throw fail(405,'Use the required connection method.');
       if(action==='crm-tools-list'&&req.method!=='GET'||action==='crm-tools-call'&&req.method!=='POST')throw fail(405,'Use GET for the tool catalog and POST for tool calls.');
-      const readActions=['site-gallery-list','site-content-list','planner-list',...shopReadActions,...timeReads,...fileReadActions,'me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary','crm-tools-list',...researchReadActions];
+      const readActions=[...articleReads,'site-gallery-list','site-content-list','planner-list',...shopReadActions,...timeReads,...fileReadActions,'me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary','crm-tools-list',...researchReadActions];
       if(req.method==='GET' && ![...readActions,'crm-note-summaries','oauth-connections','crm-global-search','crm-sales-report','crm-clients','crm-client','crm-client-tasks','crm-project','crm-project-tasks','crm-project-notes','crm-projects','crm-workspace-projects','crm-saved-views','crm-overview','crm-recent-activity','crm-recipients','crm-recipient-stats','crm-signals','tracking-gate'].includes(action)) throw fail(405,'Use POST for this action.');
       if(req.method==='POST' && !/^application\/json\b/i.test(req.headers['content-type']||'')) throw fail(415,'JSON is required.');
       // A JSON string is escaped inside the transport envelope; the research validator
       // independently enforces the 500,000-byte source limit after decoding.
       if(req.method==='POST'){
-        try{body=await readJson(req,action==='crm-tools-call'||action===MCP_ACTION?MAX_IMPORT_TOOL_REQUEST_BYTES:READ_TOOL_ACTIONS.includes(action)||OAUTH_ADMIN_ACTIONS.includes(action)?MAX_TOOL_REQUEST_BYTES:action==='shop-save'?5_000_000:action.startsWith('crm-research-')?3_100_000:action.startsWith('crm-import-')?500_000:action==='crm-project-brief-save'?310_000:['site-content-save','site-gallery-save'].includes(action)?300_000:100_000);}
+        try{body=await readJson(req,action==='crm-tools-call'||action===MCP_ACTION?MAX_IMPORT_TOOL_REQUEST_BYTES:READ_TOOL_ACTIONS.includes(action)||OAUTH_ADMIN_ACTIONS.includes(action)?MAX_TOOL_REQUEST_BYTES:action==='shop-save'?5_000_000:action==='articles-save'?350_000:action.startsWith('crm-research-')?3_100_000:action.startsWith('crm-import-')?500_000:action==='crm-project-brief-save'?310_000:['site-content-save','site-gallery-save'].includes(action)?300_000:100_000);}
         catch(error){if(action===MCP_ACTION&&error instanceof SyntaxError)throw Object.assign(fail(400,'Invalid JSON.'),{rpcCode:-32700});
           if(OAUTH_ADMIN_ACTIONS.includes(action)&&error instanceof SyntaxError)throw fail(400,'Invalid JSON.');
           if(READ_TOOL_ACTIONS.includes(action)&&error instanceof SyntaxError)throw fail(400,'Tool request must be valid JSON.');throw error;}
@@ -143,6 +144,10 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
         return;
       }
       const {user,token}=await session(req,res);
+      if (articleActions.includes(action)) {
+        if (req.method !== (articleReads.includes(action) ? 'GET' : 'POST')) throw fail(405,'Use the required article method.');
+        reply(200,await handleArticles({action,body,url,call,env,user}));return;
+      }
       if (['site-gallery-list', 'site-gallery-save', 'site-gallery-upload'].includes(action)) {
         if (req.method !== (action === 'site-gallery-list' ? 'GET' : 'POST')) throw fail(405, 'Use the required gallery method.');
         reply(200, await handleGallery({action, body, call, env, user}));

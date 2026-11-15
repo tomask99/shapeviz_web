@@ -51,10 +51,10 @@ export function sitemapXml() {
     const alternatives = ['sk','en','x-default'].map(lang=>`<xhtml:link rel="alternate" hreflang="${lang}" href="${SITE_ORIGIN}${page[lang==='x-default'?'default':lang]}"/>`).join('');
     return `  <url><loc>${SITE_ORIGIN}${page[locale]}</loc>${alternatives}<image:image><image:loc>${SITE_ORIGIN}${page.image}</image:loc></image:image></url>`;
   }));
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${entries.join('\n')}\n</urlset>\n`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n<url><loc>${SITE_ORIGIN}/articles</loc></url>\n${entries.join('\n')}\n</urlset>\n`;
 }
 
 export function robotsText() {
   // Keep noindex pages crawlable so crawlers can read their existing directives.
-  return `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /oauth/\n\nSitemap: ${SITE_ORIGIN}/sitemap.xml\nSitemap: ${SITE_ORIGIN}/sitemap-products.xml\n`;
+  return `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /oauth/\n\nSitemap: ${SITE_ORIGIN}/sitemap.xml\nSitemap: ${SITE_ORIGIN}/sitemap-products.xml\nSitemap: ${SITE_ORIGIN}/sitemap-articles.xml\n`;
 }

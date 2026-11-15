@@ -27,6 +27,8 @@
     }
   },
   "redirects": [
+    {"source":"/articles/","destination":"/articles","permanent":true},
+    {"source":"/articles/:article([a-z0-9-]+)/","destination":"/articles/:article","permanent":true},
     {"source":"/sk/ochrana-osobnych-udajov","destination":"/sk/pravne-informacie","permanent":true},
     {"source":"/en/privacy","destination":"/en/legal","permanent":true},
     {"source":"/shop/:product([a-z0-9-]+)/","destination":"/shop/:product","permanent":true},
@@ -44,6 +46,9 @@
     }
   ],
   "rewrites": [
+    {"source":"/articles","destination":"/api/site-events?route=articles"},
+    {"source":"/articles/:article([a-z0-9-]+)","destination":"/api/site-events?route=articles&article=:article"},
+    {"source":"/sitemap-articles.xml","destination":"/api/site-events?route=articles-sitemap"},
     {"source":"/sk/pravne-informacie","destination":"/api/site-events?route=page&locale=sk&legal=legal"},
     {"source":"/sk/ochrana-osobnych-udajov","destination":"/api/site-events?route=page&locale=sk&legal=privacy"},
     {"source":"/en/legal","destination":"/api/site-events?route=page&locale=en&legal=legal"},

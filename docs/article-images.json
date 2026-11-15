@@ -1,0 +1,47 @@
+{
+  "asset": "WoodFloor051",
+  "creator": "ambientCG",
+  "assetPage": "https://ambientcg.com/a/WoodFloor051",
+  "license": "CC0 1.0 Universal",
+  "licenseUrl": "https://docs.ambientcg.com/license/",
+  "retrievedAt": "2026-11-15T15:48:37.366Z",
+  "notes": "Material render and map previews supplied by ambientCG. Resized and encoded to WebP for editorial display, not production texture downloads. The normal-map illustration uses the source DirectX convention.",
+  "images": [
+    {
+      "name": "wood-pbr-material",
+      "source": "https://acg-media.struffelproductions.com/file/ambientCG-Web/media/thumbnail/2048-JPG-242424/WoodFloor051.jpg",
+      "width": 1600,
+      "height": 1600,
+      "originalBytes": 897575,
+      "webpBytes": 180392,
+      "smallBytes": 44082
+    },
+    {
+      "name": "wood-base-color",
+      "source": "https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/WoodFloor051/WoodFloor051_SQ_Color.jpg?94450",
+      "width": 1600,
+      "height": 1600,
+      "originalBytes": 956451,
+      "webpBytes": 212744,
+      "smallBytes": 45664
+    },
+    {
+      "name": "wood-roughness",
+      "source": "https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/WoodFloor051/WoodFloor051_SQ_Roughness.jpg?10371",
+      "width": 1600,
+      "height": 1600,
+      "originalBytes": 595913,
+      "webpBytes": 124904,
+      "smallBytes": 27610
+    },
+    {
+      "name": "wood-normal",
+      "source": "https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/WoodFloor051/WoodFloor051_SQ_NormalDX.jpg?95384",
+      "width": 1600,
+      "height": 1600,
+      "originalBytes": 618674,
+      "webpBytes": 58728,
+      "smallBytes": 4600
+    }
+  ]
+}

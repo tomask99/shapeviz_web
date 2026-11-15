@@ -388,4 +388,4 @@ html[lang=sk] .statement { font-size: clamp(62px, 8vw, 138px); }
   html[lang=sk] .statement { font-size: 15.5vw; }
   html[lang=sk] .hero-bottom p { max-width: 185px; }
 }
-@media(max-width:600px){.site-header{gap:12px;flex-wrap:wrap;height:auto;min-height:110px;padding-top:16px;padding-bottom:12px}.site-header nav{width:100%;justify-content:space-between;gap:12px}.site-header .nav-contact{margin-left:0;gap:10px}.shop-nav{font-size:11px}.site-header nav a:first-child{display:inline-flex}}
+@media(max-width:600px){.site-header{gap:12px;flex-wrap:wrap;height:auto;min-height:110px;padding-top:16px;padding-bottom:12px}.site-header nav{width:100%;justify-content:space-between;gap:8px}.site-header .nav-contact{margin-left:0;gap:10px}.shop-nav{font-size:11px}.site-header nav a:first-child{display:inline-flex}}

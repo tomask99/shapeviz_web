@@ -81,7 +81,7 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
       const sitemap = pathname === '/sitemap.xml';
       res.writeHead(200,{'Content-Type':sitemap?'application/xml; charset=utf-8':'text/plain; charset=utf-8','Cache-Control':'public, max-age=3600'}).end(req.method==='HEAD'?undefined:sitemap?sitemapXml():robotsText());return;
     }
-    if (pathname === '/api/shop' || pathname === '/api/site-events' || pathname === '/sitemap-products.xml' || /^\/shop\/[a-z0-9-]+\/?$/.test(pathname)) { await website(req,res);return; }
+    if (pathname === '/sitemap-articles.xml' || /^\/articles(?:\/[a-z0-9-]+)?\/?$/.test(pathname) || pathname === '/api/shop' || pathname === '/api/site-events' || pathname === '/sitemap-products.xml' || /^\/shop\/[a-z0-9-]+\/?$/.test(pathname)) { await website(req,res);return; }
     if (legalRoute(pathname) || ['/', '/index.html', '/shop', '/shop/', '/shop/index.html'].includes(pathname) || /^\/(sk|en)(\/shop)?\/?$/.test(pathname) || /^\/(sk|en)\/(sluzby|services)\/[a-z0-9-]+\/?$/.test(pathname)) {await publicPage(req,res);return;}
     if (pathname === '/api/contact') { await contact(req, res); return; }
     if (pathname === '/api/files') { await files(req, res); return; }
@@ -96,6 +96,9 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
       if (pathname === '/files/vendor/megajs.mjs' && publicDir === path.join(root,'public')) {
         await serveFile(req,res,path.join(root,'node_modules/megajs/dist/main.browser-es.mjs'),pathname);return;
       }
+    }
+    if (pathname === '/admin/vendor/article-editor.js' && publicDir === path.join(root,'public')) {
+      await serveFile(req,res,path.join(root,'.cache/articles/editor.js'),pathname);return;
     }
     if (pathname === '/api/admin') { await admin(req, res); return; }
     if(Object.hasOwn(OAUTH_ROUTES,pathname)){await oauth(req,res);return;}
