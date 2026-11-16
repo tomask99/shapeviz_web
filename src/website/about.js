@@ -11,7 +11,10 @@ export function validateAbout(about) {
     if (!source || typeof source !== 'object' || Array.isArray(source)) throw fail(400, 'Enter profile text in Slovak and English.');
     clean[locale] = {};
     for (const {key, label, maxLength} of aboutFields) {
-      const value = source[key];
+      // Profiles saved by the original editor keep all three paragraphs.
+      const value = key === 'bio' && source.bio === undefined
+        ? ['intro', 'focus', 'collaborations'].map(field => typeof source[field] === 'string' ? source[field].trim() : '').filter(Boolean).join('\n\n')
+        : source[key];
       if (typeof value !== 'string' || !value.trim() || value.length > maxLength) throw fail(400, `${locale.toUpperCase()}: ${label} must contain 1–${maxLength} characters.`);
       clean[locale][key] = value.trim();
     }
@@ -23,7 +26,7 @@ export async function handleAbout({action, body, call}) {
   const rows = await call('/rest/v1/site_content?id=eq.1&select=about,about_version');
   const current = rows?.[0];
   if (!current || !Number.isSafeInteger(current.about_version)) throw fail(503, 'Profile storage is not ready. Apply the site about migration.');
-  if (action === 'site-about-list') return {about: current.about ?? structuredClone(defaultAbout), version: current.about_version};
+  if (action === 'site-about-list') return {about: validateAbout(current.about ?? defaultAbout), version: current.about_version};
   if (!Number.isSafeInteger(body.version) || body.version !== current.about_version) throw conflict();
   const about = validateAbout(body.about);
   const saved = await call(`/rest/v1/site_content?id=eq.1&about_version=eq.${body.version}&select=about,about_version`, {

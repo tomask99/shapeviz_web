@@ -42,7 +42,14 @@ export function renderPublicPage(source, locale, {shop = false, explicit = false
     if (!shop && aboutField && typeof about?.[locale]?.[aboutField] === 'string') {
       // Saved copy is plain text, not markup, and is already in the selected language.
       const value = about[locale][aboutField];
-      if (node.tagName === 'img') node.attrs.find(attr => attr.name === 'alt').value = value;
+      if (aboutField === 'bio') {
+        node.childNodes = value.split(/\r?\n\s*\r?\n/).map(text => text.trim()).filter(Boolean).map(text => {
+          const paragraph = {nodeName: 'p', tagName: 'p', attrs: [], namespaceURI: 'http://www.w3.org/1999/xhtml', childNodes: [], parentNode: node};
+          paragraph.childNodes = [{nodeName: '#text', value: text, parentNode: paragraph}];
+          return paragraph;
+        });
+      }
+      else if (node.tagName === 'img') node.attrs.find(attr => attr.name === 'alt').value = value;
       else node.childNodes = [{nodeName: '#text', value, parentNode: node}];
       return;
     }

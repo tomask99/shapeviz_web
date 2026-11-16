@@ -68,14 +68,12 @@
 .site-editing-save .actions { margin: 0; flex-wrap: wrap; }
 .site-editing [data-error] { color: var(--accent); }
 .site-about-language { display: block; max-width: 260px; margin-top: 24px; }
-.site-about-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; padding: 24px 0 0; margin: 24px 0 0; border: 0; border-top: 1px solid var(--line); min-width: 0; }
-.site-about-fields legend { font-weight: 600; padding-right: 16px; }
+.site-about { max-width: 900px; }
+.site-about-fields { padding: 0; margin: 28px 0 0; border: 0; min-width: 0; }
 .site-about-fields label { min-width: 0; margin: 0; }
-.site-about-wide { grid-column: 1 / -1; }
 .site-about input, .site-about textarea, .site-about select { display: block; width: 100%; min-width: 0; margin: 8px 0 0; }
-.site-about textarea { resize: vertical; line-height: 1.6; }
+.site-about textarea { resize: vertical; min-height: 360px; padding: 18px; font-size: 16px; line-height: 1.7; }
 .site-about [data-about-error] { color: var(--accent); }
-@media (max-width: 600px) { .site-about-fields { grid-template-columns: minmax(0, 1fr); } }
 .site-editing-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @media (max-width: 1100px) {
   .site-company-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }

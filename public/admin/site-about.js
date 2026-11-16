@@ -1,5 +1,4 @@
 import {svgIcon} from '../ui/icons.js';
-import {aboutFields} from '../site/about-content.js';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[character]));
 
@@ -17,14 +16,13 @@ export function mountAbout({root, api, notify}) {
     if (disposed) return;
     root.innerHTML = `<div class="site-about">
       <div class="section-title"><h2>About me</h2></div>
-      <p class="fine">Edit your introduction, specialisation and collaborations in both languages. Save changes to update the website.</p>
+      <p class="fine">Write your full bio in one text box. Separate paragraphs with a blank line.</p>
       <label class="site-about-language">Editing language<select data-about-language><option value="sk" ${locale==='sk'?'selected':''}>Slovak</option><option value="en" ${locale==='en'?'selected':''}>English</option></select></label>
       <form data-about-form>
         ${['sk','en'].map(language => `<fieldset class="site-about-fields" data-locale="${language}" ${language===locale?'':'hidden'}>
-          <legend>${language==='sk'?'Slovak':'English'} profile</legend>
-          ${aboutFields.map(({key,label,maxLength,multiline}) => `<label class="${multiline?'site-about-wide':''}">${label}${multiline
-            ? `<textarea name="${language}-${key}" data-field="${key}" rows="4" required maxlength="${maxLength}">${escape(content.about[language][key])}</textarea>`
-            : `<input name="${language}-${key}" data-field="${key}" required maxlength="${maxLength}" value="${escape(content.about[language][key])}">`}</label>`).join('')}
+          <legend class="site-editing-sr">${language==='sk'?'Slovak':'English'} profile</legend>
+          <label for="about-bio-${language}">${language==='sk'?'Text o mne':'About me text'}</label>
+          <textarea id="about-bio-${language}" name="${language}-bio" data-field="bio" rows="14" required maxlength="10000">${escape(content.about[language].bio)}</textarea>
         </fieldset>`).join('')}
         <p data-about-error role="alert"></p>
         <div class="site-editing-save"><p data-about-status role="status"></p><div class="actions">
