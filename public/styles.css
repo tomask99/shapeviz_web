@@ -206,6 +206,28 @@ figcaption .accent { margin-inline: 6px; }
  .gallery-end .gallery-collapse { font-size: 8px; gap: 8px; }
 }
 
+.founder { padding-bottom: var(--space); }
+.founder-grid { display: grid; grid-template-columns: minmax(0, .65fr) minmax(0, 1.35fr); gap: clamp(40px, 7vw, 120px); align-items: center; }
+.founder-portrait { min-width: 0; width: min(100%, 380px); }
+.founder-portrait img { width: 100%; height: auto; border-radius: 28px; }
+.founder-portrait figcaption { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; margin-top: 18px; }
+.founder-portrait figcaption > :last-child { color: var(--muted); }
+.founder-content { min-width: 0; }
+.founder-content h2 { font-size: clamp(32px, 3.6vw, 62px); line-height: 1.02; overflow-wrap: anywhere; }
+.founder-copy { display: grid; gap: 18px; max-width: 620px; margin-top: 30px; color: var(--muted); font-size: clamp(16px, 1.15vw, 19px); line-height: 1.65; }
+.founder-copy p:first-child { color: var(--text); }
+.founder-copy p { white-space: pre-line; overflow-wrap: anywhere; }
+.founder [data-about] { overflow-wrap: anywhere; }
+.founder-link { display: inline-flex; align-items: center; gap: 24px; min-height: 44px; margin-top: 26px; color: var(--accent); transition: color .25s; }
+.founder-link .ui-icon { width: 20px; height: 20px; }
+.founder-link:hover { color: var(--text); }
+@media (max-width: 800px) {
+  .founder-grid { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .founder-portrait { width: min(80%, 320px); }
+  .founder-content h2 { font-size: clamp(30px, 6.2vw, 48px); }
+  .founder-copy { margin-top: 24px; }
+}
+
 .clients { padding-bottom: var(--space); }
 .clients-intro h2 { font-size: clamp(32px, 4vw, 58px); }
 .clients-intro { margin-bottom: 80px; }

@@ -1,5 +1,6 @@
 import {handleShop,shopActions,shopReadActions} from '../shop/catalog.js';
 import {handleSiteContent} from '../website/content.js';
+import {handleAbout} from '../website/about.js';
 import {handleArticles,articleActions,articleReads} from '../articles/store.js';
 import {handleGallery} from '../website/gallery.js';
 import {handlePlanner,plannerActions} from './planner.js';
@@ -112,7 +113,7 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
       if(action===MCP_ACTION&&req.method!=='POST')throw fail(405,'Use POST for the stateless MCP endpoint.');
       if(OAUTH_ADMIN_ACTIONS.includes(action)&&req.method!==(action==='oauth-connections'?'GET':'POST'))throw fail(405,'Use the required connection method.');
       if(action==='crm-tools-list'&&req.method!=='GET'||action==='crm-tools-call'&&req.method!=='POST')throw fail(405,'Use GET for the tool catalog and POST for tool calls.');
-      const readActions=[...articleReads,'site-gallery-list','site-content-list','planner-list',...shopReadActions,...timeReads,...fileReadActions,'me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary','crm-tools-list',...researchReadActions];
+      const readActions=['site-about-list',...articleReads,'site-gallery-list','site-content-list','planner-list',...shopReadActions,...timeReads,...fileReadActions,'me','list','stats','website-stats','tracking-status','crm-list','crm-detail','crm-contacts','crm-notes','crm-activity','crm-pipeline','crm-followups','crm-presentations','crm-presentation-catalog','crm-presentation-stats','crm-presentation-company','crm-reply-summary','crm-tools-list',...researchReadActions];
       if(req.method==='GET' && ![...readActions,'crm-note-summaries','oauth-connections','crm-global-search','crm-sales-report','crm-clients','crm-client','crm-client-tasks','crm-project','crm-project-tasks','crm-project-notes','crm-projects','crm-workspace-projects','crm-saved-views','crm-overview','crm-recent-activity','crm-recipients','crm-recipient-stats','crm-signals','tracking-gate'].includes(action)) throw fail(405,'Use POST for this action.');
       if(req.method==='POST' && !/^application\/json\b/i.test(req.headers['content-type']||'')) throw fail(415,'JSON is required.');
       // A JSON string is escaped inside the transport envelope; the research validator
@@ -152,6 +153,11 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
       if (['site-gallery-list', 'site-gallery-save', 'site-gallery-upload'].includes(action)) {
         if (req.method !== (action === 'site-gallery-list' ? 'GET' : 'POST')) throw fail(405, 'Use the required gallery method.');
         reply(200, await handleGallery({action, body, call, env, user}));
+        return;
+      }
+      if (['site-about-list', 'site-about-save'].includes(action)) {
+        if (req.method !== (action === 'site-about-list' ? 'GET' : 'POST')) throw fail(405, 'Use the required profile editing method.');
+        reply(200, await handleAbout({action, body, call}));
         return;
       }
       if (['site-content-list', 'site-content-save'].includes(action)) {

@@ -1,6 +1,7 @@
 import {companyProjectUrl} from '../../public/site/company-url.js';
 import {svgIcon} from '../../public/ui/icons.js';
 import {validateGallery} from './gallery.js';
+import {validateAbout} from './about.js';
 
 const fail = (status, message) => Object.assign(new Error(message), {status});
 const conflict = () => fail(409, 'The company list changed in another window. Reload the saved list before saving again.');
@@ -50,7 +51,7 @@ export async function handleSiteContent({action, body, call}) {
 export async function loadPublicContent({env, send}) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) return null;
   try {
-    const response = await send(`${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/site_content?id=eq.1&select=companies,gallery`, {
+    const response = await send(`${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/site_content?id=eq.1&select=companies,gallery,about`, {
       headers: {apikey: env.SUPABASE_SECRET_KEY},
       signal: AbortSignal.timeout(5000)
     });
@@ -60,7 +61,9 @@ export async function loadPublicContent({env, send}) {
     const companies = validateCompanies(rows[0].companies);
     let gallery = null;
     try { if (rows[0].gallery != null) gallery = validateGallery(rows[0].gallery, env); } catch { /* Keep the built-in gallery available. */ }
-    return {companies, gallery};
+    let about = null;
+    try { if (rows[0].about != null) about = validateAbout(rows[0].about); } catch { /* Keep the built-in profile available. */ }
+    return {companies, gallery, about};
   } catch {
     // Keep the original public list available during a database outage.
     return null;

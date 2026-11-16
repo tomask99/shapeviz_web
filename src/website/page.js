@@ -13,7 +13,7 @@ import {createProductPreviews} from '../shop/previews.js';
 import {renderCatalogFallback} from '../shop/pages.js';
 import {legalRoute, legalPaths, renderLegalPage, withLegalFooter} from './legal.js';
 
-export function renderPublicPage(source, locale, {shop = false, explicit = false, interest = null, companies = null, gallery = null} = {}) {
+export function renderPublicPage(source, locale, {shop = false, explicit = false, interest = null, companies = null, gallery = null, about = null} = {}) {
   const document = parse(source, {scriptingEnabled: false});
   const suffix = shop ? '/shop' : '';
   const prefix = explicit || locale === 'sk' ? '/' + locale : '';
@@ -37,6 +37,14 @@ export function renderPublicPage(source, locale, {shop = false, explicit = false
         const serviceId = node.attrs.find(a => a.name === 'data-service-link')?.value;
         if (serviceId) attr.value = servicePath(serviceDefinitions.find(service=>service.id===serviceId), locale);
       }
+    }
+    const aboutField = node.attrs?.find(attr => attr.name === 'data-about')?.value;
+    if (!shop && aboutField && typeof about?.[locale]?.[aboutField] === 'string') {
+      // Saved copy is plain text, not markup, and is already in the selected language.
+      const value = about[locale][aboutField];
+      if (node.tagName === 'img') node.attrs.find(attr => attr.name === 'alt').value = value;
+      else node.childNodes = [{nodeName: '#text', value, parentNode: node}];
+      return;
     }
     for (const child of node.childNodes || []) walk(child);
     if (node.content) walk(node.content);

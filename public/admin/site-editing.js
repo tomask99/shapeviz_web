@@ -2,6 +2,7 @@ import {svgIcon} from '../ui/icons.js';
 import {mountCompanies} from './site-companies.js';
 import {mountGallery} from './site-gallery.js';
 import {mountArticles} from './articles.js';
+import {mountAbout} from './site-about.js';
 
 export function mountSiteEditing({root, api, notify}) {
   root.innerHTML = `<div class="site-editing">
@@ -10,10 +11,12 @@ export function mountSiteEditing({root, api, notify}) {
       <button type="button" role="tab" id="companies-tab" aria-controls="companies-panel" aria-selected="true">Companies</button>
       <button type="button" role="tab" id="gallery-tab" aria-controls="gallery-panel" aria-selected="false" tabindex="-1">Gallery</button>
       <button type="button" role="tab" id="articles-tab" aria-controls="articles-panel" aria-selected="false" tabindex="-1">Articles</button>
+      <button type="button" role="tab" id="about-tab" aria-controls="about-panel" aria-selected="false" tabindex="-1">About me</button>
     </div>
     <section id="companies-panel" role="tabpanel" aria-labelledby="companies-tab"></section>
     <section id="gallery-panel" role="tabpanel" aria-labelledby="gallery-tab" hidden></section>
     <section id="articles-panel" role="tabpanel" aria-labelledby="articles-tab" hidden></section>
+    <section id="about-panel" role="tabpanel" aria-labelledby="about-tab" hidden></section>
   </div>`;
   const cleanups = [mountCompanies({root:root.querySelector('#companies-panel'), api, notify})];
   const container = root.querySelector('.site-editing');
@@ -22,6 +25,7 @@ export function mountSiteEditing({root, api, notify}) {
   const tabs = [...root.querySelectorAll('[role="tab"]')];
   let galleryMounted = false;
   let articlesMounted = false;
+  let aboutMounted = false;
   function select(tab) {
     tabs.forEach(button => {
       const active = button === tab;
@@ -37,6 +41,10 @@ export function mountSiteEditing({root, api, notify}) {
       articlesMounted = true;
       cleanups.push(mountArticles({root:root.querySelector('#articles-panel'),api,notify}));
     }
+    if (tab.id === 'about-tab' && !aboutMounted) {
+      aboutMounted = true;
+      cleanups.push(mountAbout({root:root.querySelector('#about-panel'),api,notify}));
+    }
   }
   tabs.forEach((tab, index) => {
     tab.onclick = () => select(tab);
@@ -49,5 +57,6 @@ export function mountSiteEditing({root, api, notify}) {
     };
   });
   if(location.hash === '#articles') select(root.querySelector('#articles-tab'));
+  if(location.hash === '#about') select(root.querySelector('#about-tab'));
   return () => cleanups.forEach(cleanup => cleanup());
 }

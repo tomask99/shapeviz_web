@@ -8,6 +8,7 @@ export async function siteContentFixture() {
   await db.exec(await readFile(new URL('../../supabase/migrations/20261115105042_site_content.sql', import.meta.url), 'utf8'));
   await db.exec('create schema storage; create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);');
   await db.exec(await readFile(new URL('../../supabase/migrations/20261115113735_site_gallery.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('../../supabase/migrations/20261116205209_site_about.sql', import.meta.url), 'utf8'));
   let unavailable = false;
   const send = async (input, options = {}) => {
     const url = new URL(input);
@@ -21,6 +22,11 @@ export async function siteContentFixture() {
       if (unavailable) return Response.json({error: 'Unavailable'}, {status: 503});
       if (options.method === 'PATCH') {
         const body = JSON.parse(options.body);
+        if (Object.hasOwn(body, 'about')) {
+          const version = Number(url.searchParams.get('about_version').slice(3));
+          const result = await db.query('update site_content set about=$1, about_version=$2, updated_at=$3 where id=1 and about_version=$4 returning about,about_version', [JSON.stringify(body.about), body.about_version, body.updated_at, version]);
+          return Response.json(result.rows);
+        }
         if (Object.hasOwn(body, 'gallery')) {
           const version = Number(url.searchParams.get('gallery_version').slice(3));
           const result = await db.query('update site_content set gallery=$1, gallery_version=$2, updated_at=$3 where id=1 and gallery_version=$4 returning gallery,gallery_version', [JSON.stringify(body.gallery), body.gallery_version, body.updated_at, version]);
@@ -30,7 +36,7 @@ export async function siteContentFixture() {
         const result = await db.query('update site_content set companies=$1, version=$2, updated_at=$3 where id=1 and version=$4 returning companies,version', [JSON.stringify(body.companies), body.version, body.updated_at, version]);
         return Response.json(result.rows);
       }
-      return Response.json((await db.query('select companies,version,gallery,gallery_version from site_content where id=1')).rows);
+      return Response.json((await db.query('select companies,version,gallery,gallery_version,about,about_version from site_content where id=1')).rows);
     }
     if (url.pathname.startsWith('/storage/v1/object/upload/sign/site-gallery/')) return Response.json({url:url.pathname.replace('/storage/v1', '') + '?token=test'});
     if (url.pathname.includes('crm_time')) return Response.json({entries: [], items: [], timer: null, active: null});
