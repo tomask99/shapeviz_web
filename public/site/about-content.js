@@ -66,7 +66,7 @@ export const defaultAbout = {
     "heading": "ZA SHAPEVIZ",
     "headingAccent": "STOJÍM JA.",
     "cta": "VYTVORME NIEČO SPOLU",
-    "bio": "Som Tomas Krajcovic a za značkou Shapeviz stojím ja. Už dekádu sa venujem 3D grafike a najviac ma na nej baví vytvárať realitu pomocou svetla, materiálov a detailov.\n\nŠpecializujem sa na high-end 3D modely a fotorealistické rendery. Blízka je mi aj architektúra a kreatívne projekty, v ktorých je priestor skúšať nové nápady a dať im konkrétnu podobu.\n\nPočas svojej tvorby som sa podieľal na projektoch pre značky Prada, Pucci, Mazda, Milenium či MCM — na priamych zákazkách aj v spolupráci s kreatívnymi partnermi."
+    "bio": "Som Tomáš a 3D grafike sa venujem už viac ako desať rokov. Spolupracujem s interiérovými dizajnérmi a výrobcami nábytku. S viacerými medzinárodnými CGI štúdiami som pracoval aj na väčších komerčných a reklamných projektoch, napríklad pre značky Prada a Hugo Boss.\n\nVyštudoval som pozemné stavby a architektúru, takže rozumiem aj technickej stránke budov a interiérov, s ktorými pracujem. Baví ma prenášať realitu do 3D a podieľať sa na kreatívnych CGI produkciách."
   },
   "en": {
     "sectionLabel": "03 / BEHIND SHAPEVIZ",
@@ -77,6 +77,6 @@ export const defaultAbout = {
     "heading": "THE PERSON",
     "headingAccent": "BEHIND SHAPEVIZ.",
     "cta": "LET’S CREATE SOMETHING",
-    "bio": "I’m Tomas Krajcovic, the person behind Shapeviz. I’ve spent the past decade working in 3D graphics, and what I enjoy most is creating a sense of reality through light, materials and detail.\n\nI specialise in high-end 3D models and photorealistic renders. Architecture is another passion of mine, and I’m drawn to creative projects that leave room to explore ideas and bring something new to life.\n\nOver the years, I’ve contributed to projects for brands including Prada, Pucci, Mazda, Milenium and MCM, through direct commissions and collaborations with creative partners."
+    "bio": "I’m Tomáš, and I’ve been working in 3D graphics for over ten years. I collaborate with interior designers and furniture manufacturers. I’ve also worked with several international CGI studios on larger commercial and advertising projects, including work for brands such as Prada and Hugo Boss.\n\nI studied building construction and architecture, which gives me an understanding of the technical aspects of the buildings and interiors I work with. I enjoy bringing the real world into 3D and contributing to creative CGI productions."
   }
 };

@@ -62,6 +62,7 @@ test('existing three-field profiles open as one bio without losing saved text or
     const legacy = structuredClone(defaultAbout);
     for (const value of Object.values(legacy)) {
       [value.intro,value.focus,value.collaborations] = value.bio.split('\n\n');
+      value.collaborations = 'A previously saved collaboration paragraph.';
       delete value.bio;
     }
     legacy.sk.heading = 'MÔJ VLASTNÝ NADPIS';
