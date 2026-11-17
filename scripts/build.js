@@ -12,6 +12,10 @@ const projects = process.env.PRESENTATIONS_REMOTE === 'true' ? [] : await discov
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
 await cp('public', 'dist', { recursive: true });
+// Vercel serves existing static files before rewrites. The homepage template
+// belongs in the page function's includeFiles, not at the public root, where it
+// would bypass the live content, language selection and no-store response.
+if (process.env.VERCEL === '1') await rm(path.resolve('dist/index.html'));
 await mkdir('dist/admin/vendor',{recursive:true});
 await cp('.cache/articles/editor.js','dist/admin/vendor/article-editor.js');
 await cp('.cache/articles/LICENSE.txt','dist/admin/vendor/article-editor-LICENSE.txt');
