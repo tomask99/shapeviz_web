@@ -23,10 +23,15 @@ for (const width of [390, 1440]) {
         await expect(row.locator('.client-name')).toHaveCSS('opacity', '1');
         await expect(description).toBeHidden();
         await row.hover();
+      } else {
+        await expect(description).toBeHidden();
+        await row.getByRole('button', {name:'PRADA', exact:true}).tap();
       }
       await expect(row.locator('.client-name')).toHaveCSS('opacity', '0');
       await expect(description).toHaveCSS('opacity', '1');
       expect(await row.evaluate(element => element.offsetHeight)).toBe(initialHeight);
+      await expect(description.locator('.client-brand')).toHaveText('PRADA');
+      await expect(description.locator('.client-brand')).toBeVisible();
       const layout = await row.evaluate(element => {
         const row = element.getBoundingClientRect(), text = element.querySelector('.client-description').getBoundingClientRect();
         return {contained:text.top >= row.top && text.bottom <= row.bottom && text.left >= row.left && text.right <= row.right, overflow:document.documentElement.scrollWidth > innerWidth};

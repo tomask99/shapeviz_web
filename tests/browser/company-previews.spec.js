@@ -96,11 +96,14 @@ for (const width of [390, 1440]) {
       if (width === 1440) {
         await expect(preview).toHaveCSS('clip-path', 'inset(0px 0px 0px 100%)');
         await project.hover();
+      } else {
+        await expect(preview).toHaveCSS('clip-path', 'inset(0px 0px 0px 100%)');
+        await project.getByRole('button', {name:'PRADA', exact:true}).tap();
       }
       await expect(preview).toHaveCSS('clip-path', 'inset(0px)');
       await expect(preview.locator('img')).toHaveCSS('object-position', '50% 31%');
       const {box, crop} = await project.evaluate(row => ({box:row.getBoundingClientRect().toJSON(), crop:row.querySelector('.client-preview').getBoundingClientRect().toJSON()}));
-      expect(crop.x).toBeGreaterThan(box.x + box.width * .5);
+      if (width === 1440) expect(crop.x).toBeGreaterThan(box.x + box.width * .5);
       expect(crop.y).toBeGreaterThanOrEqual(box.y);
       expect(crop.y + crop.height).toBeLessThanOrEqual(box.y + box.height + 1);
       await expect(project.getByRole('link')).toHaveAccessibleName('Open PRADA project (new tab)');

@@ -132,7 +132,7 @@ export function renderCompanies(companies, locale) {
     const bullet = '<svg class="client-bullet" viewBox="0 0 8 8" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="4" cy="4" r="2"/></svg>';
     const facts = `<div class="client-facts">${collaboration ? `<div><h3 class="client-detail-label">${locale === 'sk' ? 'SPOLUPRÁCA' : 'COLLABORATION'}</h3><p>${escape(collaboration)}</p></div>` : ''}${contributions.length ? `<div><h3 class="client-detail-label">${locale === 'sk' ? 'MOJA PRÁCA' : 'MY CONTRIBUTION'}</h3><ul class="client-contributions">${contributions.map(item => `<li>${bullet}<span>${escape(item)}</span></li>`).join('')}</ul></div>` : ''}</div>`;
     const summary = description ? `<div class="client-summary"><h3 class="client-detail-label">${locale === 'sk' ? 'O PROJEKTE' : 'ABOUT THE PROJECT'}</h3><p>${escape(description)}</p></div>` : '';
-    const copy = hasDescription ? `<div class="client-copy"><span class="client-name">${escape(company.name)}</span><div class="client-description">${facts}${summary}</div></div>` : `<span class="client-name">${escape(company.name)}</span>`;
+    const copy = hasDescription ? `<div class="client-copy"><span class="client-name">${escape(company.name)}</span><div class="client-description"><h3 class="client-brand">${escape(company.name)}</h3><div class="client-detail-body">${facts}${summary}</div></div></div>` : `<span class="client-name">${escape(company.name)}</span>`;
     return `<li data-dissolve${hasDescription ? ' class="has-project-description"' : ''}${image && !company.url ? ' tabindex="0"' : ''}>${preview}<span class="client-number micro">${String(index + 1).padStart(2, '0')}</span>${copy}${mark}</li>`;
   }).join('');
 }
