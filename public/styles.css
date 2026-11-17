@@ -474,6 +474,7 @@ figcaption .accent { margin-inline: 6px; }
 .language-switch a:hover { color: var(--text); }
 .language-switch a[aria-current] { color: #0b0805; background: var(--accent); }
 html[lang=sk] .statement { font-size: clamp(62px, 8vw, 138px); }
+html[lang=sk] .contact-heading h2 { line-height: 1; }
 @media (max-width: 900px) and (min-width: 601px) {
   .site-header { gap: 18px; }
   .site-header nav { gap: 18px; }

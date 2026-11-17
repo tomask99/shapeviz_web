@@ -37,7 +37,10 @@ test('each language has absolute canonical/social metadata and truthful localize
   assert.equal(schema['@graph'][2].inLanguage,locale);
   assert.equal(all.filter(n=>n.tagName==='h1').length,1);
   for(const image of all.filter(n=>n.tagName==='img' && attr(n,'loading')==='lazy')){
-   assert.ok(attr(image,'src')?.startsWith('/media/'));assert.ok(attr(image,'srcset'));assert.ok(attr(image,'alt'));
+   assert.ok(attr(image,'src')?.startsWith('/media/'));assert.ok(attr(image,'srcset'));
+   if(attr(image.parentNode,'class')==='client-preview') {
+    assert.equal(attr(image.parentNode,'aria-hidden'),'true');assert.equal(attr(image,'alt'),'');
+   } else assert.ok(attr(image,'alt'));
   }
  }
 });

@@ -310,7 +310,7 @@ form.addEventListener('submit', async event => {
     form.reset();
   } catch (error) {
     formStatus.dataset.error = 'true';
-    formStatus.textContent = error.name === 'TypeError' || error.name === 'TimeoutError' ? t('We couldn’t reach the studio. Your details are still here — please try again.') : error.message;
+    formStatus.textContent = error.name === 'TypeError' || error.name === 'TimeoutError' ? t('The connection failed. Your details are still here — please try again.') : error.message;
   } finally {
     submit.disabled = false;
     form.removeAttribute('aria-busy');

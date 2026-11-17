@@ -3,11 +3,11 @@ import {CONSENT_COOKIE, CONSENT_VERSION, CONSENT_MAX_AGE, readConsent} from './c
 const sk = document.documentElement.lang === 'sk';
 const copy = sk ? {
   title:'Meranie návštevnosti',
-  body:'S tvojím súhlasom meriame návštevy, čas na webe, typ zariadenia, približnú polohu a zdroj návštevy. Odmietnutie neobmedzí používanie webu. Voľbu môžeš kedykoľvek zmeniť cez Právne informácie v pätičke.',
+  body:'S vaším súhlasom meriam návštevy, čas na webe, typ zariadenia, približnú polohu a zdroj návštevy. Odmietnutie neobmedzí používanie webu. Voľbu môžete kedykoľvek zmeniť cez Právne informácie v pätičke.',
   accept:'Povoliť analytiku', reject:'Odmietnuť analytiku', close:'Zavrieť', privacy:'Ochrana osobných údajov',
 } : {
   title:'Website analytics',
-  body:'With your consent, we measure visits, time on the site, device type, approximate location and referral source. Declining does not limit access to the site. You can change your choice through Legal information in the footer at any time.',
+  body:'With your consent, I measure visits, time on the site, device type, approximate location and referral source. Declining does not limit access to the site. You can change your choice through Legal information in the footer at any time.',
   accept:'Allow analytics', reject:'Decline analytics', close:'Close', privacy:'Privacy notice',
 };
 const dialog = document.createElement('dialog');

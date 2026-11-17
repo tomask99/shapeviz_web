@@ -7,7 +7,7 @@ test('hero, anchors and all client names are available without browser errors', 
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
   await expect(page).toHaveTitle(/SHAPEVIZ/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName('High-end 3D modeling, visualization & video production.');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName('I create 3D models, visualizations & videos.');
   await expect(page.locator('.client-name')).toHaveText(clients);
   await expect(page.locator('.client-number')).toHaveText(clients.map((_,index)=>String(index+1).padStart(2,'0')));
   await page.getByRole('link', { name: 'Studio', exact: true }).click();

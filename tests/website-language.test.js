@@ -19,7 +19,7 @@ test('language respects manual choice, trusted SK country and weighted browser f
 });
 
 test('all public template copy is translated while brands, SVGs and form values survive', async () => {
-  const unchanged=new Set(['Shapeviz','SHAPEVIZ','S','H','A','P','E','V','I','Z','CGI & 3D','MILENIUM','PRADA','PUCCI','MAZDA','MCM','BERO','BRAVE MMA','TATRABANKA','TOLICCI','SK','EN','Slovenčina','English']);
+  const unchanged=new Set(['Shapeviz','SHAPEVIZ','TOMAS KRAJCOVIC','Rendering — Karma','S','H','A','P','E','V','I','Z','CGI & 3D','MILENIUM','PRADA','PUCCI','MAZDA','MCM','BERO','BRAVE MMA','TATRABANKA','TOLICCI','SK','EN','Slovenčina','English']);
   for(const file of ['public/index.html','public/shop/index.html']){
     const source=await readFile(file,'utf8'),missing=[];
     function inspect(node){
@@ -43,7 +43,7 @@ test('localized HTTP pages work without scripts, persist selection and isolate a
   try{
     const auto=await fetch(origin,{headers:{'x-vercel-ip-country':'SK','accept-language':'en'}});
     assert.equal(auto.headers.get('content-language'),'sk');assert.match(auto.headers.get('cache-control'),/no-store/);
-    assert.match(await auto.text(),/DÁVAME/);
+    assert.match(await auto.text(),/DÁVAM/);
     const english=await fetch(origin+'/en',{headers:{'x-vercel-ip-country':'SK'}});
     assert.equal(english.headers.get('content-language'),'en');assert.match(english.headers.get('set-cookie'),/sv_language=en;.*HttpOnly; Secure/);
     const saved=await fetch(origin,{headers:{cookie:'sv_language=en','x-vercel-ip-country':'SK'}});

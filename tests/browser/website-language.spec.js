@@ -43,8 +43,8 @@ test('browser language selects Slovak, contact feedback and media controls stay 
   let payload;await page.route('**/api/contact',route=>{payload=route.request().postDataJSON();return route.fulfill({status:503,json:{ok:false,message:'The contact form is not accepting messages yet. Your message has not been sent. Please try again later.'}});});
   await page.getByRole('button',{name:'ODOSLAŤ DOPYT'}).click();await expect(page.locator('.form-status')).toContainText('Vaša správa nebola odoslaná');
   expect(payload.services).toEqual(['High-end 3D modeling']);expect(payload.name).toBe('Jana Nováková');await expect(page.getByLabel('Vaše meno')).toHaveValue('Jana Nováková');
-  await page.route('**/api/contact',route=>route.fulfill({json:{ok:true,message:'Thank you. Your inquiry is on its way. We’ll be in touch.'}}));
-  await page.getByRole('button',{name:'ODOSLAŤ DOPYT'}).click();await expect(page.locator('.form-status')).toHaveText('Ďakujeme. Váš dopyt bol odoslaný. Ozveme sa vám.');
+  await page.route('**/api/contact',route=>route.fulfill({json:{ok:true,message:'Thank you. Your inquiry is on its way. I’ll be in touch.'}}));
+  await page.getByRole('button',{name:'ODOSLAŤ DOPYT'}).click();await expect(page.locator('.form-status')).toHaveText('Ďakujem. Váš dopyt bol odoslaný. Ozvem sa vám.');
   await expect(page.getByLabel('Vaše meno')).toHaveValue('');
  }finally{await context.close();}
 });

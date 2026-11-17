@@ -21,7 +21,7 @@ export function validateContact(body) {
   if (typeof body.email !== 'string' || body.email.length > 254 || !emailPattern.test(body.email.trim())) return 'Please enter a valid email address.';
   if (typeof body.company !== 'string' || body.company.length > 150) return 'Please keep the company name under 150 characters.';
   if (!Array.isArray(body.services) || body.services.length > services.length || body.services.some(value => !services.includes(value))) return 'Please choose one of the listed services.';
-  if (typeof body.message !== 'string' || body.message.trim().length < 20 || body.message.length > 5000) return 'Tell us a little more about your project (20–5,000 characters).';
+  if (typeof body.message !== 'string' || body.message.trim().length < 20 || body.message.length > 5000) return 'Tell me a little more about your project (20–5,000 characters).';
   return null;
 }
 
@@ -78,7 +78,7 @@ export function createContactHandler({ env, send, createTransport = nodemailer.c
           });
           if (!receipt.accepted?.some(address => address.toLowerCase() === env.CONTACT_TO_EMAIL.trim().toLowerCase())) throw new Error('Recipient not accepted');
         } finally { transport.close(); }
-        reply(200, 'Thank you. Your inquiry is on its way. We’ll be in touch.');
+        reply(200, 'Thank you. Your inquiry is on its way. I’ll be in touch.');
         return;
       }
       const result = await send('https://api.resend.com/emails', {
@@ -95,7 +95,7 @@ export function createContactHandler({ env, send, createTransport = nodemailer.c
       });
       const receipt = result.ok ? await result.json() : null;
       if (!receipt?.id) throw new Error('Delivery provider did not accept the message');
-      reply(200, 'Thank you. Your inquiry is on its way. We’ll be in touch.');
+      reply(200, 'Thank you. Your inquiry is on its way. I’ll be in touch.');
     } catch { reply(502, 'Your message could not be sent. Your details are still here — please try again.'); }
   };
 }
