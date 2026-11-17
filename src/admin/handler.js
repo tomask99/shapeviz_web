@@ -162,7 +162,7 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
       }
       if (['site-content-list', 'site-content-save'].includes(action)) {
         if (req.method !== (action === 'site-content-list' ? 'GET' : 'POST')) throw fail(405, 'Use the required site editing method.');
-        reply(200, await handleSiteContent({action, body, call}));
+        reply(200, await handleSiteContent({action, body, call, env}));
         return;
       }
       if(plannerActions.includes(action)){if(req.method!==(action==='planner-list'?'GET':'POST'))throw fail(405,'Use the required planner method.');reply(200,await handlePlanner({action,body,url,user,token,call}));return;}

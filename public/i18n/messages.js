@@ -1,5 +1,12 @@
+import {pradaDescription, pradaCollaboration, pradaContributions} from '../site/company-descriptions.js';
 // Translate only authored UI copy, never stored product names or visitor content.
 export const sk = {
+  [pradaDescription.en]: pradaDescription.sk,
+  [pradaCollaboration.en]: pradaCollaboration.sk,
+  ...Object.fromEntries(pradaContributions.en.map((text, index) => [text, pradaContributions.sk[index]])),
+  'COLLABORATION': 'SPOLUPRÁCA',
+  'MY CONTRIBUTION': 'MOJA PRÁCA',
+  'ABOUT THE PROJECT': 'O PROJEKTE',
   'We use your details to respond to your inquiry.': 'Vaše údaje používame na vybavenie vášho dopytu.',
   'Privacy notice': 'Ochrana osobných údajov',
   'SHAPEVIZ | 3D Modeling, Visualization & Video Production': 'SHAPEVIZ | 3D modelovanie, vizualizácie a tvorba videí',

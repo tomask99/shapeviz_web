@@ -1,7 +1,8 @@
 import {companyProjectUrl} from '../../public/site/company-url.js';
 import {svgIcon} from '../../public/ui/icons.js';
-import {validateGallery} from './gallery.js';
+import {defaultGallery, validateGallery} from './gallery.js';
 import {validateAbout} from './about.js';
+import {companyDetails} from '../../public/site/company-descriptions.js';
 
 const fail = (status, message) => Object.assign(new Error(message), {status});
 const conflict = () => fail(409, 'The company list changed in another window. Reload the saved list before saving again.');
@@ -9,7 +10,15 @@ const escape = value => String(value).replace(/[&<>"']/g, character => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 }[character]));
 
-export function validateCompanies(companies) {
+const previewNames = ['PRADA', 'PUCCI', 'MAZDA', 'MILENIUM', 'MCM', 'BERO', 'BRAVE MMA', 'TATRABANKA', 'TOLICCI', 'LOUIS VUITTON'];
+const previewImages = defaultGallery.filter(item => item.type === 'image');
+export function companyPreview(company) {
+  if (company.image !== undefined) return company.image;
+  const index = previewNames.indexOf(company.name.trim().toUpperCase());
+  return index < 0 ? null : previewImages[index % previewImages.length];
+}
+
+export function validateCompanies(companies, env = {}) {
   if (!Array.isArray(companies) || companies.length > 100) {
     throw fail(400, 'Use a list of at most 100 companies.');
   }
@@ -28,17 +37,51 @@ export function validateCompanies(companies) {
       throw fail(400, error.message);
     }
     ids.add(company.id);
-    return {id: company.id, name: company.name.trim(), url};
+    const result = {id: company.id, name: company.name.trim(), url};
+    if (company.description !== undefined) {
+      if (!company.description || typeof company.description !== 'object' || Array.isArray(company.description)) throw fail(400, 'Enter a project description in Slovak and English.');
+      result.description = {};
+      for (const locale of ['sk', 'en']) {
+        const text = company.description[locale];
+        if (typeof text !== 'string' || text.length > 500) throw fail(400, 'Keep each project description within 500 characters.');
+        result.description[locale] = text.trim();
+      }
+    }
+    if (company.image !== undefined) {
+      result.image = company.image === null ? null : validateGallery([company.image], env)[0];
+      if (result.image && result.image.type !== 'image') throw fail(400, 'Choose a still image for the project preview.');
+    }
+    if (company.collaboration !== undefined) {
+      result.collaboration = {};
+      for (const locale of ['sk', 'en']) {
+        const value = company.collaboration?.[locale];
+        if (typeof value !== 'string' || value.length > 200) throw fail(400, 'Keep collaboration names within 200 characters per language.');
+        result.collaboration[locale] = value.trim();
+      }
+    }
+    if (company.contributions !== undefined) {
+      result.contributions = {};
+      for (const locale of ['sk', 'en']) {
+        const items = company.contributions?.[locale];
+        if (!Array.isArray(items) || items.length > 6 || items.some(item => typeof item !== 'string' || !item.trim() || item.length > 120)) throw fail(400, 'Use up to 6 contribution bullets of at most 120 characters each.');
+        result.contributions[locale] = items.map(item => item.trim());
+      }
+    }
+    return result;
   });
 }
 
-export async function handleSiteContent({action, body, call}) {
+export async function handleSiteContent({action, body, call, env}) {
   const rows = await call('/rest/v1/site_content?id=eq.1&select=companies,version');
   const current = rows?.[0];
   if (!current) throw fail(503, 'Site editing storage is not ready. Apply the site content migration.');
-  if (action === 'site-content-list') return current;
+  if (action === 'site-content-list') return {...current, companies:current.companies.map(company => {
+    const image = companyPreview(company);
+    const details = Object.fromEntries(Object.entries(companyDetails(company)).filter(([,value]) => value !== null));
+    return {...company, ...(image ? {image} : {}), ...details};
+  })};
   if (!Number.isSafeInteger(body.version) || body.version !== current.version) throw conflict();
-  const companies = validateCompanies(body.companies);
+  const companies = validateCompanies(body.companies, env);
   const saved = await call(`/rest/v1/site_content?id=eq.1&version=eq.${body.version}&select=companies,version`, {
     method: 'PATCH',
     headers: {Prefer: 'return=representation'},
@@ -58,7 +101,7 @@ export async function loadPublicContent({env, send}) {
     if (!response.ok) return null;
     const rows = await response.json();
     if (!rows?.[0]) return null;
-    const companies = validateCompanies(rows[0].companies);
+    const companies = validateCompanies(rows[0].companies, env);
     let gallery = null;
     try { if (rows[0].gallery != null) gallery = validateGallery(rows[0].gallery, env); } catch { /* Keep the built-in gallery available. */ }
     let about = null;
@@ -79,6 +122,17 @@ export function renderCompanies(companies, locale) {
     const mark = company.url
       ? `<a class="client-mark" href="${escape(company.url)}" target="_blank" rel="noopener noreferrer" aria-label="${escape(label)}">${arrow}</a>`
       : `<span class="client-mark" aria-hidden="true">${arrow}</span>`;
-    return `<li data-dissolve><span class="client-number micro">${String(index + 1).padStart(2, '0')}</span><span class="client-name">${escape(company.name)}</span>${mark}</li>`;
+    const image = companyPreview(company);
+    const details = companyDetails(company);
+    const description = details.description?.[locale] || '';
+    const collaboration = details.collaboration?.[locale] || '';
+    const contributions = details.contributions?.[locale] || [];
+    const preview = image ? `<span class="client-preview" aria-hidden="true"><img src="${escape(image.src)}" ${image.srcset ? `srcset="${escape(image.srcset)}"` : ''} sizes="(max-width: 600px) 45vw, 48vw" width="${image.width}" height="${image.height}" alt="" loading="lazy" decoding="async" style="object-position:${image.positionX}% ${image.positionY}%"></span>` : '';
+    const hasDescription = Boolean(image && (description || collaboration || contributions.length));
+    const bullet = '<svg class="client-bullet" viewBox="0 0 8 8" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="4" cy="4" r="2"/></svg>';
+    const facts = `<div class="client-facts">${collaboration ? `<div><h3 class="client-detail-label">${locale === 'sk' ? 'SPOLUPRÁCA' : 'COLLABORATION'}</h3><p>${escape(collaboration)}</p></div>` : ''}${contributions.length ? `<div><h3 class="client-detail-label">${locale === 'sk' ? 'MOJA PRÁCA' : 'MY CONTRIBUTION'}</h3><ul class="client-contributions">${contributions.map(item => `<li>${bullet}<span>${escape(item)}</span></li>`).join('')}</ul></div>` : ''}</div>`;
+    const summary = description ? `<div class="client-summary"><h3 class="client-detail-label">${locale === 'sk' ? 'O PROJEKTE' : 'ABOUT THE PROJECT'}</h3><p>${escape(description)}</p></div>` : '';
+    const copy = hasDescription ? `<div class="client-copy"><span class="client-name">${escape(company.name)}</span><div class="client-description">${facts}${summary}</div></div>` : `<span class="client-name">${escape(company.name)}</span>`;
+    return `<li data-dissolve${hasDescription ? ' class="has-project-description"' : ''}${image && !company.url ? ' tabindex="0"' : ''}>${preview}<span class="client-number micro">${String(index + 1).padStart(2, '0')}</span>${copy}${mark}</li>`;
   }).join('');
 }

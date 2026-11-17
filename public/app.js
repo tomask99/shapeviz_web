@@ -2,6 +2,7 @@ import {t} from './i18n/runtime.js';
 import {svgIcon} from './ui/icons.js';
 import './gallery.js';
 import './dialog-dismiss.js';
+import {mountClientPreviews} from './site/client-previews.js';
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = matchMedia('(pointer: fine)');
 const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
@@ -11,6 +12,7 @@ const heroBackdrop = document.querySelector('.hero-backdrop');
 const heroWireframe = document.querySelector('.hero-wireframe');
 const studioIntro = document.querySelector('.about .section-label');
 const letters = [...document.querySelectorAll('#hero-title span')];
+const letterMotion = letters.map(element => ({ element, x: 0, followX: 0, scrollY: 0, bounds: null }));
 const heroDetails = [...document.querySelectorAll('.hero-fade')];
 const dissolving = [...document.querySelectorAll('[data-dissolve]')];
 const progressBar = document.querySelector('.reading-progress');
@@ -22,10 +24,67 @@ let pointerX = innerWidth * .72, pointerY = innerHeight * .28;
 let headX = pointerX, headY = pointerY, tailX = headX, tailY = headY;
 let lastPointer = 0, lastFrame = 0, frame = 0, scrollDirty = true;
 let pointerPresent = false;
+const syncClientPreviews = mountClientPreviews(requestFrame);
 heroWireframe?.addEventListener('load', () => heroWireframe.classList.add('is-loaded'));
 function hideWireframe() {
+  const wasPresent = pointerPresent;
   pointerPresent = false;
   heroWireframe?.classList.remove('is-active');
+  if (wasPresent) requestFrame();
+}
+
+function measureLetters() {
+  // Measure resting positions so displaced letters never chase their own hit area.
+  letterMotion.forEach(state => {
+    const rect = state.element.getBoundingClientRect();
+    state.bounds = { x: rect.left + rect.width / 2 - state.x, y: rect.top + rect.height / 2 - state.scrollY, left: rect.left - state.x, right: rect.right - state.x, height: rect.height };
+  });
+}
+
+function drawLetterRepulsion(elapsed, enabled) {
+  const response = elapsed * 16 / 60;
+  const decay = Math.exp(-response);
+  const targets = letterMotion.map(state => {
+    if (enabled && pointerPresent && state.bounds) {
+      const { x, y, height } = state.bounds;
+      const radius = clamp(height * 1.15, 110, 300);
+      const dx = x - pointerX, dy = y + state.scrollY - pointerY;
+      const distance = Math.hypot(dx, dy);
+      const force = smooth(1 - distance / radius) * Math.min(58, height * .25);
+      // A soft center avoids a sudden direction flip while crossing a letter.
+      const falloff = Math.hypot(radius * .24, distance);
+      return dx / falloff * force;
+    }
+    return 0;
+  });
+  // Pass each push outward through its neighbours. Ordered displacements keep
+  // every resting gap intact, including while easing back or changing direction.
+  for (let i = targets.length - 2; i >= 0; i--) {
+    if (targets[i + 1] < 0) targets[i] = Math.min(targets[i], targets[i + 1]);
+  }
+  for (let i = 1; i < targets.length; i++) {
+    if (targets[i - 1] > 0) targets[i] = Math.max(targets[i], targets[i - 1]);
+  }
+  // Reduce the whole push near viewport edges without compressing any gaps.
+  const leftRoom = Math.max(0, (letterMotion[0]?.bounds?.left ?? 16) - 16);
+  const rightRoom = Math.max(0, innerWidth - (letterMotion.at(-1)?.bounds?.right ?? innerWidth - 16) - 16);
+  const scale = Math.min(1, targets[0] < 0 ? leftRoom / -targets[0] : 1, targets.at(-1) > 0 ? rightRoom / targets.at(-1) : 1);
+  const settling = enabled && letterMotion.some((state, i) => Math.max(Math.abs(targets[i] * scale - state.x), Math.abs(targets[i] * scale - state.followX)) >= .005);
+  letterMotion.forEach((state, i) => {
+    const targetX = targets[i] * scale;
+    // Exact critically damped response: velocity stays continuous when the
+    // pointer changes direction. Positive weights preserve the ordered gaps.
+    const previousFollow = state.followX;
+    state.followX = settling ? targetX + (previousFollow - targetX) * decay : targetX;
+    state.x = settling ? targetX + (state.x - targetX + response * (previousFollow - targetX)) * decay : targetX;
+    // Individual translate composes with the existing scroll-exit transform.
+    const translate = `${state.x.toFixed(3)}px 0px`;
+    if (state.translate !== translate) {
+      state.element.style.translate = translate;
+      state.translate = translate;
+    }
+  });
+  return settling;
 }
 
 function drawScroll() {
@@ -33,6 +92,7 @@ function drawScroll() {
   const range = document.documentElement.scrollHeight - height;
   progressBar.style.transform = `scaleX(${range > 0 ? clamp(scrollY / range) : 0})`;
   if (reducedMotion.matches) return;
+  measureLetters();
   const rect = heroStage.getBoundingClientRect();
   // The extra 20svh in the stage holds the image after the original text exit.
   const imageHoldDistance = height * .2;
@@ -46,7 +106,8 @@ function drawScroll() {
     const amount = smooth((progress - .12 - index * .024) / .65);
     letter.style.opacity = 1 - amount;
     letter.style.filter = `blur(${amount * 20}px)`;
-    letter.style.transform = `translate3d(0,${amount * (-35 - index * 3)}px,0)`;
+    letterMotion[index].scrollY = amount * (-35 - index * 3);
+    letter.style.transform = `translate3d(0,${letterMotion[index].scrollY}px,0)`;
   });
   heroDetails.forEach(element => {
     const amount = smooth((progress - .05) / .62);
@@ -68,9 +129,12 @@ function render(time) {
   frame = 0;
   if (document.hidden) return;
   if (scrollDirty) { drawScroll(); scrollDirty = false; }
-  if (!finePointer.matches || reducedMotion.matches || dialog.open) { hideWireframe(); return; }
+  syncClientPreviews();
   const elapsed = lastFrame ? clamp((time - lastFrame) / 16.667, .25, 3) : 1;
   lastFrame = time;
+  const motionEnabled = finePointer.matches && !reducedMotion.matches && !dialog.open;
+  const lettersSettling = drawLetterRepulsion(elapsed, motionEnabled);
+  if (!motionEnabled) { hideWireframe(); lastFrame = 0; return; }
   const previousX = headX, previousY = headY;
   headX += (pointerX - headX) * (1 - Math.pow(1 - .105, elapsed));
   headY += (pointerY - headY) * (1 - Math.pow(1 - .105, elapsed));
@@ -93,7 +157,8 @@ function render(time) {
     heroWireframe.style.setProperty('--wire-tail-y', `${tailY}px`);
     heroWireframe.classList.add('is-active');
   }
-  if (moving || Math.hypot(pointerX - headX, pointerY - headY) > .1 || distance > .1) requestFrame();
+  if (lettersSettling || moving || Math.hypot(pointerX - headX, pointerY - headY) > .1 || distance > .1) requestFrame();
+  else lastFrame = 0;
 }
 function requestFrame() { if (!frame && !document.hidden) frame = requestAnimationFrame(render); }
 addEventListener('scroll', () => { scrollDirty = true; requestFrame(); }, { passive: true });
@@ -110,6 +175,7 @@ addEventListener('pointermove', event => {
 }, { passive: true });
 document.documentElement.addEventListener('pointerleave', hideWireframe);
 addEventListener('blur', hideWireframe);
+document.fonts.ready.then(() => { scrollDirty = true; requestFrame(); });
 
 const revealObserver = new IntersectionObserver(entries => {
   entries.forEach(entry => {
@@ -207,6 +273,7 @@ function motionPreferenceChanged() {
   hideWireframe();
   scrollDirty = true;
   if (reducedMotion.matches) {
+    letterMotion.forEach(state => { state.scrollY = 0; });
     [...letters, ...heroDetails, ...dissolving].forEach(element => { element.style.opacity = ''; element.style.filter = ''; element.style.transform = ''; });
     videos.forEach(video => { videoStates.get(video).userStarted = false; });
   }

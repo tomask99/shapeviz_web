@@ -15,6 +15,7 @@ for (const width of [390, 1440]) {
       await expect(page.getByRole('tab', {name: 'Companies'})).toHaveAttribute('aria-selected', 'true');
       await expect(page.locator('#nav-site-editing')).toHaveAttribute('aria-current', 'page');
       await expect(page.locator('.site-company-row')).toHaveCount(9);
+      await page.locator('[data-company-toggle]').first().click();
       await page.locator('.site-company-row').first().getByLabel('Project link').fill('https://example.com/prada');
       await page.getByRole('button', {name: 'Add company', exact: true}).click();
       const added = page.locator('.site-company-row').last();
@@ -31,7 +32,7 @@ for (const width of [390, 1440]) {
 
       const publicPage = await context.newPage();
       await publicPage.goto(fixture.origin + '/en');
-      await expect(publicPage.locator('.client-list li')).toHaveCount(10);
+      await expect(publicPage.locator('.client-list > li')).toHaveCount(10);
       const link = publicPage.getByRole('link', {name: 'Open PRADA project (new tab)', exact: true});
       await link.scrollIntoViewIfNeeded();
       await link.focus();
@@ -47,6 +48,7 @@ for (const width of [390, 1440]) {
       await publicPage.screenshot({path: `.cache/site-companies-${width}.png`, fullPage: true});
 
       fixture.setUnavailable(true);
+      await page.locator('[data-company-toggle]').first().click();
       await page.locator('.site-company-row').first().getByLabel('Company name').fill('Edited draft');
       await page.getByRole('button', {name: 'Save changes', exact: true}).click();
       await expect(page.locator('.site-editing [data-error]')).toContainText('could not complete');
@@ -58,7 +60,7 @@ for (const width of [390, 1440]) {
       await page.getByRole('button', {name: 'Save changes', exact: true}).click();
       await expect(page.locator('[data-save-status]')).toHaveText('All changes saved');
       await publicPage.reload();
-      await expect(publicPage.locator('.client-list li')).toHaveCount(9);
+      await expect(publicPage.locator('.client-list > li')).toHaveCount(9);
       await expect(publicPage.locator('.client-list')).not.toContainText('NEW STUDIO');
       expect(errors).toEqual([]);
     } finally {

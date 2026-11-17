@@ -103,8 +103,8 @@ test('reduced motion keeps text visible and does not autoplay video', async ({ p
   await page.locator('#project-video').scrollIntoViewIfNeeded();
   await expect.poll(() => page.locator('#project-video').evaluate(v => v.paused)).toBe(true);
   await page.getByText('TOLICCI', { exact: true }).scrollIntoViewIfNeeded();
-  await expect(page.locator('.client-list li').nth(8)).toHaveCSS('opacity', '1');
-  await expect(page.locator('.client-list li').nth(8)).toHaveCSS('filter', 'none');
+  await expect(page.locator('.client-list > li').nth(8)).toHaveCSS('opacity', '1');
+  await expect(page.locator('.client-list > li').nth(8)).toHaveCSS('filter', 'none');
   const image = page.getByRole('button', { name: 'Enlarge Milenium interior visual' });
   await image.hover();
   await expect(image).toHaveCSS('transform', 'none');

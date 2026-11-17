@@ -3,8 +3,71 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {parse} from 'parse5';
 import {companyProjectUrl} from '../public/site/company-url.js';
-import {validateCompanies} from '../src/website/content.js';
+import {companyPreview, validateCompanies} from '../src/website/content.js';
 import {siteContentFixture} from './helpers/site-content-fixture.js';
+import {defaultGallery} from '../src/website/gallery.js';
+import {companyDescription, companyDetails} from '../public/site/company-descriptions.js';
+
+test('project descriptions persist per language, escape markup and can be cleared', async () => {
+  const company = {id:'prada', name:'PRADA', url:'', description:{sk:'Spolupráca <script>alert(1)</script>', en:'Models & textures with a larger team.'}, collaboration:{sk:'Štúdio <partner>', en:'Studio & partner'}, contributions:{sk:['Modelovanie <3D>'], en:['Models & textures']}};
+  for (const description of [null, 'text', [], {sk:'a'.repeat(501), en:''}, {sk:42, en:''}]) {
+    assert.throws(() => validateCompanies([{...company, description}]), {status:400});
+  }
+  for (const patch of [{collaboration:{sk:'x'.repeat(201), en:''}}, {contributions:{sk:['x'.repeat(121)], en:[]}}, {contributions:{sk:Array(7).fill('Task'), en:[]}}, {contributions:{sk:'text', en:[]}}]) assert.throws(() => validateCompanies([{...company, ...patch}]), {status:400});
+  assert.match(companyDetails({name:'PRADA'}).collaboration.en, /The New Face/);
+  assert.match(companyDescription({name:'PRADA'}).sk, /širšieho tvorivého tímu/);
+  const fixture = await siteContentFixture();
+  try {
+    const initial = await (await fixture.request('site-content-list')).json();
+    assert.match(initial.companies[0].contributions.en[0], /3ds Max/);
+    const saved = await (await fixture.request('site-content-save', {version:initial.version, companies:[company]})).json();
+    assert.deepEqual(saved.companies[0].description, company.description);
+    assert.deepEqual(saved.companies[0].collaboration, company.collaboration);
+    assert.deepEqual(saved.companies[0].contributions, company.contributions);
+    assert.deepEqual((await (await fixture.request('site-content-list')).json()).companies[0].description, company.description);
+    const sk = await (await fetch(fixture.origin + '/sk')).text();
+    assert.match(sk, /Spolupráca &lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+    assert.match(sk, /Štúdio &lt;partner&gt;/);
+    assert.match(sk, /Modelovanie &lt;3D&gt;/);
+    const en = await (await fetch(fixture.origin + '/en')).text();
+    assert.match(en, /Models &amp; textures with a larger team\./);
+    await fixture.request('site-content-save', {version:saved.version, companies:[{...company, description:{sk:'', en:''}, collaboration:{sk:'', en:''}, contributions:{sk:[], en:[]}}]});
+    const cleared = await (await fetch(fixture.origin + '/en')).text();
+    assert.ok(!cleared.includes('class="client-description"'));
+    assert.ok(cleared.includes('class="client-name">PRADA</span>'));
+  } finally {await fixture.close();}
+});
+
+test('Louis Vuitton gets a gallery placeholder while chosen or removed images are preserved', () => {
+  assert.equal(companyPreview({name:'Louis Vuitton'}).type, 'image');
+  assert.equal(companyPreview({name:'LOUIS VUITTON', image:null}), null);
+  const image = defaultGallery[1];
+  assert.equal(companyPreview({name:'LOUIS VUITTON', image}), image);
+});
+
+test('project previews validate media, persist crops and preserve explicit removal', async () => {
+  const image = defaultGallery.find(item => item.type === 'image');
+  const company = {id:'preview', name:'PRADA', url:'', image:{...image, positionY:23}};
+  for (const invalid of [{...image, src:'javascript:alert(1)'}, {...image, positionY:101}, defaultGallery.find(item => item.type === 'video')]) {
+    assert.throws(() => validateCompanies([{...company, image:invalid}]), {status:400});
+  }
+  const fixture = await siteContentFixture();
+  try {
+    const initial = await (await fixture.request('site-content-list')).json();
+    assert.ok(initial.companies.every(item => item.image?.type === 'image'));
+    const saved = await (await fixture.request('site-content-save', {version:initial.version, companies:[company]})).json();
+    assert.equal(saved.companies[0].image.positionY, 23);
+    const loaded = await (await fixture.request('site-content-list')).json();
+    assert.equal(loaded.companies[0].image.src, image.src);
+    const html = await (await fetch(fixture.origin + '/en')).text();
+    assert.match(html, /class="client-preview"/);
+    assert.match(html, /object-position:50% 23%/);
+    const removed = await fixture.request('site-content-save', {version:saved.version, companies:[{...company, image:null}]});
+    assert.equal(removed.status, 200);
+    assert.equal((await (await fixture.request('site-content-list')).json()).companies[0].image, null);
+    assert.ok(!(await (await fetch(fixture.origin + '/en')).text()).includes('class="client-preview"'));
+  } finally {await fixture.close();}
+});
 
 function companyList(html) {
   let list;

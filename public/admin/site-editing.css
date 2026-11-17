@@ -56,13 +56,32 @@
   .gallery-card-caption { font-size:10px; padding:32px 10px 10px; gap:6px; }
 }
 .site-company-fields { padding: 0; margin: 24px 0 0; border: 0; min-width: 0; }
-.site-company-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) auto; gap: 18px; align-items: end; padding: 20px 0; border-top: 1px solid var(--line); }
+.site-company-row { border-top: 1px solid var(--line); }
+.site-company-header { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+.site-company-toggle { display: flex; align-items: center; justify-content: flex-start; gap: 12px; flex: 1; min-width: 0; min-height: 44px; padding: 10px 4px; text-align: left; font-weight: 600; }
+.site-company-toggle span { overflow-wrap: anywhere; }
+.site-company-toggle svg { flex-shrink: 0; color: var(--accent); transform: rotate(-90deg); transition: transform 180ms ease; }
+.site-company-toggle[aria-expanded="true"] svg { transform: rotate(0); }
+.site-company-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.site-company-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 18px; align-items: end; padding: 10px 0 24px; }
 .site-company-row label { min-width: 0; margin: 0; }
 .site-editing .site-company-row input { width: 100%; min-width: 0; margin: 8px 0 0; }
-.site-company-actions { display: flex; gap: 4px; padding-bottom: 2px; }
+.site-company-actions { display: flex; flex-shrink: 0; gap: 4px; }
 .site-company-actions button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 10px; }
 .site-company-actions button:disabled { opacity: .3; cursor: default; }
 .site-company-fields > [data-add] { margin-top: 18px; }
+.site-company-image { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(160px, .8fr) minmax(0, 1.7fr); gap: 20px; align-items: center; }
+.site-company-preview { display: grid; place-items: center; aspect-ratio: 3.5; overflow: hidden; background: #171410; border: 1px solid var(--line); }
+.site-company-preview img { width: 100%; height: 100%; min-height: 0; object-fit: cover; }
+.site-company-image-controls { min-width: 0; }
+.site-company-image-controls select { display: block; width: 100%; min-width: 0; margin-top: 8px; }
+.site-company-image-controls .actions { margin: 12px 0; flex-wrap: wrap; }
+.site-company-image-controls input[type="range"] { accent-color: var(--accent); }
+.site-company-descriptions { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.site-company-descriptions textarea { display: block; width: 100%; min-width: 0; margin-top: 8px; resize: vertical; line-height: 1.5; }
+.site-company-descriptions p { grid-column: 1 / -1; margin: 0; }
+.site-company-language { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.site-company-language h3 { font-size: 12px; color: var(--accent); margin: 0; letter-spacing: .08em; text-transform: uppercase; }
 .site-editing-save { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line); }
 .site-editing-save p { color: var(--muted); font-size: 13px; }
 .site-editing-save .actions { margin: 0; flex-wrap: wrap; }
@@ -76,11 +95,18 @@
 .site-about [data-about-error] { color: var(--accent); }
 .site-editing-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @media (max-width: 1100px) {
-  .site-company-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
-  .site-company-actions { grid-column: 1 / -1; justify-content: flex-end; }
+  .site-company-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
 }
 @media (max-width: 600px) {
-  .site-company-row { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .site-company-descriptions { grid-template-columns: minmax(0, 1fr); }
+  .site-company-image { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .site-company-body { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .site-company-header { gap: 4px; }
+  .site-company-toggle { gap: 8px; }
+  .site-company-actions { gap: 0; }
   .site-editing-save { align-items: stretch; flex-direction: column; }
   .site-editing-save .actions { justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-company-toggle svg { transition: none; }
 }
