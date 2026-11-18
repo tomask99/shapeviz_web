@@ -121,7 +121,7 @@ export function renderCompanies(companies, locale) {
     const arrow = svgIcon('arrowUpRight', 'arrow-icon');
     const mark = company.url
       ? `<a class="client-mark" href="${escape(company.url)}" target="_blank" rel="noopener noreferrer" aria-label="${escape(label)}">${arrow}</a>`
-      : `<span class="client-mark" aria-hidden="true">${arrow}</span>`;
+      : '';
     const image = companyPreview(company);
     const details = companyDetails(company);
     const description = details.description?.[locale] || '';
