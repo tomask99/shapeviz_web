@@ -18,7 +18,7 @@ export function reportTotals(items,rate){
 }
 
 export async function renderTimeReport(report){
- const font=await readFile(new URL('../../assets/fonts/NotoSans-Regular.ttf',import.meta.url));
+ const font=await readFile(new URL('./fonts/NotoSans-Regular.ttf',import.meta.url));
  const doc=new PDFDocument({size:'A4',margins:{top:76,bottom:64,left:44,right:44},font,
   info:{Title:`${report.project.name} - Time report`,Author:'SHAPEVIZ',Subject:'Project time and earnings'}});
  const chunks=[];

@@ -5,6 +5,8 @@ import { validateUiIcons } from './validate-ui-icons.js';
 import {buildPresentationBundles} from './lib/presentation-bundles.js';
 import {sitemapXml,robotsText} from '../src/website/seo.js';
 await validateUiIcons();
+// Runtime PDF fonts must survive deployment source filtering before packaging.
+await stat(new URL('../src/crm/fonts/NotoSans-Regular.ttf',import.meta.url));
 await import('./build-article-editor.js');
 const required = ['public/index.html', 'public/styles.css', 'public/app.js', 'public/media/milenium-interior-720.webp', 'public/media/milenium-interior-1440.webp', 'public/media/milenium-motion.mp4', 'public/media/milenium-motion-poster.webp', 'public/media/shapeviz-logo.webp'];
 for (const file of required) await stat(file);
