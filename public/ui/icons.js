@@ -16,6 +16,7 @@ const paths={
   chart:'M4 3v18h17M8 16v-5M13 16V6M18 16V9',
   presentation:'M3 4h18v13H3ZM12 17v4M8 21h8M7 12l3-3 3 2 4-4',
   upload:'M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6',
+  download:'M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4',
   info:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM12 11v6M12 7v.1',
   chevronDown:'m6 9 6 6 6-6',
   settings:'M4 7h16M4 17h16M8 4v6M16 14v6',

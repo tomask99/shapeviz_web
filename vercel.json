@@ -15,7 +15,7 @@
       "maxDuration": 30
     },
     "api/admin.js": {
-      "includeFiles": "presentation-templates/**",
+      "includeFiles": "{presentation-templates,assets/fonts}/**",
       "maxDuration": 60
     },
     "api/presentation-events.js": {

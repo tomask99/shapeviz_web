@@ -1,10 +1,10 @@
 import {fail,uuid,string,choice} from './validation.js';
 import {durationSeconds,durationParts} from '../../public/admin/time-values.js';
-export const timeReads=['crm-time-open','crm-time-options','crm-time-history','crm-time-detail','crm-time-summary','crm-project-time'];
+export const timeReads=['crm-time-open','crm-time-options','crm-time-history','crm-time-detail','crm-time-summary','crm-project-time','crm-project-time-report'];
 export const timeActions=[...timeReads,'crm-time-start','crm-time-pause','crm-time-resume','crm-time-finish','crm-time-manual-save','crm-time-manual-delete','crm-time-delete'];
 function id(value,label,optional=false){if(optional&&!value)return null;if(!uuid(value))throw fail(400,`Invalid ${label}.`);return value;}
 function date(value,optional=false){if(optional&&!value)return null;if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value)||value<'1900-01-01'||!Number.isFinite(Date.parse(value))||new Date(value).toISOString().slice(0,10)!==value)throw fail(400,'Invalid work date.');return value;}
-export async function handleTime({action,body,url,request}){
+export async function handleTime({action,body,url,request,owner}){
  const input=timeReads.includes(action)?Object.fromEntries(url.searchParams):body;
  const rpc=(name,args={})=>request('/rest/v1/rpc/'+name,{method:'POST',body:args});
  if(action==='crm-time-open')return rpc('crm_time_open');
@@ -14,6 +14,24 @@ export async function handleTime({action,body,url,request}){
  }
  if(action==='crm-time-detail')return rpc('crm_time_detail',{p_id:id(input.id,'session')});
  if(action==='crm-project-time')return rpc('crm_project_time',{p_project:id(input.projectId,'project'),p_company:id(input.companyId,'client')});
+ if(action==='crm-project-time-report'){
+  const projectId=id(input.projectId,'project'),companyId=id(input.companyId,'client');
+  const projects=await request(`/rest/v1/crm_projects?id=eq.${projectId}&company_id=eq.${companyId}&${owner}&select=id,name,hourly_rate_cents`);
+  const companies=await request(`/rest/v1/crm_companies?id=eq.${companyId}&${owner}&select=id,company_name`);
+  if(!projects[0]||!companies[0])throw fail(404,'Project not found for this client.');
+  if(projects[0].hourly_rate_cents==null)throw fail(400,'Choose an hourly project for a time report.');
+  const items=[],seen=new Set(),started=Date.now();let descriptionSize=0;
+  const query=new URL(url);query.searchParams.delete('kind');
+  for(let page=1;page<=200;page++){
+   query.searchParams.set('page',page);
+   const data=await handleTime({action:'crm-time-history',url:query,request});
+   for(const row of data.items){const key=row.source+row.id;if(seen.has(key))throw fail(409,'Time entries changed during export. Please try again.');seen.add(key);items.push(row);descriptionSize+=(row.description||'').length;}
+   if(descriptionSize>1_000_000)throw fail(400,'This report is too large. Choose a shorter date range.');
+   if(!data.hasMore)return {project:projects[0],company:companies[0],items,from:input.from||'',to:input.to||'',timeZone:input.timeZone||'Europe/Bratislava',generatedAt:new Date().toISOString()};
+   if(Date.now()-started>30000)throw fail(400,'This report is too large. Choose a shorter date range.');
+  }
+  throw fail(400,'Choose a date range with at most 5,000 time entries per report.');
+ }
  if(action==='crm-time-summary'){
   let zone=string(input.timeZone||'Europe/Bratislava',100,'time zone');try{new Intl.DateTimeFormat('en',{timeZone:zone}).format();}catch{throw fail(400,'Invalid time zone.');}
   return rpc('crm_time_summary',{p_zone:zone});

@@ -2,6 +2,8 @@ import {test,expect} from '@playwright/test';
 import {createApp} from '../../server.js';
 import {timeDatabase,owner,company,project} from '../helpers/time-database.js';
 import {randomUUID} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
+import {getDocument} from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 // Real browser -> admin HTTP/auth/validation -> migrated Postgres (PGlite).
 // Only the upstream Supabase transport is adapted to the isolated SQL fixture.
@@ -34,6 +36,38 @@ async function fixture(context){
  await context.addCookies([{name:'sv_access',value:'fixture-jwt',url:origin}]);
  return {origin,db,rpc,loseStart(){lostStart=true;},loseDelete(){lostDelete=true;},async close(){server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await db.close();}};
 }
+
+for(const width of [1440,390])test(`Project PDF downloads all pages and respects dates at ${width}px`,async({page,context})=>{
+ test.setTimeout(90000);const f=await fixture(context);await page.setViewportSize({width,height:960});
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ try{
+  for(let i=0;i<27;i++)await f.rpc('crm_time_command',{p_action:'manual_save',p_request:randomUUID(),p_data:{project_id:project,company_id:company,work_date:i===26?'2026-10-02':'2026-10-01',duration_seconds:3600,description:`Report entry ${i+1}: Príprava vizualizácie.`}});
+  await page.goto(f.origin+'/admin/projects');await page.locator('.workspace-project-card').click();
+  const detail=page.getByRole('dialog',{name:'Hourly design project details',exact:true}),button=detail.getByRole('button',{name:'Download PDF report',exact:true});
+  await expect(button).toBeVisible();await expect(button.locator('svg')).toHaveAttribute('aria-hidden','true');
+  async function download(){
+   const event=page.waitForEvent('download');await button.click();const file=await event;
+   expect(file.suggestedFilename()).toMatch(/^hourly-design-time-report-.*\.pdf$/);
+   const pdf=await readFile(await file.path()),task=getDocument({data:new Uint8Array(pdf)}),doc=await task.promise;
+   let text='';for(let i=1;i<=doc.numPages;i++)text+=(await (await doc.getPage(i)).getTextContent()).items.map(item=>item.str).join(' ')+' ';
+   await task.destroy();await expect(button).toBeEnabled();return text;
+  }
+  let text=await download();expect(text).toContain('Time entries (27)');expect(text).toContain('27:00:00');expect(text).toContain('€1,620.00');expect(text).toContain('Report entry 1:');expect(text).toContain('Report entry 27:');
+  await detail.getByLabel('From',{exact:true}).fill('2026-10-02');await detail.getByLabel('To',{exact:true}).fill('2026-10-02');
+  text=await download();expect(text).toContain('Time entries (1)');expect(text).toContain('€60.00');expect(text).not.toContain('Report entry 1:');
+  await detail.getByLabel('From',{exact:true}).fill('2026-10-03');await button.click();await expect(detail.getByRole('status',{name:'Time report'})).toHaveText('End date precedes start date.');await expect(button).toBeEnabled();
+  await detail.getByLabel('To',{exact:true}).fill('2026-10-03');text=await download();expect(text).toContain('No time entries in this period.');
+  await page.route('**/api/admin?*action=crm-project-time-report*',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Report service unavailable.'})}));
+  await button.click();await expect(detail.getByRole('status',{name:'Time report'})).toHaveText('Report service unavailable.');await expect(button.locator('svg')).toHaveCount(1);await page.unroute('**/api/admin?*action=crm-project-time-report*');
+  let release;const gate=new Promise(resolve=>release=resolve);
+  await page.route('**/api/admin?*action=crm-project-time-report*',async route=>{await gate;await route.continue();});
+  const event=page.waitForEvent('download');await button.click();await expect(detail.getByRole('button',{name:'Preparing PDF...'})).toBeDisabled();release();await event;
+  await expect(button).toBeEnabled();await expect(button.locator('svg')).toHaveCount(1);await detail.evaluate(el=>el.scrollTop=0);await page.screenshot({path:`.cache/time-report/project-${width}.png`,fullPage:true});
+  expect(await detail.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+  const denied=await context.request.get(f.origin+'/api/admin?'+new URLSearchParams({action:'crm-project-time-report',projectId:project,companyId:randomUUID()}));expect(denied.status()).toBe(404);
+  await context.clearCookies();const signedOut=await context.request.get(f.origin+'/api/admin?'+new URLSearchParams({action:'crm-project-time-report',projectId:project,companyId:company}));expect(signedOut.status()).toBe(401);expect(errors).toEqual([]);
+ }finally{await f.close();}
+});
 
 for(const width of [1440,390])test(`Hourly billing and persistent timer complete flow at ${width}px`,async({page,context})=>{
  test.setTimeout(90000);const f=await fixture(context),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setViewportSize({width,height:960});

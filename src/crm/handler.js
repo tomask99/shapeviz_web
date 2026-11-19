@@ -54,7 +54,7 @@ export async function handleCrm({action, body, url, user, token, call, signingKe
   const request = (path, options = {}) => call(path, {...options, token});
   if(action==='crm-recent-activity')return recentActivityPage(await request(recentActivityQuery(url.searchParams,user.id)));
   const owner = `owner_id=eq.${encodeURIComponent(user.id)}`;
-  if(timeActions.includes(action))return handleTime({action,body,url,request});
+  if(timeActions.includes(action))return handleTime({action,body,url,request,owner});
   if(projectWorkspaceActions.includes(action))return handleProjectWorkspace({action,body,url,user,request,owner});
   if(noteActions.includes(action))return handleNotes({action,body,url,user,request,owner});
   if(operationActions.includes(action))return handleOperations({action,body,url,request,validateCompany:companyInput});

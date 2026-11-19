@@ -176,6 +176,14 @@ export function createAdminHandler({env = process.env, send = fetch, templatesRo
       if(OAUTH_ADMIN_ACTIONS.includes(action)){reply(200,await handleOAuthAdmin({action,body,url,req,res,user,token,env,call}));return;}
       if(action===MCP_ACTION){await handleReadMcp({req,res,body,url,user,token,scopes:[...ADMIN_READ_SCOPES],call,audit:toolAudit});return;}
       if(READ_TOOL_ACTIONS.includes(action)){reply(200,await handleReadTools({action,body,url,user,token,call,audit:toolAudit}));return;}
+      if(action==='crm-project-time-report'){
+        if(req.method!=='GET')throw fail(405,'Use GET for time reports.');
+        const report=await handleCrm({action,body,url,user,token,call});
+        const {renderTimeReport,timeReportFilename}=await import('../crm/time-report-pdf.js');
+        const pdf=await renderTimeReport(report);
+        if(pdf.length>4_000_000)throw fail(400,'This PDF is too large. Choose a shorter date range.');
+        res.writeHead(200,{'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="${timeReportFilename(report)}"`,'Content-Length':pdf.length});res.end(pdf);return;
+      }
       if(action.startsWith('crm-')) {reply(200,await handleCrm({action,body,url,user,token,call,signingKey:env.SUPABASE_SECRET_KEY}));return;}
       if(action==='website-stats') {
         const days=Number(url.searchParams.get('days')||30);

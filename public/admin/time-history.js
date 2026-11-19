@@ -46,5 +46,5 @@ export function mountTimeHistory({root,api,projectId,companyId,readOnly=false}){
   finally{pendingDelete=false;if(!disposed)target.querySelectorAll('button[data-time-delete],button[data-time-edit],button[data-time-detail]').forEach(b=>b.disabled=false);}
  }
  target.onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled||pendingDelete)return;if(b.dataset.timePage){page+=Number(b.dataset.timePage);load();}if(b.hasAttribute('data-time-detail'))detail(rows[Number(b.dataset.timeDetail)]);if(b.hasAttribute('data-time-edit')){const row=rows[Number(b.dataset.timeEdit)];editor.open({record:row,project:{id:row.project_id,name:row.project_name,hourly_rate_cents:row.rate_cents},company:{id:row.company_id}});}if(b.hasAttribute('data-time-delete'))remove(rows[Number(b.dataset.timeDelete)]);};
- load();return {refresh:load,destroy(){disposed=true;editor.destroy();dialog.close();dialog.remove();}};
+ load();return {refresh:load,reportFilters(){if(!form.reportValidity())return null;return {from:form.elements.from.value,to:form.elements.to.value,timeZone:timeZone()};},destroy(){disposed=true;editor.destroy();dialog.close();dialog.remove();}};
 }
