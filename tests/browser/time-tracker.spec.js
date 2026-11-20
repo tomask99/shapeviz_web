@@ -44,11 +44,18 @@ for(const width of [1440,390])test(`edit tracked segments through project histor
   await f.db.exec(`reset role;update public.crm_time_sessions set started_at='2026-01-01T10:00Z',ended_at='2026-01-01T12:00Z',status='finished' where id='${id}';update public.crm_time_segments set started_at='2026-01-01T10:00Z',ended_at='2026-01-01T11:00Z' where session_id='${id}';insert into public.crm_time_segments(session_id,owner_id,started_at,ended_at) values('${id}','${owner}','2026-01-01T11:30Z','2026-01-01T12:00Z');set role authenticated;`);
   await page.goto(f.origin+'/admin/projects');await page.locator('.workspace-project-card').click();
   const projectDialog=page.getByRole('dialog',{name:'Hourly design project details',exact:true});
+  // Reproduce a detail opened before the hosted segment migration was applied.
+  await page.route('**/api/admin?*action=crm-time-detail*',async route=>{
+   const response=await route.fetch(),body=await response.json();
+   body.segments=body.segments.map(({started_at,ended_at})=>({started_at,ended_at}));
+   await route.fulfill({response,json:body});
+  },{times:1});
   await projectDialog.getByRole('button',{name:'View segments',exact:true}).click();
   const detail=page.getByRole('dialog',{name:'Session details',exact:true});
   await expect(detail.getByRole('button',{name:'Edit segment 2',exact:true})).toBeVisible();
   await detail.getByRole('button',{name:'Edit segment 1',exact:true}).click();
   const form=detail.locator('form'),start=form.getByLabel('Start',{exact:true}),end=form.getByLabel('End',{exact:true});
+  await expect(form.getByLabel('Description')).toHaveValue('Original work');
   await form.getByLabel('Description').fill('Lighting and materials');
   const originalStart=await start.inputValue(),originalEnd=await end.inputValue();
   await end.fill(originalStart);await form.getByRole('button',{name:'Save segment'}).click();await expect(form.getByRole('alert')).toHaveText('End must be after start.');

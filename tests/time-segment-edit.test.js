@@ -43,6 +43,7 @@ test('segment API validates timestamps, version and IDs and forwards only editab
  const input={id:project,segmentId:company,version:1,requestId:randomUUID(),started_at:'2026-01-01T10:00:00Z',ended_at:'2026-01-01T11:00:01Z',description:'Work',owner_id:other,rate_cents:1};
  const run=body=>handleTime({action:'crm-time-segment-save',body,request:async(path,options)=>options.body});
  const result=await run(input);assert.equal(result.p_action,'segment_save');assert.equal(result.p_data.owner_id,undefined);assert.equal(result.p_data.rate_cents,undefined);assert.equal(result.p_data.segment_id,company);
+ await assert.rejects(run({...input,segmentId:undefined}),e=>e.status===409&&/Close and reopen/.test(e.message));
  for(const patch of [{version:0},{segmentId:'bad'},{started_at:'2026-02-30T10:00:00Z'},{started_at:'2026-01-01T10:00:00'},{ended_at:input.started_at},{ended_at:'2026-01-01T11:00:01.100Z'}])await assert.rejects(run({...input,...patch}),e=>e.status===400);
  const original='2026-10-25T01:30:01Z';assert.equal(segmentInstant(segmentLocalTime(original),original),new Date(original).toISOString());
 });

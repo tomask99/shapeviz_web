@@ -33,7 +33,7 @@ export function createSegmentDetail({api,readOnly=false,onSaved=()=>{}}){
   host.innerHTML=`<form class="time-segment-editor"><div class="two-columns"><label>Start<input name="started_at" type="datetime-local" step="1" min="1900-01-01T00:00:00" required></label><label>End<input name="ended_at" type="datetime-local" step="1" min="1900-01-01T00:00:00" required></label></div><label>Description<textarea name="description" rows="3" maxlength="5000"></textarea></label><p data-preview aria-live="polite"></p><p role="alert"></p><div class="actions"><button type="button" class="secondary" data-cancel>Cancel</button><button type="submit" class="primary">Save segment</button></div></form>`;
   const form=host.querySelector('form');
   for(const key of ['started_at','ended_at'])form.elements[key].value=segmentLocalTime(segment[key]);
-  form.elements.description.value=segment.description||'';
+  form.elements.description.value=segment.description??data.item.description??'';
   const values=()=>{
    const started_at=segmentInstant(form.elements.started_at.value,segment.started_at),ended_at=segmentInstant(form.elements.ended_at.value,segment.ended_at);
    if(ended_at<=started_at)throw new Error('End must be after start.');
@@ -49,6 +49,17 @@ export function createSegmentDetail({api,readOnly=false,onSaved=()=>{}}){
    pending=true;dialog.dataset.dismissPending='true';dialog.querySelectorAll('input,textarea,button').forEach(el=>el.disabled=true);
    let saved=false;
    try{
+    // A detail opened before the database update may still lack segment IDs.
+    // Resolve only the original interval in the same unchanged session, never
+    // the edited times or a positional index which could identify another row.
+    if(!intent.segmentId){
+     const fresh=await api('crm-time-detail',null,{id:intent.id});
+     if(disposed)return;
+     if(!fresh.item||fresh.item.version!==intent.version)throw Object.assign(new Error('Session changed. Close and reopen its details before saving.'),{status:409});
+     const matches=fresh.segments.filter(g=>Date.parse(g.started_at)===Date.parse(segment.started_at)&&Date.parse(g.ended_at)===Date.parse(segment.ended_at));
+     if(matches.length!==1||!matches[0].id)throw Object.assign(new Error('Segment details are out of date. Close and reopen this session before saving.'),{status:409});
+     intent.segmentId=matches[0].id;
+    }
     await api('crm-time-segment-save',intent);saved=true;intent=null;
     if(disposed)return;
     announceTimeChange();onSaved();

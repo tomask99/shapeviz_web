@@ -2,6 +2,7 @@ import {test,expect} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
 import {createApp} from '../../server.js';
 import {euro} from '../../public/admin/time-values.js';
+import {segmentLocalTime} from '../../public/admin/time-segment-detail.js';
 test.use({trace:'off',screenshot:'off'});
 
 test('live hourly project, concurrent starts, persistent timer and manual earnings',async({page,context})=>{
@@ -27,6 +28,18 @@ test('live hourly project, concurrent starts, persistent timer and manual earnin
   const second=await context.newPage();await second.goto(origin+'/admin/time-tracker');await expect(second.getByRole('button',{name:'Pause',exact:true})).toBeVisible();await second.close();
   const session=(await get('crm-time-open')).item;await expect(page.locator('[data-clock]')).not.toHaveText('00:00:00');
   const finish={id:session.id,version:session.version,requestId:randomUUID()};await post('crm-time-finish',finish);await post('crm-time-finish',finish);expect((await get('crm-time-open')).item).toBeNull();
+  const beforeEdit=await get('crm-time-detail',{id:session.id});expect(beforeEdit.segments[0].id).toMatch(/^[0-9a-f-]{36}$/);
+  await page.reload();await page.getByRole('button',{name:'Edit time',exact:true}).click();
+  const segmentEditor=page.getByRole('dialog',{name:'Session details',exact:true});
+  await segmentEditor.getByLabel('Description').fill('Verified segment editing');
+  await segmentEditor.getByLabel('Start',{exact:true}).fill(segmentLocalTime(Date.parse(beforeEdit.segments[0].started_at)-1000));
+  await segmentEditor.getByRole('button',{name:'Save segment',exact:true}).click();
+  await expect(segmentEditor.locator('[data-save-status]')).toHaveText('Segment saved.');
+  const afterEdit=await get('crm-time-detail',{id:session.id});
+  expect(afterEdit.segments[0].description).toBe('Verified segment editing');
+  expect(afterEdit.item.duration_seconds).toBe(beforeEdit.item.duration_seconds+1);
+  expect(afterEdit.item.version).toBe(beforeEdit.item.version+1);
+  await segmentEditor.getByRole('button',{name:'Close session details'}).click();
   const manual={companyId,projectId,work_date:'2026-10-07',hours:'2.5',requestId:randomUUID()};const entry=await post('crm-time-manual-save',manual);await post('crm-time-manual-save',manual);
   expect((await get('crm-project-time',{companyId,projectId})).manual_seconds).toBe(9000);
   await post('crm-project-save',{companyId,id:projectId,version:project.version,name:project.name,status:'ACTIVE',billing_type:'HOURLY',amount:'90'});

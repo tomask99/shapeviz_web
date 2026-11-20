@@ -34,9 +34,16 @@ Running segments must be paused or finished first. Overlapping segments within
 the session, future end times and stale versions are rejected. Lost-response
 retries reuse the original request and cannot apply the change twice.
 
-This addition requires `20261120130052_editable_time_segments.sql` before deploying
-the updated application. The migration is verified locally; it has not been
-applied to the hosted database as part of this change.
+The hosted database now includes `20261120133947_editable_time_segments.sql`
+(applied 20 November 2026). The original frontend deployment preceded this
+migration, so session details omitted segment IDs and Save segment returned
+`Invalid segment`. The migration adds those IDs and the save command. Existing
+session and segment values were verified unchanged by checksums. Details opened
+before the migration refresh a missing ID using the original interval and session
+version; they preserve the edit draft and reject changed or ambiguous matches.
+Verification includes desktop/mobile legacy-detail recovery, a browser save of
+both description and time against hosted Supabase using an isolated temporary
+owner, cleanup of the test records, database/API tests, build and SVG validation.
 
 Use **Delete time** on any manual or tracked history row, in either the project
 or Time Tracker. Confirmation removes that entry, its segments, and its earned
@@ -115,7 +122,7 @@ At this verification, local and remote histories contained the same 64 versions
 
 ## Automatic recalculation (12 November 2026)
 
-Apply `supabase/migrations/20261112111248_current_project_time_rates.sql` before
+Apply `supabase/migrations/20261118132235_current_project_time_rates.sql` before
 deploying the UI update. It replaces the two invoker views used by time history,
 project totals and revenue. Stored time, original rate snapshots, retry records
 and entry versions are preserved; existing work immediately uses current project
@@ -127,8 +134,9 @@ decreases, edits to existing duration, completed and open timers, revenue, retri
 owner isolation and cross-tab refresh. The opt-in live test expects this migration.
 Verification: 18 focused database/API tests and 7 browser scenarios passed, along
 with build and SVG icon validation. Desktop and mobile screenshots were reviewed.
-This follow-up is local only; its migration has not been applied to hosted Supabase
-and the application has not been deployed.
+This migration was applied to hosted Supabase on 18 November 2026. Its filename
+now matches the hosted migration version. The production frontend already contains
+the automatic refresh changes; no application deployment was needed.
 
 ## Changed files
 

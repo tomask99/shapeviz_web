@@ -25,7 +25,8 @@ export async function timeDatabase(){
  await db.exec(await readFile(new URL(revenueMigration,migrations),'utf8'));
  const detailsMigration=(await readdir(migrations)).find(file=>file.endsWith('_time_entry_details_and_projects.sql'));
  await db.exec(await readFile(new URL(detailsMigration,migrations),'utf8'));
- await db.exec(await readFile(new URL('20261112111248_current_project_time_rates.sql',migrations),'utf8'));
+ const ratesMigration=(await readdir(migrations)).find(file=>file.endsWith('_current_project_time_rates.sql'));
+ await db.exec(await readFile(new URL(ratesMigration,migrations),'utf8'));
  const segmentsMigration=(await readdir(migrations)).find(file=>file.endsWith('_editable_time_segments.sql'));
  await db.exec(await readFile(new URL(segmentsMigration,migrations),'utf8'));
  await db.exec(`update public.crm_projects set hourly_rate_cents=6000 where id='${project}';set role authenticated;set request.jwt.claim.sub='${owner}';`);

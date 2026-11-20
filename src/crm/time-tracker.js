@@ -44,6 +44,7 @@ export async function handleTime({action,body,url,request,owner}){
  }
  const requestId=id(input.requestId,'request');
  if(action==='crm-time-segment-save'){
+  if(!input.segmentId)throw fail(409,'Segment details are out of date. Close and reopen this session before saving.');
   if(!Number.isSafeInteger(input.version)||input.version<1)throw fail(400,'Reload the session before saving.');
   const stamps={};for(const key of ['started_at','ended_at']){
    const value=input[key];if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.000)?Z$/.test(value)||!Number.isFinite(Date.parse(value))||new Date(value).toISOString()!==value.replace(/(?:\.000)?Z$/,'.000Z'))throw fail(400,'Enter valid segment dates and times.');
