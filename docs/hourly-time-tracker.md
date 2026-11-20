@@ -24,6 +24,20 @@ exact seconds until explicitly edited. Entry prices use the current project hour
 rate. Editing time or changing the project rate automatically recalculates existing
 entries and totals.
 
+Tracked rows also offer **Edit time**, which opens the first completed segment,
+or **View segments**, with **Edit** beside each completed segment. Edit the
+description, start and end (including seconds) in the displayed local timezone.
+The preview shows the new segment duration and value. Saving refreshes history,
+project totals, reports and revenue; distinct segment descriptions appear in the
+session summary. Legacy segments inherit their original session description.
+Running segments must be paused or finished first. Overlapping segments within
+the session, future end times and stale versions are rejected. Lost-response
+retries reuse the original request and cannot apply the change twice.
+
+This addition requires `20261120130052_editable_time_segments.sql` before deploying
+the updated application. The migration is verified locally; it has not been
+applied to the hosted database as part of this change.
+
 Use **Delete time** on any manual or tracked history row, in either the project
 or Time Tracker. Confirmation removes that entry, its segments, and its earned
 value. Deleting an open timer also clears the mini-timer. Retries use the same

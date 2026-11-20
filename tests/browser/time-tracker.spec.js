@@ -8,7 +8,7 @@ import {getDocument} from 'pdfjs-dist/legacy/build/pdf.mjs';
 // Real browser -> admin HTTP/auth/validation -> migrated Postgres (PGlite).
 // Only the upstream Supabase transport is adapted to the isolated SQL fixture.
 async function fixture(context){
- const {db,rpc}=await timeDatabase();let lostStart=false,lostDelete=false;
+ const {db,rpc}=await timeDatabase();let lostStart=false,lostDelete=false,lostSegment=false;
  const send=async(url,options={})=>{
   const u=new URL(url),body=options.body?JSON.parse(options.body):{},method=options.method||'GET';
   const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
@@ -19,7 +19,7 @@ async function fixture(context){
     const name=u.pathname.split('/').at(-1);
     if(name==='crm_business_overview')return json({total_leads:1,stages:{WON:1},followups:{today:0,overdue:0,upcoming:0},next_tasks:[],revenue:await rpc('crm_project_revenue')});
     if(!/^crm_(time_|project_time|workspace_projects)/.test(name))return json({});
-    const result=await rpc(name,body);if(lostStart&&body.p_action==='start'){lostStart=false;return json({},502);}if(lostDelete&&body.p_action==='entry_delete'){lostDelete=false;return json({},502);}return json(result);
+    const result=await rpc(name,body);if(lostStart&&body.p_action==='start'){lostStart=false;return json({},502);}if(lostDelete&&body.p_action==='entry_delete'){lostDelete=false;return json({},502);}if(lostSegment&&body.p_action==='segment_save'){lostSegment=false;return json({},502);}return json(result);
    }
    const table=u.pathname.split('/').at(-1);
    if(!['crm_companies','crm_clients','crm_projects'].includes(table))return json([]);
@@ -34,8 +34,41 @@ async function fixture(context){
  };
  const server=createApp({env:{SUPABASE_URL:'https://fixture.example',SUPABASE_SECRET_KEY:'test-only'},send});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${server.address().port}`;
  await context.addCookies([{name:'sv_access',value:'fixture-jwt',url:origin}]);
- return {origin,db,rpc,loseStart(){lostStart=true;},loseDelete(){lostDelete=true;},async close(){server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await db.close();}};
+ return {origin,db,rpc,loseStart(){lostStart=true;},loseDelete(){lostDelete=true;},loseSegment(){lostSegment=true;},async close(){server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await db.close();}};
 }
+
+for(const width of [1440,390])test(`edit tracked segments through project history at ${width}px`,async({page,context},testInfo)=>{
+ const f=await fixture(context);await page.setViewportSize({width,height:960});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ try{
+  const {id}=await f.rpc('crm_time_command',{p_action:'start',p_request:randomUUID(),p_data:{kind:'project',company_id:company,project_id:project,description:'Original work'}});
+  await f.db.exec(`reset role;update public.crm_time_sessions set started_at='2026-01-01T10:00Z',ended_at='2026-01-01T12:00Z',status='finished' where id='${id}';update public.crm_time_segments set started_at='2026-01-01T10:00Z',ended_at='2026-01-01T11:00Z' where session_id='${id}';insert into public.crm_time_segments(session_id,owner_id,started_at,ended_at) values('${id}','${owner}','2026-01-01T11:30Z','2026-01-01T12:00Z');set role authenticated;`);
+  await page.goto(f.origin+'/admin/projects');await page.locator('.workspace-project-card').click();
+  const projectDialog=page.getByRole('dialog',{name:'Hourly design project details',exact:true});
+  await projectDialog.getByRole('button',{name:'View segments',exact:true}).click();
+  const detail=page.getByRole('dialog',{name:'Session details',exact:true});
+  await expect(detail.getByRole('button',{name:'Edit segment 2',exact:true})).toBeVisible();
+  await detail.getByRole('button',{name:'Edit segment 1',exact:true}).click();
+  const form=detail.locator('form'),start=form.getByLabel('Start',{exact:true}),end=form.getByLabel('End',{exact:true});
+  await form.getByLabel('Description').fill('Lighting and materials');
+  const originalStart=await start.inputValue(),originalEnd=await end.inputValue();
+  await end.fill(originalStart);await form.getByRole('button',{name:'Save segment'}).click();await expect(form.getByRole('alert')).toHaveText('End must be after start.');
+  await end.fill(originalEnd);const earlier=originalStart.replace(/T\d{2}:/,match=>'T'+String(Number(match.slice(1,3))-1).padStart(2,'0')+':');await start.fill(earlier);
+  await page.screenshot({path:testInfo.outputPath(`segment-editor-${width}.png`)});
+  expect(await detail.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  f.loseSegment();await form.getByRole('button',{name:'Save segment'}).click();await expect(form.getByRole('alert')).toContainText('Retry Save segment');await expect(start).toBeDisabled();
+  await form.getByRole('button',{name:'Save segment'}).click();await expect(detail.locator('[data-save-status]')).toHaveText('Segment saved.');
+  await expect(detail.locator('[data-session-duration]')).toContainText('02:30:00');
+  const stored=await f.rpc('crm_time_detail',{p_id:id});expect(stored.item.version).toBe(2);expect(stored.segments[0].description).toBe('Lighting and materials');expect(stored.item.duration_seconds).toBe(9000);
+  await detail.getByRole('button',{name:'Close session details'}).click();
+  await expect(projectDialog.locator('.time-entry')).toContainText('Lighting and materials');await expect(projectDialog.locator('[data-totals]')).toContainText('02:30:00');await expect(projectDialog.locator('[data-totals]')).toContainText('150.00');
+  await projectDialog.getByRole('button',{name:'Edit time',exact:true}).click();await expect(detail.getByLabel('Description')).toHaveValue('Lighting and materials');
+  await detail.getByLabel('Description').fill('Discard this');await detail.getByRole('button',{name:'Cancel',exact:true}).click();await expect(detail.locator('form')).toHaveCount(0);
+  await detail.getByRole('button',{name:'Edit segment 1',exact:true}).click();await expect(detail.getByLabel('Description')).toHaveValue('Lighting and materials');
+  await f.rpc('crm_time_command',{p_action:'segment_save',p_request:randomUUID(),p_data:{id,segment_id:stored.segments[0].id,version:2,started_at:stored.segments[0].started_at,ended_at:stored.segments[0].ended_at,description:'Another tab'}});
+  await detail.getByRole('button',{name:'Save segment'}).click();await expect(detail.getByRole('alert')).toContainText('Session changed');
+  expect(errors).toEqual([]);
+ }finally{await f.close();}
+});
 
 for(const width of [1440,390])test(`Project PDF downloads all pages and respects dates at ${width}px`,async({page,context})=>{
  test.setTimeout(90000);const f=await fixture(context);await page.setViewportSize({width,height:960});

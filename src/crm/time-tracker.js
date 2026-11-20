@@ -1,7 +1,7 @@
 import {fail,uuid,string,choice} from './validation.js';
 import {durationSeconds,durationParts} from '../../public/admin/time-values.js';
 export const timeReads=['crm-time-open','crm-time-options','crm-time-history','crm-time-detail','crm-time-summary','crm-project-time','crm-project-time-report'];
-export const timeActions=[...timeReads,'crm-time-start','crm-time-pause','crm-time-resume','crm-time-finish','crm-time-manual-save','crm-time-manual-delete','crm-time-delete'];
+export const timeActions=[...timeReads,'crm-time-start','crm-time-pause','crm-time-resume','crm-time-finish','crm-time-manual-save','crm-time-manual-delete','crm-time-delete','crm-time-segment-save'];
 function id(value,label,optional=false){if(optional&&!value)return null;if(!uuid(value))throw fail(400,`Invalid ${label}.`);return value;}
 function date(value,optional=false){if(optional&&!value)return null;if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value)||value<'1900-01-01'||!Number.isFinite(Date.parse(value))||new Date(value).toISOString().slice(0,10)!==value)throw fail(400,'Invalid work date.');return value;}
 export async function handleTime({action,body,url,request,owner}){
@@ -43,6 +43,15 @@ export async function handleTime({action,body,url,request,owner}){
   return rpc('crm_time_history',{p_from:from,p_to:to,p_company:id(input.companyId,'client',true),p_project:id(input.projectId,'project',true),p_kind:choice(input.kind||'',['','project','custom_activity'],'type'),p_page:page,p_zone:zone});
  }
  const requestId=id(input.requestId,'request');
+ if(action==='crm-time-segment-save'){
+  if(!Number.isSafeInteger(input.version)||input.version<1)throw fail(400,'Reload the session before saving.');
+  const stamps={};for(const key of ['started_at','ended_at']){
+   const value=input[key];if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.000)?Z$/.test(value)||!Number.isFinite(Date.parse(value))||new Date(value).toISOString()!==value.replace(/(?:\.000)?Z$/,'.000Z'))throw fail(400,'Enter valid segment dates and times.');
+   stamps[key]=new Date(value).toISOString();
+  }
+  if(stamps.ended_at<=stamps.started_at)throw fail(400,'End must be after start.');
+  return rpc('crm_time_command',{p_action:'segment_save',p_request:requestId,p_data:{id:id(input.id,'session'),segment_id:id(input.segmentId,'segment'),version:input.version,description:string(input.description,5000,'description'),...stamps}});
+ }
  if(action==='crm-time-delete'){
   if(input.confirm!=='delete')throw fail(400,'Confirm entry deletion.');
   if(!Number.isSafeInteger(input.version)||input.version<1)throw fail(400,'Refresh the entry before deleting.');
