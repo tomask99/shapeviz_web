@@ -1,45 +1,7 @@
+import {modelingService} from './modeling.js';
 // One source for public routes, visible service copy, sitemap and structured data.
 export const services = [
-  {
-    id: 'modeling',
-    image: {src: '/media/gallery/studio_01-1920.webp', small: '/media/gallery/studio_01-640.webp', width: 1920, height: 1434},
-    en: {
-      slug: '3d-modeling', name: 'High-end 3D modeling', title: 'High-end 3D Modeling for Products & Furniture | SHAPEVIZ',
-      description: 'Detailed 3D models for products, furniture and CGI campaigns. I create geometry, materials and textures for close-up renders and animation.',
-      intro: 'A convincing image starts with a well-built model. I create detailed 3D products and furniture with attention to proportions, surface transitions and the small details that become visible in a close-up.',
-      imageAlt: 'Terracotta modular sofa modeled and visualized against a neutral studio background',
-      caption: 'Milenium / furniture visualization',
-      deliverables: [
-        ['Product and furniture models', 'Geometry built around the intended use: a hero product render, a furniture collection or an animated sequence. References and dimensions establish the shape before surface detail is added.'],
-        ['Materials and textures', 'Fabric, wood, metal and other surfaces need to respond convincingly to light. I develop materials together with the model so that seams, edges and texture scale work in the final view.'],
-        ['A model for your next visual', 'The agreed output may be rendered images, an animation-ready asset or a model for an existing production workflow. File format, software compatibility and the required level of detail are agreed before production.'],
-      ],
-      process: [['Reference and scale', 'I review drawings, measurements, photographs and the views you need.'], ['Shape and detail', 'Proportions and silhouette are reviewed before I refine geometry and materials.'], ['Output preparation', 'I prepare the model or renders for the agreed use and delivery format.']],
-      brief: 'Send product photographs from several angles, dimensions or drawings, material references and examples of the intended visual style. Tell me whether you need finished images, animation or the 3D asset itself.',
-      questions: [
-        ['Can you work from photographs?', 'Yes. Photographs are useful references for shape and surface detail. Dimensions or drawings help establish accurate proportions; I review the available references before defining the modeling scope.'],
-        ['Does a 3D model include finished renders?', 'Modeling and visualization are separate parts of production. Tell me which views or animations you need so the proposal can include the right materials, lighting and rendering work.'],
-      ],
-    },
-    sk: {
-      slug: '3d-modelovanie', name: 'High-end 3D modelovanie', title: 'High-end 3D modelovanie produktov a nábytku | SHAPEVIZ',
-      description: 'Detailné 3D modely produktov a nábytku pre vizualizácie a CGI kampane. Tvorím geometriu, materiály a textúry pre detailné rendery aj animácie.',
-      intro: 'Presvedčivý obraz sa začína kvalitným modelom. Tvorím detailné 3D modely produktov a nábytku s dôrazom na proporcie, prechody povrchov a drobnosti, ktoré vyniknú pri pohľade zblízka.',
-      imageAlt: 'Terakotová modulárna sedačka vymodelovaná a vizualizovaná na neutrálnom štúdiovom pozadí',
-      caption: 'Milenium / vizualizácia nábytku',
-      deliverables: [
-        ['Modely produktov a nábytku', 'Geometriu prispôsobujem použitiu: hlavnému produktovému renderu, kolekcii nábytku alebo animovanej sekvencii. Referencie a rozmery určia tvar ešte pred pridaním detailov povrchu.'],
-        ['Materiály a textúry', 'Látka, drevo, kov aj ďalšie povrchy musia presvedčivo reagovať na svetlo. Materiály pripravujem spolu s modelom, aby švy, hrany a mierka textúr fungovali vo výslednom zábere.'],
-        ['Model pre váš ďalší vizuál', 'Dohodnutým výstupom môžu byť rendery, model pripravený na animáciu alebo podklad do existujúcej produkcie. Formát súborov, kompatibilitu so softvérom a úroveň detailov dohodnem pred začatím práce.'],
-      ],
-      process: [['Referencie a mierka', 'Prejdem výkresy, rozmery, fotografie a pohľady, ktoré potrebujete.'], ['Tvar a detaily', 'Pred spracovaním detailov geometrie a materiálov si s vami odsúhlasím proporcie a siluetu.'], ['Príprava výstupov', 'Model alebo rendery pripravím na dohodnuté použitie a vo zvolenom formáte.']],
-      brief: 'Pošlite fotografie produktu z viacerých uhlov, rozmery alebo výkresy, materiálové referencie a ukážky želaného vizuálneho štýlu. Napíšte, či potrebujete hotové obrázky, animáciu alebo samotný 3D model.',
-      questions: [
-        ['Viete modelovať podľa fotografií?', 'Áno. Fotografie pomáhajú zachytiť tvar a povrchové detaily. Rozmery alebo výkresy spresnia proporcie; dostupné podklady posúdim pred určením rozsahu modelovania.'],
-        ['Zahŕňa 3D model aj hotové rendery?', 'Modelovanie a vizualizácia sú samostatné časti produkcie. Napíšte mi, aké pohľady či animácie potrebujete, aby ponuka zahŕňala potrebnú prípravu materiálov, osvetlenia aj renderovanie.'],
-      ],
-    },
-  },
+  modelingService,
   {
     id: 'visualization',
     image: {src: '/media/milenium-interior-1440.webp', small: '/media/milenium-interior-720.webp', smallWidth: 720, width: 1440, height: 960},
