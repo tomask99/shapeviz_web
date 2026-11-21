@@ -1,47 +1,9 @@
+import {visualizationService} from './visualization.js';
 import {modelingService} from './modeling.js';
 // One source for public routes, visible service copy, sitemap and structured data.
 export const services = [
   modelingService,
-  {
-    id: 'visualization',
-    image: {src: '/media/milenium-interior-1440.webp', small: '/media/milenium-interior-720.webp', smallWidth: 720, width: 1440, height: 960},
-    en: {
-      slug: 'product-interior-visualization', name: 'Product & interior visualization', title: 'Product & Interior Visualization | SHAPEVIZ',
-      description: 'I create photorealistic product renders and interior visualizations for campaigns, e-commerce and design presentations, capturing the character of your product or space.',
-      intro: 'I show your product in the right light and capture the atmosphere of a space before it exists. I combine 3D models, materials, lighting and composition to create images with a clear purpose.',
-      imageAlt: 'Terracotta Milenium sofa in a sunlit interior with soft curtains and natural materials',
-      caption: 'Milenium / product in an interior setting',
-      deliverables: [
-        ['Product renders', 'Clean studio views focus attention on shape, finish and detail. They can support a product launch, an e-commerce page or a catalogue with a consistent visual treatment across a collection.'],
-        ['Interior and lifestyle scenes', 'Furniture and products gain context in a designed environment. I work with room layout, surrounding materials and natural or studio lighting to create the intended mood.'],
-        ['Images for the right channel', 'A campaign hero, a website banner and a product detail image need different compositions. I plan camera views, crops and resolution around where the final images will appear.'],
-      ],
-      process: [['Visual direction', 'I agree on references, the audience and the purpose of each image.'], ['Scene and preview', 'I build the scene and review composition, lighting and materials in preview renders.'], ['Final images', 'After feedback, I render and finish the selected views in the agreed sizes.']],
-      brief: 'Share existing 3D models if available, product dimensions, material samples or photographs, and examples of the mood you want. Include the number of views and where you will use them.',
-      questions: [
-        ['What if I do not have a 3D model?', 'I can include 3D modeling in the project. Photographs, dimensions and drawings help me define the work needed before building the visualization scene.'],
-        ['Can one scene produce several views?', 'Yes. A prepared scene can support different camera angles, details or compositions. Agreeing on the required views early helps me build the scene for all planned outputs.'],
-      ],
-    },
-    sk: {
-      slug: 'produktove-interierove-vizualizacie', name: 'Produktové a interiérové vizualizácie', title: 'Produktové a interiérové vizualizácie | SHAPEVIZ',
-      description: 'Fotorealistické produktové rendery a vizualizácie interiérov pre kampane, e-shopy a prezentácie návrhov. Tvorím CGI vizuály, ktoré vystihnú charakter vášho produktu či priestoru.',
-      intro: 'Ukážem váš produkt v správnom svetle a vystihnem atmosféru priestoru, ktorý ešte neexistuje. Spájam 3D modely, materiály, osvetlenie a kompozíciu do obrazov s jasným účelom.',
-      imageAlt: 'Terakotová sedačka Milenium v slnečnom interiéri s jemnými závesmi a prírodnými materiálmi',
-      caption: 'Milenium / produkt zasadený do interiéru',
-      deliverables: [
-        ['Produktové rendery', 'Čisté štúdiové pohľady upriamia pozornosť na tvar, povrch a detail. Využijete ich pri uvedení produktu, v e-shope či katalógu s jednotným vizuálnym štýlom celej kolekcie.'],
-        ['Interiérové a lifestyle scény', 'Nábytok a produkty získajú kontext v navrhnutom prostredí. Pracujem s dispozíciou, okolitými materiálmi a prirodzeným či štúdiovým svetlom tak, aby obraz vystihoval želanú náladu.'],
-        ['Obrázky pre konkrétne použitie', 'Hlavný vizuál kampane, webový banner a produktový detail potrebujú odlišnú kompozíciu. Pohľady kamery, výrezy a rozlíšenie plánujem podľa toho, kde budú obrázky použité.'],
-      ],
-      process: [['Vizuálny smer', 'Dohodnem si s vami referencie, cieľovú skupinu a účel jednotlivých obrázkov.'], ['Scéna a náhľady', 'Pripravím scénu a na náhľadoch si overím kompozíciu, osvetlenie a materiály.'], ['Finálne obrázky', 'Po zapracovaní pripomienok vyrenderujem a dokončím vybrané pohľady v dohodnutých rozmeroch.']],
-      brief: 'Pošlite existujúce 3D modely, ak ich máte, rozmery produktov, vzorky alebo fotografie materiálov a ukážky požadovanej atmosféry. Doplňte počet pohľadov a ich plánované použitie.',
-      questions: [
-        ['Čo ak nemám 3D model?', 'Do projektu môžem zahrnúť aj 3D modelovanie. Fotografie, rozmery a výkresy mi pomôžu určiť rozsah práce pred prípravou vizualizačnej scény.'],
-        ['Dá sa z jednej scény vytvoriť viac pohľadov?', 'Áno. Pripravenú scénu možno využiť na rôzne uhly kamery, detaily alebo kompozície. Ak si s vami potrebné pohľady dohodnem vopred, scénu pripravím pre všetky plánované výstupy.'],
-      ],
-    },
-  },
+  visualizationService,
   {
     id: 'architecture',
     image: {src: '/media/gallery/lifestyle_05-1664.webp', small: '/media/gallery/lifestyle_05-640.webp', width: 1664, height: 2224},

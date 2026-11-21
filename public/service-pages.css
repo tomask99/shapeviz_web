@@ -65,6 +65,43 @@
 .modeling-story--final .modeling-story-heading { display: block; margin: 0; }
 .modeling-story--final h2 { margin-bottom: 28px; }
 .modeling-story--final .modeling-images { grid-template-columns: 1fr; }
+.modeling-story--details .modeling-images { grid-template-columns: .84fr 1.16fr; align-items: center; }
+.service-image { display: block; position: relative; width: 100%; border-radius: 28px; cursor: zoom-in; transition: transform .3s ease, box-shadow .3s ease; }
+.service-image-clip { display: block; overflow: hidden; border-radius: inherit; }
+.service-image img { transition: transform .4s ease, filter .4s ease; }
+.service-image-zoom { position: absolute; right: 16px; bottom: 16px; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--text); background: rgba(12, 10, 8, .8); transition: background .25s ease, color .25s ease; }
+.service-image-zoom svg { width: 20px; height: 20px; }
+.service-image:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; }
+.service-image:focus-visible .service-image-zoom { background: var(--accent); color: #000; }
+@media (hover: hover) and (pointer: fine) {
+  .service-image:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(0, 0, 0, .3); }
+  .service-image:hover img { transform: scale(1.015); filter: saturate(1.04); }
+  .service-image:hover .service-image-zoom { background: var(--accent); color: #000; }
+}
+.service-lightbox { border: 0; padding: 64px 12px 24px; width: max-content; max-width: calc(100vw - 32px); max-height: 100svh; overflow: auto; background: transparent; color: var(--text); }
+.service-lightbox[open] { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.service-lightbox::backdrop { background: rgba(5, 4, 3, .95); backdrop-filter: blur(12px); }
+.service-lightbox img { display: block; max-width: 100%; max-height: calc(100svh - 152px); width: auto; height: auto; object-fit: contain; border-radius: 24px; }
+.service-lightbox p { max-width: 760px; font-size: 14px; line-height: 1.5; text-align: center; }
+.service-lightbox-close { position: fixed; top: 16px; right: 20px; display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid var(--line); border-radius: 50%; background: #17130f; color: var(--text); }
+.service-lightbox-close svg { width: 24px; height: 24px; }
+.service-lightbox-close:hover { background: var(--accent); color: #000; }
+@media (max-width: 700px) {
+  .modeling-story--details .modeling-images { grid-template-columns: 1fr; }
+  .service-image, .service-lightbox img { border-radius: 20px; }
+  .service-image-zoom { right: 12px; bottom: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .service-image, .service-image img, .service-image-zoom { transition: none; }
+  .service-image:hover, .service-image:hover img { transform: none; }
+}
+.visualization-page .modeling-hero h1 { font-size: clamp(38px, 4.4vw, 68px); }
+.service-hero-media--wide .modeling-images { grid-template-columns: 1fr; }
+.service-hero-media--wide .modeling-figure { width: 100%; max-width: 1100px; margin-inline: auto; }
+.modeling-story--triptych .modeling-images { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start; }
+@media (max-width: 900px) {
+  .modeling-story--triptych .modeling-images { grid-template-columns: 1fr; max-width: 640px; margin-inline: auto; gap: 32px; }
+}
 @media (max-width: 900px) {
   .modeling-hero > div:first-child { display: block; }
   .modeling-hero h1 { max-width: 760px; }
