@@ -14,7 +14,7 @@ export const sk = {
   'I create 3D models, visualizations & videos.': 'Tvorím 3D modely, vizualizácie a videá.',
   'High-end 3D modeling': 'High-end 3D modelovanie',
   'Product & interior visualization': 'Produktové a interiérové vizualizácie',
-  'Architectural 3D modeling': '3D modelovanie architektúry',
+  'Architectural 3D modeling & rendering': 'Architektonické 3D modelovanie a rendering',
   'Video production & animation': 'Tvorba videí a animácií',
   'MY SERVICES / FROM MODEL TO MOTION': 'MOJE SLUŽBY / OD MODELU K POHYBU',
   'CRAFTED IN EVERY DETAIL': 'PREPRACOVANÉ DO DETAILU',

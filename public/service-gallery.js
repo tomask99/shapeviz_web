@@ -43,6 +43,7 @@ if (dialog && typeof dialog.showModal === 'function') {
     }
   });
   dialog.addEventListener('close', () => {
+    if (dialog.open) return;
     document.body.classList.remove('modal-open');
     trigger?.focus({preventScroll: true});
     image.removeAttribute('src');

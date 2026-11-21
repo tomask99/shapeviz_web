@@ -27,7 +27,7 @@ export function renderServicePage(service, locale) {
 ${seoMarkup({locale,title:copy.title,description:copy.description,service})}
 <script src="/i18n/switcher.js" type="module"></script><script src="/site-tracker.js" type="module"></script>
 ${copy.stories ? '<script src="/service-gallery.js" type="module"></script>' : ''}
-</head><body class="service-page${copy.stories ? ' modeling-page' : ''}${service.id === 'visualization' ? ' visualization-page' : ''}">
+</head><body class="service-page${copy.stories ? ' modeling-page' : ''}${service.id === 'visualization' ? ' visualization-page' : ''}${service.id === 'architecture' ? ' architecture-page' : ''}">
 ${link('#main',ui.skip,'skip-link')}
 <header class="site-header">
 <a class="brand" href="${home}" aria-label="Shapeviz — ${ui.home}"><img src="/media/shapeviz-logo.webp" alt="Shapeviz" width="1515" height="314"></a>

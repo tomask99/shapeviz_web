@@ -49,7 +49,7 @@ test('sitemap lists indexable language URLs and articles; contact accepts the ne
  const xml=sitemapXml();assert.equal((xml.match(/<loc>/g)||[]).length,11);assert.match(xml,/<loc>https:\/\/www.shapeviz.com\/articles<\/loc>/);
  for(const locale of ['sk','en'])assert.ok(xml.includes(`<loc>${SITE_ORIGIN}/${locale}</loc>`));
  assert.ok(!/admin|shop|\/files|\/p\//.test(xml));assert.ok(robotsText().includes(`Sitemap: ${SITE_ORIGIN}/sitemap.xml`));
- const selected=['High-end 3D modeling','Product & interior visualization','Architectural 3D modeling','Video production & animation','Marketing & digital presence','Websites & applications'];
+ const selected=['High-end 3D modeling','Product & interior visualization','Architectural 3D modeling & rendering','Video production & animation','Marketing & digital presence','Websites & applications'];
  assert.equal(validateContact({name:'Test visitor',email:'visitor@example.test',company:'',message:'A detailed brief for a visualization project.',consent:true,services:selected}),null);
 });
 

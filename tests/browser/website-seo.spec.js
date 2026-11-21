@@ -16,7 +16,7 @@ for(const locale of ['sk','en'])for(const width of [320,390,1440])test(`SEO serv
  await page.locator('[name=name]').fill('Test visitor');await page.locator('[name=email]').fill('visitor@example.test');await page.locator('[name=message]').fill('We need a detailed architectural model and a product video.');
  let payload;await page.route('**/api/contact',route=>{payload=route.request().postDataJSON();return route.fulfill({json:{ok:true,message:'Thank you. Your inquiry is on its way. I’ll be in touch.'}});});
  await page.locator('#project-form [type=submit]').click();await expect(page.locator('.form-status')).toContainText(locale==='sk'?'Ďakujem':'Thank you');
- expect(payload.services).toEqual(['High-end 3D modeling','Product & interior visualization','Architectural 3D modeling','Video production & animation']);
+ expect(payload.services).toEqual(['High-end 3D modeling','Product & interior visualization','Architectural 3D modeling & rendering','Video production & animation']);
  await expect(page.locator('input[name=services]:checked')).toHaveCount(0);
  const schema=JSON.parse(await page.locator('script[type="application/ld+json"]').textContent());expect(schema['@graph'].at(-1).itemListElement).toHaveLength(4);
  expect(errors).toEqual([]);

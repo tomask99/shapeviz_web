@@ -4,6 +4,7 @@ import nodemailer from 'nodemailer';
 export const services = [
   'High-end 3D modeling',
   'Product & interior visualization',
+  'Architectural 3D modeling & rendering',
   'Architectural 3D modeling',
   'Video production & animation',
   'Marketing & digital presence',
