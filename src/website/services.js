@@ -1,4 +1,6 @@
 import {architectureService} from './architecture.js';
+import {marketingService} from './marketing.js';
+import {websitesService} from './websites.js';
 import {visualizationService} from './visualization.js';
 import {modelingService} from './modeling.js';
 // One source for public routes, visible service copy, sitemap and structured data.
@@ -44,6 +46,8 @@ export const services = [
       ],
     },
   },
+  marketingService,
+  websitesService,
 ];
 
 export const servicePath = (service, locale) => `/${locale}/${locale === 'sk' ? 'sluzby' : 'services'}/${service[locale].slug}`;

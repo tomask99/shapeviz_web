@@ -28,7 +28,7 @@ test('each language has absolute canonical/social metadata and truthful localize
   assert.equal(attr(all.find(n=>attr(n,'name')==='twitter:card'),'content'),'summary_large_image');
   const schema=JSON.parse(text(all.find(n=>attr(n,'type')==='application/ld+json')));
   assert.deepEqual(schema['@graph'].map(n=>n['@type']),['Organization','WebSite','WebPage','OfferCatalog']);
-  const catalog=schema['@graph'].at(-1);assert.equal(catalog.itemListElement.length,4);
+  const catalog=schema['@graph'].at(-1);assert.equal(catalog.itemListElement.length,services.length);
   for(const offer of catalog.itemListElement){
    const service=offer.itemOffered,definition=services.find(item=>SITE_ORIGIN+servicePath(item,locale)===service.url),section=all.find(n=>attr(n,'id')===definition?.id);
    assert.ok(section);assert.ok(text(section).includes(service.name));assert.equal(service.description,undefined);
@@ -46,7 +46,7 @@ test('each language has absolute canonical/social metadata and truthful localize
 });
 
 test('sitemap lists indexable language URLs and articles; contact accepts the new services',()=>{
- const xml=sitemapXml();assert.equal((xml.match(/<loc>/g)||[]).length,11);assert.match(xml,/<loc>https:\/\/www.shapeviz.com\/articles<\/loc>/);
+ const xml=sitemapXml();assert.equal((xml.match(/<loc>/g)||[]).length,3+services.length*2);assert.match(xml,/<loc>https:\/\/www.shapeviz.com\/articles<\/loc>/);
  for(const locale of ['sk','en'])assert.ok(xml.includes(`<loc>${SITE_ORIGIN}/${locale}</loc>`));
  assert.ok(!/admin|shop|\/files|\/p\//.test(xml));assert.ok(robotsText().includes(`Sitemap: ${SITE_ORIGIN}/sitemap.xml`));
  const selected=['High-end 3D modeling','Product & interior visualization','Architectural 3D modeling & rendering','Video production & animation','Marketing & digital presence','Websites & applications'];
@@ -73,7 +73,7 @@ test('service pages expose distinct localized copy, equivalent URLs and schema w
    assert.ok(copy.title.length<65);assert.ok(copy.description.length>100&&copy.description.length<180);
   }
  }
- assert.equal(titles.size,8);assert.equal(descriptions.size,8);
+ assert.equal(titles.size,services.length*2);assert.equal(descriptions.size,services.length*2);
 });
 
 test('all sitemap destinations, service rewrites and missing pages return the correct HTTP response',async()=>{

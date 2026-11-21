@@ -38,6 +38,13 @@
   .service-related .primary-button:hover { transform: none; }
 }
 .service-cta p { max-width: 650px; margin-bottom: 28px; }
+.service-highlights { padding: clamp(24px, 3vw, 44px); border: 1px solid var(--line); border-radius: 28px; background: #100e0b; }
+.service-highlights dl { margin: 28px 0 0; }
+.service-highlights dl > div { padding-block: 24px; border-top: 1px solid var(--line); }
+.service-highlights dl > div:last-child { padding-bottom: 0; }
+.service-highlights dt { margin-bottom: 10px; font-size: 22px; line-height: 1.3; }
+.service-highlights dd { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.7; }
+.websites-page .service-columns { row-gap: 48px; }
 .service-page .site-footer { gap: 24px; }
 /* Modeling follows the work from geometry and surfaces into a finished CGI scene. */
 .modeling-page .micro { font-size: 13px; }
@@ -77,6 +84,24 @@
   .service-image:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(0, 0, 0, .3); }
   .service-image:hover img { transform: scale(1.015); filter: saturate(1.04); }
   .service-image:hover .service-image-zoom { background: var(--accent); color: #000; }
+}
+
+/* Compact campaign sets retain complete poster artwork and comparable variants. */
+.marketing-page .modeling-hero h1 { font-size: clamp(36px, 4.4vw, 64px); }
+.marketing-page .modeling-hero-media .modeling-images { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.marketing-page .modeling-story--compact .modeling-images { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px 20px; }
+.marketing-page .service-image { border-radius: 20px; }
+.marketing-page .modeling-story--wide .modeling-figure img { background: #fff; }
+@media (max-width: 900px) {
+  .marketing-page .modeling-story--compact .modeling-images { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 16px; }
+}
+@media (max-width: 600px) {
+  .marketing-page .modeling-hero h1 { font-size: clamp(30px, 8vw, 42px); }
+  .marketing-page .modeling-hero-media .modeling-images { grid-template-columns: 1fr; max-width: 420px; margin-inline: auto; }
+  .marketing-page .service-image-zoom { width: 36px; height: 36px; right: 8px; bottom: 8px; }
+}
+@media (max-width: 359px) {
+  .marketing-page .modeling-story--compact .modeling-images { grid-template-columns: 1fr; }
 }
 .service-lightbox { border: 0; padding: 64px 12px 24px; width: max-content; max-width: calc(100vw - 32px); max-height: 100svh; overflow: auto; background: transparent; color: var(--text); }
 .service-lightbox[open] { display: flex; flex-direction: column; align-items: center; gap: 16px; }

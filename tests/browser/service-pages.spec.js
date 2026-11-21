@@ -36,7 +36,7 @@ test('service content and navigation work without JavaScript',async({browser})=>
   await expect(page.locator('h1')).toHaveText(services[0].sk.name);
   await page.locator('summary').first().click();await expect(page.locator('details p').first()).toBeVisible();
   await page.locator('[data-language=en]').click();await expect(page.locator('h1')).toHaveText(services[0].en.name);
-  await page.locator('.service-related a').last().click();await expect(page.locator('video')).toHaveAttribute('controls','');
+  await page.locator('.service-related a[href="/en/services/video-production-animation"]').click();await expect(page.locator('video')).toHaveAttribute('controls','');
   await page.locator('.service-hero .primary-button').click();await expect(page.locator('#project-form')).toBeVisible();
   await expect(page.locator('[data-service-id="video-production"]')).toBeChecked();
  }finally{await context.close();}
