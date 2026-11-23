@@ -35,19 +35,21 @@ export function validateGallery(items, env) {
   });
 }
 
+export async function signGalleryImage({uploadId, bucket, call, env, user}) {
+  if (typeof uploadId !== 'string' || !uuid.test(uploadId)) throw fail(400, 'Invalid upload ID.');
+  const root = env.SUPABASE_URL.replace(/\/$/, '');
+  const result = {};
+  for (const name of ['image', 'thumb']) {
+    const object = `uploads/${user.id}/${uploadId}/${name}.webp`;
+    const signed = await call(`/storage/v1/object/upload/sign/${bucket}/${object}`, {method:'POST', body:{}, headers:{'x-upsert':'true'}});
+    result[name] = {url:`${root}/storage/v1${signed.url}`, publicUrl:`${root}/storage/v1/object/public/${bucket}/${object}`};
+  }
+  return result;
+}
+
 export async function handleGallery({action, body, call, env, user}) {
   body ??= {};
-  if (action === 'site-gallery-upload') {
-    if (!uuid.test(body.uploadId || '')) throw fail(400, 'Invalid upload ID.');
-    const root = env.SUPABASE_URL.replace(/\/$/, '');
-    const result = {};
-    for (const name of ['image', 'thumb']) {
-      const object = `uploads/${user.id}/${body.uploadId}/${name}.webp`;
-      const signed = await call(`/storage/v1/object/upload/sign/site-gallery/${object}`, {method:'POST', body:{}, headers:{'x-upsert':'true'}});
-      result[name] = {url:`${root}/storage/v1${signed.url}`, publicUrl:`${root}/storage/v1/object/public/site-gallery/${object}`};
-    }
-    return result;
-  }
+  if (action === 'site-gallery-upload') return signGalleryImage({uploadId:body.uploadId, bucket:'site-gallery', call, env, user});
   const rows = await call('/rest/v1/site_content?id=eq.1&select=gallery,gallery_version');
   const current = rows?.[0];
   if (!current || !current.gallery_version) throw fail(503, 'Gallery storage is not ready.');

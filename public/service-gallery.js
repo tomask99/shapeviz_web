@@ -18,7 +18,10 @@ if (dialog && typeof dialog.showModal === 'function') {
       image.width = Number(thumbnail.getAttribute('width'));
       image.height = Number(thumbnail.getAttribute('height'));
       image.src = link.href;
-      caption.textContent = link.closest('figure').querySelector('figcaption').textContent;
+      caption.textContent = link.closest('figure')?.querySelector('figcaption')?.textContent || '';
+      caption.hidden = !caption.textContent;
+      if (caption.hidden) dialog.removeAttribute('aria-describedby');
+      else if (caption.id) dialog.setAttribute('aria-describedby', caption.id);
       dialog.showModal();
       document.body.classList.add('modal-open');
       close.focus({preventScroll: true});

@@ -4,6 +4,20 @@
 and HTTP response specify `noindex, nofollow`. The page is deliberately absent
 from the sitemap and main navigation. It remains publicly accessible by URL.
 
+## Editor
+
+Open **Site Editing**, then **Portfolio**, in Studio at `/admin/site-editing#portfolio`.
+Use the language selector to edit Slovak and English separately. Block order,
+images and grid layouts are shared. Each project's image descriptions, captions
+and destinations can differ per language. Blank fields are omitted. A linked
+image opens its destination, and an unlinked project image opens the gallery
+preview.
+
+Page settings contain the logo and the labels used across the page. Drag blocks
+in the list or use the move buttons. **Save and publish** updates the public
+page; the preview shows the current draft. The editor uses the
+`site_portfolio` Supabase migration for the saved content and image bucket.
+
 ## Content sources
 
 The owner requested every project from the website's current collaboration list,

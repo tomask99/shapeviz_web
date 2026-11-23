@@ -3,6 +3,7 @@ import {mountCompanies} from './site-companies.js';
 import {mountGallery} from './site-gallery.js';
 import {mountArticles} from './articles.js';
 import {mountAbout} from './site-about.js';
+import {mountPortfolio} from './site-portfolio.js';
 
 export function mountSiteEditing({root, api, notify}) {
   root.innerHTML = `<div class="site-editing">
@@ -12,20 +13,23 @@ export function mountSiteEditing({root, api, notify}) {
       <button type="button" role="tab" id="gallery-tab" aria-controls="gallery-panel" aria-selected="false" tabindex="-1">Gallery</button>
       <button type="button" role="tab" id="articles-tab" aria-controls="articles-panel" aria-selected="false" tabindex="-1">Articles</button>
       <button type="button" role="tab" id="about-tab" aria-controls="about-panel" aria-selected="false" tabindex="-1">About me</button>
+      <button type="button" role="tab" id="portfolio-tab" aria-controls="portfolio-panel" aria-selected="false" tabindex="-1">Portfolio</button>
     </div>
     <section id="companies-panel" role="tabpanel" aria-labelledby="companies-tab"></section>
     <section id="gallery-panel" role="tabpanel" aria-labelledby="gallery-tab" hidden></section>
     <section id="articles-panel" role="tabpanel" aria-labelledby="articles-tab" hidden></section>
     <section id="about-panel" role="tabpanel" aria-labelledby="about-tab" hidden></section>
+    <section id="portfolio-panel" role="tabpanel" aria-labelledby="portfolio-tab" hidden></section>
   </div>`;
   const cleanups = [mountCompanies({root:root.querySelector('#companies-panel'), api, notify})];
   const container = root.querySelector('.site-editing');
   const stopEvent = event => event.stopPropagation();
-  for (const name of ['click', 'input', 'change', 'submit']) container.addEventListener(name, stopEvent);
+  for (const name of ['click', 'input', 'change', 'submit', 'dragstart', 'dragover', 'drop', 'dragend']) container.addEventListener(name, stopEvent);
   const tabs = [...root.querySelectorAll('[role="tab"]')];
   let galleryMounted = false;
   let articlesMounted = false;
   let aboutMounted = false;
+  let portfolioMounted = false;
   function select(tab) {
     tabs.forEach(button => {
       const active = button === tab;
@@ -45,6 +49,10 @@ export function mountSiteEditing({root, api, notify}) {
       aboutMounted = true;
       cleanups.push(mountAbout({root:root.querySelector('#about-panel'),api,notify}));
     }
+    if (tab.id === 'portfolio-tab' && !portfolioMounted) {
+      portfolioMounted = true;
+      cleanups.push(mountPortfolio({root:root.querySelector('#portfolio-panel'), api, notify}));
+    }
   }
   tabs.forEach((tab, index) => {
     tab.onclick = () => select(tab);
@@ -58,5 +66,6 @@ export function mountSiteEditing({root, api, notify}) {
   });
   if(location.hash === '#articles') select(root.querySelector('#articles-tab'));
   if(location.hash === '#about') select(root.querySelector('#about-tab'));
+  if(location.hash === '#portfolio') select(root.querySelector('#portfolio-tab'));
   return () => cleanups.forEach(cleanup => cleanup());
 }

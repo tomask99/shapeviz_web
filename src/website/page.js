@@ -7,6 +7,7 @@ import {seoMarkup} from './seo.js';
 import {services as serviceDefinitions, servicePath, findService} from './services.js';
 import {renderServicePage} from './service-page.js';
 import {renderPortfolioPage} from './portfolio.js';
+import {loadPortfolio} from './portfolio-store.js';
 import {loadPublicContent, renderCompanies} from './content.js';
 import {renderGallery} from './gallery.js';
 import {loadShopCatalog} from '../shop/handler.js';
@@ -144,7 +145,7 @@ export function createPublicPageHandler({publicDir = path.resolve('public'), env
     try {
       const content = portfolio || service || shop ? null : await loadPublicContent({env, send});
       const catalog=shop&&url.searchParams.get('preview')!=='1'?await previews(await loadShopCatalog({env,send})):null;
-      let body = portfolio ? renderPortfolioPage(locale) : service ? renderServicePage(service, locale) : renderPublicPage(await readFile(path.join(publicDir, shop ? 'shop/index.html' : 'index.html'), 'utf8'), locale, {shop, explicit: !!explicit, interest: url.searchParams.get('interest'), ...content});
+      let body = portfolio ? renderPortfolioPage(locale, await loadPortfolio({env, send})) : service ? renderServicePage(service, locale) : renderPublicPage(await readFile(path.join(publicDir, shop ? 'shop/index.html' : 'index.html'), 'utf8'), locale, {shop, explicit: !!explicit, interest: url.searchParams.get('interest'), ...content});
       if(catalog?.launched){
         body=body.replace(/<section id="shop-catalog"[^>]*><\/section>/,()=>`<section id="shop-catalog" aria-label="Shop products">${renderCatalogFallback(catalog)}</section>`)
           .replace('id="shop-coming"','hidden id="shop-coming"')
