@@ -46,6 +46,8 @@ export const defaultPortfolio = {
     enlarge: ['Zväčšiť obrázok','Enlarge image'], close: ['Zavrieť náhľad','Close enlarged image'],
     openLink: ['Otvoriť odkaz obrázka','Open image link'], projectIndex: ['Prejsť na projekt','Jump to project'],
     contribution: ['Moja práca','My contribution'], credit: ['Spolupráca','Collaboration'],
+    gallery:['Otvoriť galériu','Open gallery'], projectDetails:['O projekte','Project details'],
+    previousImage:['Predchádzajúci obrázok','Previous image'], nextImage:['Nasledujúci obrázok','Next image'],
   }),
   blocks: [
     block('intro', 'intro', {
@@ -57,13 +59,6 @@ export const defaultPortfolio = {
       'MCM Worldwide / tvorba 3D prostredia v spolupráci s The New Face',
       'MCM Worldwide / 3D environment creation with The New Face',
     ]]),
-    block('services', 'services', {
-      sectionLabel:['Služby','Services'], kicker:['01 / GEOMETRIA','01 / GEOMETRY'],
-      title:['Modelovanie','Modeling'],
-      text:['Nábytok, produkty a prostredia. Od proporcií po posledný šev, s čistou topológiou a UV mapovaním.','Furniture, products and environments. From proportions to the last seam, with clean topology and UV mapping.'],
-      secondKicker:['02 / ATMOSFÉRA','02 / ATMOSPHERE'], secondTitle:['Vizualizácie','Visualization'],
-      secondText:['Produktové CGI, interiéry a architektúra. Materiály, svetlo a kompozícia, ktoré dávajú obrazu charakter.','Product CGI, interiors and architecture. Materials, light and composition that give an image its character.'],
-    }),
     block('work', 'index', {title:['Projekty a spolupráce','Projects and collaborations'], nav:['Práce','Work']}),
     ...projects.map(project => block(project.id, 'project', {
       title: project.name, kicker: project.category, text: project.text, credit: project.collaboration || '',
@@ -71,6 +66,13 @@ export const defaultPortfolio = {
       button: project.url ? ['Pozrieť video (nová karta)','Watch video (new tab)'] : '',
       url: project.url || '',
     }, project.images, project.layout || 'pair')),
+    block('services', 'services', {
+      sectionLabel:['Služby','Services'], kicker:['01 / GEOMETRIA','01 / GEOMETRY'],
+      title:['Modelovanie','Modeling'],
+      text:['Nábytok, produkty a prostredia. Od proporcií po posledný šev, s čistou topológiou a UV mapovaním.','Furniture, products and environments. From proportions to the last seam, with clean topology and UV mapping.'],
+      secondKicker:['02 / ATMOSFÉRA','02 / ATMOSPHERE'], secondTitle:['Vizualizácie','Visualization'],
+      secondText:['Produktové CGI, interiéry a architektúra. Materiály, svetlo a kompozícia, ktoré dávajú obrazu charakter.','Product CGI, interiors and architecture. Materials, light and composition that give an image its character.'],
+    }),
     block('about', 'about', {
       nav:['O mne','About'], kicker:['Človek za obrazmi','The person behind the images'],
       title:['Viac než desať rokov\nvo svete 3D.','Over ten years\nin the world of 3D.'],
