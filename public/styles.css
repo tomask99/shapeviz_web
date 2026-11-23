@@ -109,6 +109,11 @@ body.modal-open .hero-backdrop .hero-wireframe { opacity: 0; }
 .services > div { display: flex; gap: 26px; align-items: baseline; padding-block: 17px; border-top: 1px solid var(--line); font-size: 17px; }
 .services > div:last-child { border-bottom: 1px solid var(--line); }
 .services a:hover { color: var(--accent); }
+.specialist-services { max-width: 580px; margin-top: 30px; }
+.specialist-services h3 { margin: 0 0 12px; font-size: 15px; font-weight: 500; }
+.specialist-services ul { display: flex; flex-wrap: wrap; gap: 6px 22px; list-style: none; margin: 0; padding: 0; }
+.specialist-services a { display: inline-block; padding-block: 9px; color: var(--muted); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 5px; }
+.specialist-services a:hover, .specialist-services a:focus-visible { color: var(--accent); }
 .service-intro { max-width: 740px; margin-top: 30px; color: var(--muted); font-size: 17px; line-height: 1.7; }
 @media (max-width: 600px) {
   .service-intro { font-size: 15px; }

@@ -2,10 +2,12 @@ import {test,expect} from '@playwright/test';
 import {services,servicePath} from '../../src/website/services.js';
 
 for(const locale of ['sk','en'])for(const width of [320,768,1440])test(`service pages, language links and inquiry at ${width}px in ${locale}`,async({page})=>{
+ test.setTimeout(60000);
  await page.setViewportSize({width,height:960});await page.emulateMedia({reducedMotion:'reduce'});
  await page.route('**/api/admin?action=tracking-status',route=>route.fulfill({json:{exclude:true}}));
  const errors=[];page.on('pageerror',error=>errors.push(error.message));
  for(const service of services){
+  const interest=service.parent || service.id;
   const response=await page.goto(servicePath(service,locale));expect(response.status()).toBe(200);
   await expect(page.getByRole('heading',{level:1})).toHaveText(service[locale].name);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
@@ -18,11 +20,11 @@ for(const locale of ['sk','en'])for(const width of [320,768,1440])test(`service 
   await expect(page).toHaveURL(new RegExp(servicePath(service,other)+'$'));
   await expect(page.getByRole('heading',{level:1})).toHaveText(service[other].name);
   await page.locator('.service-hero .primary-button').click();
-  await expect(page).toHaveURL(new RegExp(`/${other}\\?interest=${service.id}#project-form$`));
-  await expect(page.locator(`#project-form [data-service-id="${service.id}"]`)).toBeChecked();
+  await expect(page).toHaveURL(new RegExp(`/${other}\\?interest=${interest}#project-form$`));
+  await expect(page.locator(`#project-form [data-service-id="${interest}"]`)).toBeChecked();
   await expect(page.locator('input[name=services]:checked')).toHaveCount(1);
   await expect(page.locator('#project-form')).toBeInViewport();
-  await page.locator(`[data-service-id="${service.id}"]`).uncheck();
+  await page.locator(`[data-service-id="${interest}"]`).uncheck();
   await expect(page.locator('input[name=services]:checked')).toHaveCount(0);
  }
  expect(errors).toEqual([]);

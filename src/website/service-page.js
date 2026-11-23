@@ -11,7 +11,9 @@ const labels = {
 
 export function renderServicePage(service, locale) {
   const copy = service[locale], ui = labels[locale], home = `/${locale}`, image = service.image;
-  const inquiryUrl = `${home}?interest=${service.id}#project-form`;
+  const inquiryUrl = `${home}?interest=${service.parent || service.id}#project-form`;
+  const exampleUrl = service.parent ? `#${copy.stories[0].id}` : home+'#work';
+  const related = services.filter(item => item.id !== service.id && (!item.parent || item.parent === (service.parent || service.id)));
   const enlargeLabel = locale === 'sk' ? 'Zväčšiť obrázok' : 'Enlarge image';
   const closeLabel = locale === 'sk' ? 'Zavrieť náhľad' : 'Close enlarged image';
   const paragraph = value => `<p>${escape(value)}</p>`;
@@ -37,7 +39,7 @@ ${link('#main',ui.skip,'skip-link')}
 <main id="main" class="section-shell">
 <nav class="service-breadcrumb" aria-label="${ui.breadcrumb}"><ol><li>${link(home,'Shapeviz')}</li><li aria-current="page">${escape(copy.name)}</li></ol></nav>
 <section class="service-hero${copy.heroImages ? ' modeling-hero' : ''}" aria-labelledby="service-title">
-<div><p class="micro accent">SHAPEVIZ / ${ui.services.toUpperCase()}</p><h1 id="service-title">${escape(copy.name)}</h1><p class="service-intro">${escape(copy.intro)}</p><div class="service-actions">${link(inquiryUrl,ui.cta,'primary-button')}${link(home+'#work',ui.portfolio,'service-text-link')}</div></div>
+<div><p class="micro accent">SHAPEVIZ / ${ui.services.toUpperCase()}</p><h1 id="service-title">${escape(copy.name)}</h1><p class="service-intro">${escape(copy.intro)}</p><div class="service-actions">${link(inquiryUrl,ui.cta,'primary-button')}${link(exampleUrl,ui.portfolio,'service-text-link')}</div></div>
 ${copy.heroHighlights ? `<aside class="service-highlights" aria-label="${escape(copy.heroNote)}"><p class="modeling-label">${escape(copy.heroNote)}</p><dl>${copy.heroHighlights.map(([title,body])=>`<div><dt>${escape(title)}</dt><dd>${escape(body)}</dd></div>`).join('')}</dl></aside>` : copy.heroImages ? `<div class="modeling-hero-media${copy.heroLayout === 'wide' ? ' service-hero-media--wide' : ''}"><p class="modeling-label">${escape(copy.heroNote)}</p><div class="modeling-images">${copy.heroImages.map(item=>modelFigure(item,true,copy.heroLayout === 'wide')).join('')}</div></div>` : `<figure>${service.video
     ? `<video controls playsinline preload="none" width="${image.width}" height="${image.height}" poster="${image.src}" src="${service.video}" aria-label="${ui.video}">${link(service.video,ui.video)}</video>`
     : `<img src="${image.src}" srcset="${image.small} ${image.smallWidth || 640}w, ${image.src} ${image.width}w" sizes="(max-width: 900px) 90vw, 44vw" width="${image.width}" height="${image.height}" alt="${escape(copy.imageAlt)}" fetchpriority="high" decoding="async">`}
@@ -48,7 +50,7 @@ ${modelingStories}
 <section class="service-section" aria-labelledby="process-title"><h2 id="process-title">${ui.process}</h2><ol class="service-process">${copy.process.map(([heading,body])=>`<li><h3>${escape(heading)}</h3>${paragraph(body)}</li>`).join('')}</ol></section>
 <section class="service-section service-brief" aria-labelledby="brief-title"><h2 id="brief-title">${ui.brief}</h2><div>${paragraph(copy.brief)}${link(inquiryUrl,ui.cta,'service-text-link')}</div></section>
 <section class="service-section service-faq" aria-labelledby="faq-title"><h2 id="faq-title">${ui.faq}</h2>${copy.questions.map(([question,answer])=>`<details><summary>${escape(question)}<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></summary>${paragraph(answer)}</details>`).join('')}</section>
-<section class="service-section" aria-labelledby="related-title"><h2 id="related-title">${ui.related}</h2><nav class="service-related" aria-label="${ui.related}">${services.filter(item=>item.id!==service.id).map(item=>link(servicePath(item,locale),item[locale].name,'primary-button')).join('')}</nav></section>
+<section class="service-section" aria-labelledby="related-title"><h2 id="related-title">${ui.related}</h2><nav class="service-related" aria-label="${ui.related}">${related.map(item=>link(servicePath(item,locale),item[locale].name,'primary-button')).join('')}</nav></section>
 <section class="service-section service-cta"><h2>${ui.end}</h2>${paragraph(copy.endText || ui.endText)}${link(inquiryUrl,ui.cta,'primary-button')}</section>
 </main><footer class="site-footer section-shell"><span>© SHAPEVIZ</span>${link(home+'#services',ui.services)}${link(inquiryUrl,ui.contact)}</footer>
 ${copy.stories ? `<dialog class="service-lightbox" aria-label="${enlargeLabel}" aria-describedby="service-lightbox-caption"><button class="service-lightbox-close" type="button" aria-label="${closeLabel}" autofocus>${svgIcon('close')}</button><img alt=""><p id="service-lightbox-caption"></p></dialog>` : ''}

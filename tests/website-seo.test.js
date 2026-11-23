@@ -68,8 +68,8 @@ test('service pages expose distinct localized copy, equivalent URLs and schema w
    assert.equal(graph.find(n=>n['@type']==='BreadcrumbList').itemListElement[1].item,url);
    assert.equal(all.filter(n=>n.tagName==='details').length,copy.questions.length);
    assert.ok(sitemapXml().includes(`<loc>${url}</loc>`));
-   assert.ok(all.some(n=>attr(n,'href')===`/${locale}?interest=${service.id}#project-form`));
-   for(const other of services.filter(s=>s!==service))assert.ok(all.some(n=>attr(n,'href')===servicePath(other,locale)));
+   assert.ok(all.some(n=>attr(n,'href')===`/${locale}?interest=${service.parent || service.id}#project-form`));
+   for(const other of services.filter(s=>s!==service && (!s.parent || s.parent===(service.parent || service.id))))assert.ok(all.some(n=>attr(n,'href')===servicePath(other,locale)));
    assert.ok(copy.title.length<65);assert.ok(copy.description.length>100&&copy.description.length<180);
   }
  }
