@@ -72,7 +72,7 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
     try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
     catch { res.writeHead(400).end('Bad request'); return; }
     const canonicalPath = pathname === '/index.html' ? '/' : pathname === '/shop/index.html' ? '/shop'
-      : /^\/(?:sk|en)(?:\/shop|\/(?:sluzby|services)\/[a-z0-9-]+)?\/$/.test(pathname) || pathname === '/shop/' ? pathname.slice(0,-1) : null;
+      : /^\/(?:sk|en)(?:\/shop|\/(?:sluzby|services)\/[a-z0-9-]+)?\/$/.test(pathname) || ['/shop/', '/portfolio/'].includes(pathname) ? pathname.slice(0,-1) : null;
     if (canonicalPath && ['GET','HEAD'].includes(req.method)) {
       res.writeHead(308, {Location:canonicalPath+new URL(req.url,'http://localhost').search}).end();return;
     }
@@ -82,7 +82,7 @@ export function createApp({ publicDir = path.join(root, 'public'), presentations
       res.writeHead(200,{'Content-Type':sitemap?'application/xml; charset=utf-8':'text/plain; charset=utf-8','Cache-Control':'public, max-age=3600'}).end(req.method==='HEAD'?undefined:sitemap?sitemapXml():robotsText());return;
     }
     if (pathname === '/sitemap-articles.xml' || /^\/articles(?:\/[a-z0-9-]+)?\/?$/.test(pathname) || pathname === '/api/shop' || pathname === '/api/site-events' || pathname === '/sitemap-products.xml' || /^\/shop\/[a-z0-9-]+\/?$/.test(pathname)) { await website(req,res);return; }
-    if (legalRoute(pathname) || ['/', '/index.html', '/shop', '/shop/', '/shop/index.html'].includes(pathname) || /^\/(sk|en)(\/shop)?\/?$/.test(pathname) || /^\/(sk|en)\/(sluzby|services)\/[a-z0-9-]+\/?$/.test(pathname)) {await publicPage(req,res);return;}
+    if (legalRoute(pathname) || ['/', '/index.html', '/portfolio', '/shop', '/shop/', '/shop/index.html'].includes(pathname) || /^\/(sk|en)(\/shop)?\/?$/.test(pathname) || /^\/(sk|en)\/(sluzby|services)\/[a-z0-9-]+\/?$/.test(pathname)) {await publicPage(req,res);return;}
     if (pathname === '/api/contact') { await contact(req, res); return; }
     if (pathname === '/api/files') { await files(req, res); return; }
     if (pathname.startsWith('/files/')) {

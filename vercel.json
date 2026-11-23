@@ -27,6 +27,7 @@
     }
   },
   "redirects": [
+    {"source":"/portfolio/","destination":"/portfolio","permanent":true},
     {"source":"/articles/","destination":"/articles","permanent":true},
     {"source":"/articles/:article([a-z0-9-]+)/","destination":"/articles/:article","permanent":true},
     {"source":"/sk/ochrana-osobnych-udajov","destination":"/sk/pravne-informacie","permanent":true},
@@ -46,6 +47,7 @@
     }
   ],
   "rewrites": [
+    {"source":"/portfolio","destination":"/api/site-events?route=page&page=portfolio"},
     {"source":"/articles","destination":"/api/site-events?route=articles"},
     {"source":"/articles/:article([a-z0-9-]+)","destination":"/api/site-events?route=articles&article=:article"},
     {"source":"/sitemap-articles.xml","destination":"/api/site-events?route=articles-sitemap"},

@@ -6,6 +6,7 @@ import {preferredLanguage, supportedLanguages} from './language.js';
 import {seoMarkup} from './seo.js';
 import {services as serviceDefinitions, servicePath, findService} from './services.js';
 import {renderServicePage} from './service-page.js';
+import {renderPortfolioPage} from './portfolio.js';
 import {loadPublicContent, renderCompanies} from './content.js';
 import {renderGallery} from './gallery.js';
 import {loadShopCatalog} from '../shop/handler.js';
@@ -131,18 +132,19 @@ export function createPublicPageHandler({publicDir = path.resolve('public'), env
     const route = /^\/(sk|en)(\/shop)?\/?$/.exec(url.pathname);
     const serviceRoute = /^\/(sk|en)\/(sluzby|services)\/([a-z0-9-]+)\/?$/.exec(url.pathname);
     const isApi = url.pathname === '/api/site-events' && url.searchParams.get('route') === 'page';
+    const portfolio = /^\/portfolio\/?$/.test(url.pathname) || (isApi && url.searchParams.get('page') === 'portfolio');
     const explicit = route?.[1] || serviceRoute?.[1] || (isApi && supportedLanguages.includes(url.searchParams.get('locale')) ? url.searchParams.get('locale') : null);
     const shop = !!route?.[2] || /^\/shop(?:\/|\/index.html)?$/.test(url.pathname) || (isApi && url.searchParams.get('page') === 'shop');
-    const locale = explicit || preferredLanguage(req.headers, env);
+    const locale = portfolio ? (url.searchParams.get('lang') === 'en' ? 'en' : 'sk') : explicit || preferredLanguage(req.headers, env);
     const serviceSlug = serviceRoute?.[3] || (isApi ? url.searchParams.get('service') : null);
     const service = serviceSlug ? findService(locale, serviceSlug) : null;
     if ((serviceSlug && !service) || (serviceRoute && serviceRoute[2] !== (locale==='sk'?'sluzby':'services'))) {
       res.writeHead(404, {'Content-Type':'text/plain; charset=utf-8','X-Robots-Tag':'noindex','Cache-Control':'no-store'}).end(req.method==='HEAD'?undefined:'Not found');return;
     }
     try {
-      const content = service || shop ? null : await loadPublicContent({env, send});
+      const content = portfolio || service || shop ? null : await loadPublicContent({env, send});
       const catalog=shop&&url.searchParams.get('preview')!=='1'?await previews(await loadShopCatalog({env,send})):null;
-      let body = service ? renderServicePage(service, locale) : renderPublicPage(await readFile(path.join(publicDir, shop ? 'shop/index.html' : 'index.html'), 'utf8'), locale, {shop, explicit: !!explicit, interest: url.searchParams.get('interest'), ...content});
+      let body = portfolio ? renderPortfolioPage(locale) : service ? renderServicePage(service, locale) : renderPublicPage(await readFile(path.join(publicDir, shop ? 'shop/index.html' : 'index.html'), 'utf8'), locale, {shop, explicit: !!explicit, interest: url.searchParams.get('interest'), ...content});
       if(catalog?.launched){
         body=body.replace(/<section id="shop-catalog"[^>]*><\/section>/,()=>`<section id="shop-catalog" aria-label="Shop products">${renderCatalogFallback(catalog)}</section>`)
           .replace('id="shop-coming"','hidden id="shop-coming"')
@@ -155,7 +157,7 @@ export function createPublicPageHandler({publicDir = path.resolve('public'), env
       }
       const headers = {'Content-Type': 'text/html; charset=utf-8', 'Content-Language': locale, 'Cache-Control': 'private, no-store', Vary: 'Cookie, Accept-Language, X-Vercel-IP-Country', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin'};
       if (explicit) headers['Set-Cookie'] = `sv_language=${locale}; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly${env.VERCEL === '1' ? '; Secure' : ''}`;
-      if ((shop&&!catalog?.launched) || env.VERCEL_ENV === 'preview') headers['X-Robots-Tag'] = 'noindex, nofollow';
+      if (portfolio || (shop&&!catalog?.launched) || env.VERCEL_ENV === 'preview') headers['X-Robots-Tag'] = 'noindex, nofollow';
       headers['Content-Security-Policy'] = shop
         ? "default-src 'self'; script-src 'self' https://gumroad.com https://assets.gumroad.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://public-files.gumroad.com https://assets.gumroad.com; media-src 'self'; connect-src 'self'; frame-src https://gumroad.com https://*.gumroad.com; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
         : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
