@@ -42,6 +42,17 @@ function list(value, label) {
   return items.length ? `<ul${label ? ` aria-label="${escape(label)}"` : ''}>${items.map(item => `<li>${escape(item)}</li>`).join('')}</ul>` : '';
 }
 
+function projectContributions(value, label) {
+  const entries = clean(value).split(/\r?\n/).map(clean).filter(Boolean);
+  if (!entries.length) return '';
+  const rows = entries.map(entry => {
+    const split = entry.indexOf(' — ');
+    if (split < 0) return `<li>${escape(entry)}</li>`;
+    return `<li><span>${escape(entry.slice(0, split))}</span> <span class="portfolio-tool-name">${escape(entry.slice(split + 3))}</span></li>`;
+  });
+  return `<div class="portfolio-contributions">${label ? `<span class="portfolio-meta-label">${escape(label)}</span>` : ''}<ul${label ? ` aria-label="${escape(label)}"` : ''}>${rows.join('')}</ul></div>`;
+}
+
 export function renderPortfolioLayout(content, locale, {origin, preview = false} = {}) {
   const sk = locale === 'sk';
   const copy = item => Object.fromEntries(Object.entries(item.copy?.[locale] ?? {}).map(([key, value]) => [key, clean(value)]));
@@ -95,9 +106,9 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
       }
       case 'project': {
         const layout = Object.hasOwn(portfolioLayouts, block.layout) ? block.layout : 'pair';
-        const credit = f.credit ? `<p class="portfolio-credit">${settings.credit ? escape(settings.credit) + ': ' : ''}${escape(f.credit)}</p>` : '';
-        const caption = kicker(f.kicker) + heading('h3', f.title) + credit;
-        const detail = text + list(f.items, settings.contribution) + link(f.button, f.url, 'portfolio-original', 'arrowUpRight');
+        const credit = f.credit ? `<div class="portfolio-credit">${settings.credit ? `<span class="portfolio-meta-label">${escape(settings.credit)}</span> ` : ''}${escape(f.credit)}</div>` : '';
+        const caption = kicker(f.kicker) + heading('h3', f.title);
+        const detail = text + credit + projectContributions(f.items, settings.contribution) + link(f.button, f.url, 'portfolio-original', 'arrowUpRight');
         const header = caption || detail ? `<div class="portfolio-project-heading">${caption ? `<div>${caption}</div>` : ''}${detail ? `<div class="portfolio-project-copy">${detail}</div>` : ''}</div>` : '';
         const grid = images.map((image, index) => {
           const lead = layout === 'wide' || (layout === 'architecture' && index === 0);
