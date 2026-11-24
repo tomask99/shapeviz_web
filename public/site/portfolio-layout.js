@@ -20,8 +20,11 @@ function link(label, destination, className, icon) {
 }
 
 function picture(photo, alt, sizes, eager) {
-  const srcset = photo.small && photo.smallWidth < photo.width
-    ? ` srcset="${escape(relativeOrAbsolute(photo.small))} ${Number(photo.smallWidth)}w, ${escape(imageSource(photo))} ${Number(photo.width)}w" sizes="${sizes}"`
+  const variants = [[photo.small, photo.smallWidth], [photo.medium, photo.mediumWidth]]
+    .filter(([src, width]) => src && width < photo.width);
+  const srcset = variants.length
+    ? ` srcset="${[...variants, [imageSource(photo), photo.width]].map(([src, width]) =>
+      `${escape(relativeOrAbsolute(src))} ${Number(width)}w`).join(', ')}" sizes="${sizes}"`
     : '';
   return `<img draggable="false" src="${escape(imageSource(photo))}"${srcset} width="${Number(photo.width)}" height="${Number(photo.height)}" alt="${escape(alt)}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
 }
@@ -145,17 +148,18 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
       }
       case 'project': {
         const layout = Object.hasOwn(portfolioLayouts, block.layout) ? block.layout : 'pair';
+        const fullHeight = block.id === 'block-716c94c0-ac63-487f-83ad-03f49cec504c';
         const credit = f.credit ? `<div class="portfolio-credit">${settings.credit ? `<span class="portfolio-meta-label">${escape(settings.credit)}</span> ` : ''}${escape(f.credit)}</div>` : '';
         const caption = kicker(f.kicker) + heading('h3', f.title);
         const detail = text + credit + projectContributions(f.items, settings.contribution) + link(f.button, f.url, 'portfolio-original', 'arrowUpRight');
         const header = caption || detail ? `<div class="portfolio-project-heading">${caption ? `<div>${caption}</div>` : ''}${detail ? `<div class="portfolio-project-copy">${detail}</div>` : ''}</div>` : '';
         const grid = images.map((image, index) => {
           const lead = layout === 'wide' || (layout === 'architecture' && index === 0);
-          const sizes = lead ? '(max-width: 950px) 92vw, 62vw' :
+          const sizes = fullHeight ? '(max-width: 700px) 92vw, 30vw' : lead ? '(max-width: 950px) 92vw, 62vw' :
             ['compact', 'architecture', 'triptych'].includes(layout) ? tight : pair;
           return photo(image, 'auto, ' + sizes, {slide: true});
         }).join('');
-        return section(block, `portfolio-project portfolio-shell portfolio-project--${layout}`, header + (grid ? `<div class="portfolio-grid">${grid}</div>` : ''), f.title);
+        return section(block, `portfolio-project portfolio-shell portfolio-project--${layout}${fullHeight ? ' portfolio-project--full-height' : ''}`, header + (grid ? `<div class="portfolio-grid">${grid}</div>` : ''), f.title);
       }
       case 'about': {
         const firstList = list(f.items);

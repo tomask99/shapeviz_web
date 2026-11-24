@@ -336,10 +336,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-8-1.webp",
-          "small": "/media/portfolio/pdf-8-1-small.webp",
           "width": 504,
-          "height": 896,
-          "smallWidth": 504
+          "height": 896
         },
         "Prada Beauty / záber z CGI videa / 01",
         "Prada Beauty / CGI video frame / 01"
@@ -347,10 +345,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-8-2.webp",
-          "small": "/media/portfolio/pdf-8-2-small.webp",
           "width": 504,
-          "height": 896,
-          "smallWidth": 504
+          "height": 896
         },
         "Prada Beauty / záber z CGI videa / 02",
         "Prada Beauty / CGI video frame / 02"
@@ -358,10 +354,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-8-3.webp",
-          "small": "/media/portfolio/pdf-8-3-small.webp",
           "width": 504,
-          "height": 896,
-          "smallWidth": 504
+          "height": 896
         },
         "Prada Beauty / záber z CGI videa / 03",
         "Prada Beauty / CGI video frame / 03"
@@ -490,10 +484,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-15-3.webp",
-          "small": "/media/portfolio/pdf-15-3-small.webp",
           "width": 432,
-          "height": 768,
-          "smallWidth": 432
+          "height": 768
         },
         "Kontrafakt – INÍ / CGI a produkčné detaily / 03",
         "Kontrafakt – INÍ / CGI and production details / 03"
@@ -501,10 +493,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-15-4.webp",
-          "small": "/media/portfolio/pdf-15-4-small.webp",
           "width": 432,
-          "height": 768,
-          "smallWidth": 432
+          "height": 768
         },
         "Kontrafakt – INÍ / CGI a produkčné detaily / 04",
         "Kontrafakt – INÍ / CGI and production details / 04"
@@ -512,10 +502,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-15-5.webp",
-          "small": "/media/portfolio/pdf-15-5-small.webp",
           "width": 432,
-          "height": 768,
-          "smallWidth": 432
+          "height": 768
         },
         "Kontrafakt – INÍ / CGI a produkčné detaily / 05",
         "Kontrafakt – INÍ / CGI and production details / 05"
@@ -523,10 +511,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-15-6.webp",
-          "small": "/media/portfolio/pdf-15-6-small.webp",
           "width": 432,
-          "height": 768,
-          "smallWidth": 432
+          "height": 768
         },
         "Kontrafakt – INÍ / CGI a produkčné detaily / 06",
         "Kontrafakt – INÍ / CGI and production details / 06"
@@ -744,6 +730,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-11-1.webp",
+          "medium": "/media/portfolio/pdf-11-1-1200.webp",
+          "mediumWidth": 1200,
           "small": "/media/portfolio/pdf-11-1-small.webp",
           "width": 2160,
           "height": 3840,
@@ -755,6 +743,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-11-2.webp",
+          "medium": "/media/portfolio/pdf-11-2-1200.webp",
+          "mediumWidth": 1200,
           "small": "/media/portfolio/pdf-11-2-small.webp",
           "width": 2160,
           "height": 3840,
@@ -766,6 +756,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-11-3.webp",
+          "medium": "/media/portfolio/pdf-11-3-1200.webp",
+          "mediumWidth": 1200,
           "small": "/media/portfolio/pdf-11-3-small.webp",
           "width": 2160,
           "height": 3840,
@@ -777,6 +769,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/ami-bakery.webp",
+          "medium": "/media/portfolio/ami-bakery-1200.webp",
+          "mediumWidth": 1200,
           "small": "/media/portfolio/ami-bakery-small.webp",
           "width": 2160,
           "height": 3840,
@@ -788,6 +782,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-12-1.webp",
+          "medium": "/media/portfolio/pdf-12-1-1200.webp",
+          "mediumWidth": 1200,
           "small": "/media/portfolio/pdf-12-1-small.webp",
           "width": 2160,
           "height": 3840,
@@ -977,6 +973,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-20-1.webp",
+          "medium": "/media/portfolio/pdf-20-1-1200.webp",
+          "mediumWidth": 1200,
           "small": "/media/portfolio/pdf-20-1-small.webp",
           "width": 1920,
           "height": 2400,
@@ -988,6 +986,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-20-2.webp",
+          "medium": "/media/portfolio/pdf-20-2-1200.webp",
+          "mediumWidth": 1200,
           "small": "/media/portfolio/pdf-20-2-small.webp",
           "width": 1920,
           "height": 2400,
@@ -999,6 +999,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-21-1.webp",
+          "medium": "/media/portfolio/pdf-21-1-1200.webp",
+          "mediumWidth": 1200,
           "small": "/media/portfolio/pdf-21-1-small.webp",
           "width": 1920,
           "height": 2400,
@@ -1010,6 +1012,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-21-2.webp",
+          "medium": "/media/portfolio/pdf-21-2-1200.webp",
+          "mediumWidth": 1200,
           "small": "/media/portfolio/pdf-21-2-small.webp",
           "width": 1920,
           "height": 2400,
@@ -1021,6 +1025,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-22-1.webp",
+          "medium": "/media/portfolio/pdf-22-1-1200.webp",
+          "mediumWidth": 1200,
           "small": "/media/portfolio/pdf-22-1-small.webp",
           "width": 2000,
           "height": 2500,
@@ -1032,6 +1038,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-22-2.webp",
+          "medium": "/media/portfolio/pdf-22-2-1200.webp",
+          "mediumWidth": 1200,
           "small": "/media/portfolio/pdf-22-2-small.webp",
           "width": 2000,
           "height": 2500,
@@ -1065,6 +1073,8 @@ export const portfolioProjects = [
       [
         {
           "src": "/media/portfolio/pdf-24-2.webp",
+          "medium": "/media/portfolio/pdf-24-2-1200.webp",
+          "mediumWidth": 1200,
           "small": "/media/portfolio/pdf-24-2-small.webp",
           "width": 2000,
           "height": 2500,
