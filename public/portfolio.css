@@ -32,9 +32,6 @@
 .portfolio-services:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
 .portfolio-services h2 { margin: 0 0 18px; font-size: clamp(32px, 3.5vw, 52px); letter-spacing: -.035em; }
 .portfolio-services p { max-width: 440px; margin: 0; color: var(--muted); font-size: 16px; }
-.portfolio-section-label { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 24px; margin-bottom: 70px; }
-.portfolio-section-label h2, .portfolio-section-label span { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
-.portfolio-section-label span { color: var(--muted); }
 .portfolio-project-heading:has(> :only-child), .portfolio-about:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
 .portfolio-project-heading .portfolio-kicker { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-weight: 600; }
 .portfolio-project-heading .portfolio-kicker::before { content: ''; width: 22px; height: 1px; flex: none; background: var(--accent); }
@@ -49,9 +46,25 @@
 .portfolio-tool-name { font-size: 13px; color: var(--muted); }
 .portfolio-project-copy .portfolio-original { justify-self: start; margin-top: 0; color: var(--accent); }
 .portfolio-original { display: inline-flex; align-items: center; gap: 12px; margin-top: 18px; font-size: 12px; }
-.portfolio-project-index { display: flex; flex-wrap: wrap; gap: 10px 24px; margin: 0 0 64px; }
-.portfolio-section-label + .portfolio-project-index { margin-top: -36px; }
-.portfolio-project-index a { color: var(--muted); font-size: 12px; padding-block: 10px; border-bottom: 1px solid var(--line); }
+.portfolio-index {
+  display: grid;
+  grid-template-columns: minmax(240px, .8fr) minmax(0, 2fr);
+  align-items: start;
+  gap: clamp(28px, 4vw, 72px);
+  padding-block: clamp(32px, 4vw, 64px);
+  border-top: 1px solid var(--line);
+}
+.portfolio-index h2 { margin: 0; max-width: 14ch; font-size: clamp(34px, 3.5vw, 56px); line-height: 1.02; letter-spacing: -.05em; text-transform: none; text-wrap: balance; }
+.portfolio-project-index { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 205px), 1fr)); gap: 0 20px; }
+.portfolio-project-index:only-child { grid-column: 1 / -1; }
+.portfolio-project-index a {
+  display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 8px 4px;
+  border-bottom: 1px solid var(--line); font-size: 15px; font-weight: 600; line-height: 1.25;
+}
+.portfolio-project-index img { width: 44px; height: 44px; object-fit: cover; flex: none; }
+.portfolio-project-index svg { flex: none; margin-left: auto; width: 15px; height: 15px; color: var(--muted); }
+.portfolio-project-index a:is(:hover, :focus-visible) { color: var(--accent); border-bottom-color: var(--accent); }
+.portfolio-project-index a:is(:hover, :focus-visible) svg { color: inherit; }
 
 .portfolio-project {
   display: grid;
@@ -181,6 +194,8 @@
 .portfolio-viewer button:focus-visible { outline-offset: -4px; }
 .portfolio-viewer-description { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 @media (max-width: 950px) {
+  .portfolio-index { grid-template-columns: 1fr; gap: 20px; }
+  .portfolio-index h2 { max-width: none; }
   .portfolio-project { grid-template-columns: 1fr; }
   .portfolio-project--compact .portfolio-grid, .portfolio-project--architecture .portfolio-grid { --columns: 3; }
 }
@@ -202,9 +217,10 @@
   .portfolio-grid { --gap: 10px; row-gap: 18px; }
   .portfolio-about { grid-template-columns: 1fr; gap: 40px; padding-block: 64px; }
   .portfolio-portrait { max-width: 340px; }
-  .portfolio-section-label { margin-bottom: 44px; }
-  .portfolio-project-index { gap: 8px 18px; }
-  .portfolio-section-label + .portfolio-project-index { margin-top: -16px; }
+  .portfolio-project-index { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; }
+  .portfolio-project-index a { min-height: 54px; font-size: 14px; gap: 8px; padding-inline: 0; }
+  .portfolio-project-index img { width: 32px; height: 32px; border-radius: 9px; }
+  .portfolio-project-index svg { width: 12px; height: 12px; }
   :is(.portfolio-project--compact, .portfolio-project--architecture, .portfolio-project--triptych) .portfolio-grid { --columns: 2; }
   .portfolio-project--architecture .portfolio-grid > figure:first-child img, .portfolio-project--wide .portfolio-grid img { aspect-ratio: 16 / 9; }
   .portfolio-contact { padding-block: 64px; }

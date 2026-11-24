@@ -67,7 +67,10 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
   const blocks = content.blocks.map(block => ({...block, fields: copy(block)}));
   let primaryHeading = false;
   const projectLinks = blocks.filter(({type, fields}) => type === 'project' && fields.title)
-    .map(({id, fields}) => `<a href="#${escape(id)}">${escape(fields.title)}</a>`).join('');
+    .map(({id, fields, images}) => {
+      const preview = images[0] ? picture(images[0], '', '44px', false) : '';
+      return `<a href="#${escape(id)}">${preview}<span>${escape(fields.title)}</span>${svgIcon('arrowDown')}</a>`;
+    }).join('');
   const cover = blocks.find(block => block.type === 'cover' && block.images.length)?.images[0];
   const fullWidth = '100vw';
   const pair = '(max-width: 950px) 44vw, 29vw';
@@ -101,7 +104,7 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
       case 'index': {
         const label = settings.projectIndex || (sk ? 'Prejsť na projekt' : 'Jump to project');
         return section(block, 'portfolio-shell portfolio-index',
-          (title ? `<div class="portfolio-section-label">${title}</div>` : '') +
+          title +
           (projectLinks ? `<nav class="portfolio-project-index" aria-label="${escape(label)}">${projectLinks}</nav>` : ''));
       }
       case 'project': {
