@@ -65,6 +65,7 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
     next: settings.nextImage || (sk ? 'Nasledujúci obrázok' : 'Next image'),
   };
   const blocks = content.blocks.map(block => ({...block, fields: copy(block)}));
+  const intro = blocks.find(block => block.type === 'intro');
   let primaryHeading = false;
   const projectLinks = blocks.filter(({type, fields}) => type === 'project' && fields.title)
     .map(({id, fields, images}) => {
@@ -88,6 +89,14 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
     const text = paragraphs(f.text);
     switch (type) {
       case 'intro': {
+        if (block === intro) {
+          primaryHeading = true;
+          const name = [f.title, f.secondTitle].filter(Boolean).join(' ');
+          return section(block, 'portfolio-intro portfolio-shell portfolio-masthead',
+            kicker(f.kicker) + '<h1 class="portfolio-wordmark">PORTFOLIO</h1>' +
+            (name ? `<p class="portfolio-author">${escape(name)}</p>` : '') +
+            (text || introLink ? `<div class="portfolio-intro-bottom">${text}${introLink}</div>` : ''));
+        }
         const headline = [f.title ? lines(f.title) : '', f.secondTitle ? `<span>${lines(f.secondTitle)}</span>` : ''].filter(Boolean).join('<br>');
         const tag = primaryHeading ? 'h2' : 'h1';
         if (headline) primaryHeading = true;
@@ -140,17 +149,9 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
     }
   }
 
-  const rendered = blocks.map(block => ({...block, html: renderBlock(block)})).filter(block => block.html);
-  const sections = [];
-  for (let i = 0; i < rendered.length; i++) {
-    const block = rendered[i];
-    if (block.type === 'intro' && rendered[i + 1]?.type === 'cover') {
-      sections.push(`<div class="portfolio-hero">${block.html}${rendered[i + 1].html}</div>`);
-      i++;
-    } else {
-      sections.push(block.html);
-    }
-  }
+  const rendered = blocks.filter((block, i) => !(i > 0 && block.type === 'cover' && blocks[i - 1] === intro))
+    .map(block => ({...block, html: renderBlock(block)})).filter(block => block.html);
+  const sections = rendered.map(block => block.html);
   const nav = rendered.filter(block => block.fields.nav).map(block => `<a href="#${escape(block.id)}">${escape(block.fields.nav)}</a>`).join('');
   const brand = content.logo ? picture(content.logo, settings.brand, '142px', true) : escape(settings.brand);
   const brandUrl = portfolioLink(settings.brandUrl);
@@ -185,6 +186,7 @@ ${socialImage ? `<meta property="og:image" content="${escape(socialImage)}"><met
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/service-pages.css"><link rel="stylesheet" href="/portfolio.css">
 ${preview ? '<style>html{background:var(--bg);scroll-behavior:auto}[data-portfolio-selected]{outline:2px solid var(--accent);outline-offset:-2px}</style>' : '<link rel="stylesheet" href="/cursor.css"><script type="module" src="/admin/cursor.js"></script>'}
 ${gallery && !preview ? '<script type="module" src="/service-gallery.js"></script>' : ''}
+${intro && !preview ? '<script type="module" src="/site/portfolio-wordmark.js"></script>' : ''}
 </head><body class="portfolio-page">
 ${settings.skip ? `<a href="#main" class="skip-link">${escape(settings.skip)}</a>` : ''}
 ${logo || nav || language ? `<header class="portfolio-header">${logo}${nav ? `<nav aria-label="${escape(settings.menu || (sk ? 'Navigácia' : 'Navigation'))}">${nav}</nav>` : ''}${language ? `<div class="portfolio-languages" role="group" aria-label="${escape(settings.language || (sk ? 'Jazyk' : 'Language'))}">${language}</div>` : ''}</header>` : ''}
