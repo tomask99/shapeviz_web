@@ -99,9 +99,12 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
         const caption = kicker(f.kicker) + heading('h3', f.title) + credit;
         const detail = text + list(f.items, settings.contribution) + link(f.button, f.url, 'portfolio-original', 'arrowUpRight');
         const header = caption || detail ? `<div class="portfolio-project-heading">${caption ? `<div>${caption}</div>` : ''}${detail ? `<div class="portfolio-project-copy">${detail}</div>` : ''}</div>` : '';
-        const sizes = layout === 'wide' ? '(max-width: 540px) 88vw, 480px' :
-          ['compact', 'triptych'].includes(layout) ? tight : pair;
-        const grid = images.map(image => photo(image, sizes, {slide: true})).join('');
+        const grid = images.map((image, index) => {
+          const lead = layout === 'wide' || (layout === 'architecture' && index === 0);
+          const sizes = lead ? '(max-width: 950px) 92vw, 62vw' :
+            ['compact', 'architecture', 'triptych'].includes(layout) ? tight : pair;
+          return photo(image, 'auto, ' + sizes, {slide: true});
+        }).join('');
         return section(block, `portfolio-project portfolio-shell portfolio-project--${layout}`, header + (grid ? `<div class="portfolio-grid">${grid}</div>` : ''), f.title);
       }
       case 'about': {
