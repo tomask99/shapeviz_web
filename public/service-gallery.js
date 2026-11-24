@@ -19,6 +19,10 @@ if (dialog && typeof dialog.showModal === 'function') {
     image.alt = thumbnail.alt;
     image.width = Number(thumbnail.getAttribute('width'));
     image.height = Number(thumbnail.getAttribute('height'));
+    if (navigation) {
+      const ratio = Number(thumbnail.getAttribute('width')) / Number(thumbnail.getAttribute('height'));
+      image.style.setProperty('--photo-ratio', ratio);
+    }
     image.src = slide.dataset.portfolioSlide || slide.href;
     caption.textContent = slide.closest('figure')?.querySelector('figcaption')?.textContent || '';
     caption.hidden = !caption.textContent;

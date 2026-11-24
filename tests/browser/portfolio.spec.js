@@ -4,6 +4,33 @@ import {createApp} from '../../server.js';
 import {portfolioFixture} from '../helpers/portfolio-fixture.js';
 
 for (const width of [390, 1536]) {
+  test(`MCM thumbnails and enlarged photos fill the available width or height at ${width}px`, async ({page}) => {
+    await page.setViewportSize({width, height:940});
+    await page.goto('/portfolio');
+    const thumbnails = page.locator('#mcm .portfolio-grid img');
+    const count = await thumbnails.count();
+    expect(count).toBeGreaterThan(1);
+    async function expectFit(photo, frame) {
+      await photo.evaluate(img => img.decode());
+      const ratio = await photo.evaluate(img => img.naturalWidth / img.naturalHeight);
+      const box = await frame.boundingBox();
+      const expectedWidth = Math.min(box.width, box.height * ratio);
+      const actual = await photo.boundingBox();
+      expect(Math.abs(actual.width - expectedWidth)).toBeLessThan(1);
+      expect(Math.abs(actual.height - expectedWidth / ratio)).toBeLessThan(1);
+    }
+    for (const photo of await thumbnails.all()) {
+      await photo.scrollIntoViewIfNeeded();
+      await expectFit(photo, photo.locator('xpath=ancestor::figure'));
+    }
+    await thumbnails.first().click();
+    const dialog = page.getByRole('dialog');
+    for (let i = 0; i < count; i++) {
+      await expectFit(dialog.locator('img'), dialog.locator('.portfolio-viewer-photo'));
+      await dialog.getByRole('button', {name:'Nasledujúci obrázok'}).click();
+    }
+  });
+
   test(`portfolio editor publishes ordered blocks and linked images at ${width}px`, async ({page, context}) => {
     const fixture = portfolioFixture();
     const server = createApp(fixture);
