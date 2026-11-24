@@ -3,13 +3,11 @@ const dialog = document.querySelector('.service-lightbox');
 if (dialog && typeof dialog.showModal === 'function') {
   const image = dialog.querySelector('img');
   const caption = dialog.querySelector('p');
-  const close = dialog.querySelector('.service-lightbox-close');
+  const close = dialog.querySelector('.service-lightbox-close, .portfolio-viewer-photo');
   const navigation = dialog.querySelector('[data-gallery-nav]');
   const previous = dialog.querySelector('[data-gallery-prev]');
   const next = dialog.querySelector('[data-gallery-next]');
-  const title = dialog.querySelector('[data-gallery-title]');
   const count = dialog.querySelector('[data-gallery-count]');
-  const destination = dialog.querySelector('[data-gallery-link]');
   let trigger;
   let startedOutside = false;
   let slides = [];
@@ -30,16 +28,6 @@ if (dialog && typeof dialog.showModal === 'function') {
       count.hidden = slides.length < 2;
       count.textContent = `${position + 1} / ${slides.length}`;
     }
-    if (destination) {
-      const linked = slide.hasAttribute('data-portfolio-link');
-      if (!linked && document.activeElement === destination) close.focus({preventScroll:true});
-      destination.hidden = !linked;
-      if (linked) {
-        destination.href = slide.href;
-        destination.target = slide.target;
-        destination.rel = slide.rel;
-      } else destination.removeAttribute('href');
-    }
   }
 
   function advance(step) {
@@ -57,7 +45,6 @@ if (dialog && typeof dialog.showModal === 'function') {
       const group = link.closest('[data-portfolio-gallery]');
       slides = group ? [...group.querySelectorAll('[data-portfolio-slide]')] : [link];
       position = Math.max(0, slides.indexOf(link));
-      if (title) title.textContent = group?.dataset.portfolioGallery || '';
       if (navigation) navigation.hidden = slides.length < 2;
       showSlide();
       dialog.showModal();
@@ -69,9 +56,6 @@ if (dialog && typeof dialog.showModal === 'function') {
   close.addEventListener('click', () => dialog.close());
   previous?.addEventListener('click', () => advance(-1));
   next?.addEventListener('click', () => advance(1));
-  destination?.addEventListener('click', () => {
-    if (destination.target !== '_blank') dialog.close();
-  });
   // A backdrop click closes the preview; dragging from the image does not.
   const outside = event => {
     const bounds = dialog.getBoundingClientRect();
@@ -88,7 +72,7 @@ if (dialog && typeof dialog.showModal === 'function') {
       advance(event.key === 'ArrowRight' ? 1 : -1);
     } else if (event.key === 'Tab') {
       event.preventDefault();
-      const controls = [close, previous, next, destination].filter(control => control && !control.closest('[hidden]'));
+      const controls = [close, previous, next].filter(control => control && !control.closest('[hidden]'));
       const index = controls.indexOf(document.activeElement);
       const step = event.shiftKey ? -1 : 1;
       const target = index < 0 ? (event.shiftKey ? controls.at(-1) : controls[0]) : controls[(index + step + controls.length) % controls.length];

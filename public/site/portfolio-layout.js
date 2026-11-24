@@ -33,7 +33,7 @@ function figure(photo, copy, labels, sizes, {eager = false, preview = true, slid
   const external = /^https?:\/\//i.test(url);
   const render = picture(photo, alt, sizes, eager);
   if (!preview && !url) return `<figure>${render}${caption}</figure>`;
-  const gallery = slide ? ` data-portfolio-slide="${escape(imageSource(photo))}"${url ? ' data-portfolio-link' : ''}` : '';
+  const gallery = slide ? ` data-portfolio-slide="${escape(imageSource(photo))}"` : '';
   return `<figure><a class="service-image" href="${escape(url || imageSource(photo))}"${gallery}${url ? (external ? ' target="_blank" rel="noopener noreferrer"' : '') : ' data-service-image'} aria-label="${escape((url ? labels.openLink : labels.enlarge) + description)}"><span class="service-image-clip">${render}</span><span class="service-image-zoom" aria-hidden="true">${svgIcon(url ? 'arrowUpRight' : 'search')}</span></a>${caption}</figure>`;
 }
 
@@ -152,12 +152,12 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
   const footer = settings.footer ? `<span>${escape(settings.footer.replaceAll('{year}', new Date().getFullYear()))}</span>` : '';
   const gallery = rendered.some(block => block.html.includes(' data-service-image'));
   const modal = gallery && !preview ? `<dialog class="service-lightbox portfolio-viewer" aria-label="${escape(labels.enlarge)}">
-    <header class="portfolio-viewer-head"><span data-gallery-title></span><button class="service-lightbox-close" type="button" aria-label="${escape(labels.close)}" autofocus>${svgIcon('close')}</button></header>
-    <div class="portfolio-viewer-stage"><img alt=""><div class="portfolio-viewer-nav" data-gallery-nav hidden>
+    <button class="portfolio-viewer-photo" type="button" aria-label="${escape(labels.close)}" autofocus><img alt=""></button>
+    <div class="portfolio-viewer-nav" data-gallery-nav hidden>
       <button type="button" data-gallery-prev aria-label="${escape(labels.previous)}">${svgIcon('arrowLeft')}</button>
       <button type="button" data-gallery-next aria-label="${escape(labels.next)}">${svgIcon('arrowRight')}</button>
-    </div></div>
-    <footer class="portfolio-viewer-meta"><p id="service-lightbox-caption" hidden></p><a data-gallery-link hidden>${escape(labels.openLink)}${svgIcon('arrowUpRight')}</a><span data-gallery-count aria-live="polite" hidden></span></footer>
+    </div>
+    <div class="portfolio-viewer-description"><p id="service-lightbox-caption" hidden></p><span data-gallery-count aria-live="polite" hidden></span></div>
   </dialog>` : '';
   return `<!doctype html>
 <html lang="${locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
