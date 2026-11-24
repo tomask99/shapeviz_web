@@ -25,7 +25,7 @@ function picture(photo, alt, sizes, eager) {
   return `<img src="${escape(imageSource(photo))}"${srcset} width="${Number(photo.width)}" height="${Number(photo.height)}" alt="${escape(alt)}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
 }
 
-function figure(photo, copy, labels, sizes, eager = false, preview = true) {
+function figure(photo, copy, labels, sizes, {eager = false, preview = true, slide = false} = {}) {
   const alt = clean(copy.alt) || clean(copy.caption);
   const caption = clean(copy.caption) ? `<figcaption>${escape(copy.caption)}</figcaption>` : '';
   const description = alt ? ': ' + alt : '';
@@ -33,7 +33,8 @@ function figure(photo, copy, labels, sizes, eager = false, preview = true) {
   const external = /^https?:\/\//i.test(url);
   const render = picture(photo, alt, sizes, eager);
   if (!preview && !url) return `<figure>${render}${caption}</figure>`;
-  return `<figure><a class="service-image" href="${escape(url || imageSource(photo))}" ${url ? (external ? 'target="_blank" rel="noopener noreferrer"' : '') : 'data-service-image'} aria-label="${escape((url ? labels.openLink : labels.enlarge) + description)}"><span class="service-image-clip">${render}</span><span class="service-image-zoom" aria-hidden="true">${svgIcon(url ? 'arrowUpRight' : 'search')}</span></a>${caption}</figure>`;
+  const gallery = slide ? ` data-portfolio-slide="${escape(imageSource(photo))}"${url ? ' data-portfolio-link' : ''}` : '';
+  return `<figure><a class="service-image" href="${escape(url || imageSource(photo))}"${gallery}${url ? (external ? ' target="_blank" rel="noopener noreferrer"' : '') : ' data-service-image'} aria-label="${escape((url ? labels.openLink : labels.enlarge) + description)}"><span class="service-image-clip">${render}</span><span class="service-image-zoom" aria-hidden="true">${svgIcon(url ? 'arrowUpRight' : 'search')}</span></a>${caption}</figure>`;
 }
 
 function list(value, label) {
@@ -49,6 +50,8 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
     enlarge: settings.enlarge || (sk ? 'Zväčšiť obrázok' : 'Enlarge image'),
     close: settings.close || (sk ? 'Zavrieť náhľad' : 'Close preview'),
     openLink: settings.openLink || (sk ? 'Otvoriť odkaz obrázka' : 'Open image link'),
+    previous: settings.previousImage || (sk ? 'Predchádzajúci obrázok' : 'Previous image'),
+    next: settings.nextImage || (sk ? 'Nasledujúci obrázok' : 'Next image'),
   };
   const blocks = content.blocks.map(block => ({...block, fields: copy(block)}));
   let primaryHeading = false;
@@ -58,10 +61,10 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
   const fullWidth = '100vw';
   const pair = '(max-width: 950px) 44vw, 29vw';
   const tight = '(max-width: 700px) 44vw, (max-width: 950px) 29vw, 20vw';
-  const photo = (image, sizes, eager, zoom) => figure(image, copy(image), labels, sizes, eager, zoom);
+  const photo = (image, sizes, options) => figure(image, copy(image), labels, sizes, options);
   const heading = (tag, value) => value ? `<${tag}>${lines(value)}</${tag}>` : '';
   const section = (block, css, body, label = '') => body
-    ? `<section id="${escape(block.id)}" data-portfolio-block="${escape(block.id)}" class="${css}"${label ? ` aria-label="${escape(label)}"` : ''}>${body}</section>`
+    ? `<section id="${escape(block.id)}" data-portfolio-block="${escape(block.id)}" class="${css}"${label ? ` aria-label="${escape(label)}"` : ''}${block.type === 'project' && block.images.length ? ` data-portfolio-gallery="${escape(label)}"` : ''}>${body}</section>`
     : '';
 
   function renderBlock(block) {
@@ -78,7 +81,7 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
         return section(block, 'portfolio-intro portfolio-shell', kicker(f.kicker) + (headline ? `<${tag}>${headline}</${tag}>` : '') + bottom);
       }
       case 'cover':
-        return section(block, 'portfolio-cover', images.length ? photo(images[0], fullWidth, images[0] === cover) : '');
+        return section(block, 'portfolio-cover', images.length ? photo(images[0], fullWidth, {eager: images[0] === cover}) : '');
       case 'services': {
         const columns = [kicker(f.kicker) + title + text, kicker(f.secondKicker) + heading('h2', f.secondTitle) + paragraphs(f.secondText)]
           .filter(Boolean).map(column => `<div>${column}</div>`).join('');
@@ -98,7 +101,7 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
         const header = caption || detail ? `<div class="portfolio-project-heading">${caption ? `<div>${caption}</div>` : ''}${detail ? `<div class="portfolio-project-copy">${detail}</div>` : ''}</div>` : '';
         const sizes = layout === 'wide' ? '(max-width: 540px) 88vw, 480px' :
           ['compact', 'triptych'].includes(layout) ? tight : pair;
-        const grid = images.map(image => photo(image, sizes)).join('');
+        const grid = images.map(image => photo(image, sizes, {slide: true})).join('');
         return section(block, `portfolio-project portfolio-shell portfolio-project--${layout}`, header + (grid ? `<div class="portfolio-grid">${grid}</div>` : ''), f.title);
       }
       case 'about': {
@@ -106,7 +109,7 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
         const secondList = list(f.secondItems);
         const tools = (firstList ? heading('h3', f.itemsTitle) + firstList : '') + (secondList ? heading('h3', f.secondItemsTitle) + secondList : '');
         const detail = kicker(f.kicker) + title + text + (tools ? `<div class="portfolio-tools">${tools}</div>` : '');
-        const portrait = images.length ? `<div class="portfolio-portrait">${photo(images[0], '(max-width: 700px) 80vw, 30vw', false, false)}</div>` : '';
+        const portrait = images.length ? `<div class="portfolio-portrait">${photo(images[0], '(max-width: 700px) 80vw, 30vw', {preview: false})}</div>` : '';
         return section(block, 'portfolio-about portfolio-shell', portrait + (detail ? `<div>${detail}</div>` : ''), f.title);
       }
       case 'contact':
@@ -148,7 +151,14 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
   const pageTitle = escape(settings.title || 'Portfolio');
   const footer = settings.footer ? `<span>${escape(settings.footer.replaceAll('{year}', new Date().getFullYear()))}</span>` : '';
   const gallery = rendered.some(block => block.html.includes(' data-service-image'));
-  const modal = gallery && !preview ? `<dialog class="service-lightbox" aria-label="${escape(labels.enlarge)}"><button class="service-lightbox-close" type="button" aria-label="${escape(labels.close)}" autofocus>${svgIcon('close')}</button><img alt=""><p id="service-lightbox-caption" hidden></p></dialog>` : '';
+  const modal = gallery && !preview ? `<dialog class="service-lightbox portfolio-viewer" aria-label="${escape(labels.enlarge)}">
+    <header class="portfolio-viewer-head"><span data-gallery-title></span><button class="service-lightbox-close" type="button" aria-label="${escape(labels.close)}" autofocus>${svgIcon('close')}</button></header>
+    <div class="portfolio-viewer-stage"><img alt=""><div class="portfolio-viewer-nav" data-gallery-nav hidden>
+      <button type="button" data-gallery-prev aria-label="${escape(labels.previous)}">${svgIcon('arrowLeft')}</button>
+      <button type="button" data-gallery-next aria-label="${escape(labels.next)}">${svgIcon('arrowRight')}</button>
+    </div></div>
+    <footer class="portfolio-viewer-meta"><p id="service-lightbox-caption" hidden></p><a data-gallery-link hidden>${escape(labels.openLink)}${svgIcon('arrowUpRight')}</a><span data-gallery-count aria-live="polite" hidden></span></footer>
+  </dialog>` : '';
   return `<!doctype html>
 <html lang="${locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${pageTitle}</title><meta name="robots" content="noindex, nofollow"><meta name="theme-color" content="#000000">

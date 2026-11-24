@@ -80,6 +80,18 @@ for (const width of [390, 1536]) {
       const dialog = page.getByRole('dialog', {name:'Zväčšiť obrázok'});
       await expect(dialog).toBeVisible();
       await expect(dialog.locator('p')).toBeHidden();
+      await expect(dialog.locator('[data-gallery-count]')).toHaveText('2 / 2');
+      const next = dialog.getByRole('button', {name:'Nasledujúci obrázok'});
+      const previous = dialog.getByRole('button', {name:'Predchádzajúci obrázok'});
+      if (width === 390) await next.click();
+      else await page.keyboard.press('ArrowRight');
+      await expect(dialog.locator('[data-gallery-count]')).toHaveText('1 / 2');
+      await expect(dialog.locator('img')).toHaveAttribute('alt', 'Odkaz na externý projekt');
+      await expect(dialog.getByRole('link')).toHaveAttribute('href', 'https://example.com/design');
+      if (width === 390) await previous.click();
+      else await page.keyboard.press('ArrowLeft');
+      await expect(dialog.locator('[data-gallery-count]')).toHaveText('2 / 2');
+      await expect(dialog.locator('img')).toHaveAttribute('alt', 'Náhľad bez popisu');
       const close = dialog.getByRole('button', {name:'Zavrieť náhľad'});
       await expect(close.locator('svg[aria-hidden=true][focusable=false]')).toHaveCount(1);
       if (width === 390) await close.click();
