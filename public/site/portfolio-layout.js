@@ -56,8 +56,8 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
     .map(({id, fields}) => `<a href="#${escape(id)}">${escape(fields.title)}</a>`).join('');
   const cover = blocks.find(block => block.type === 'cover' && block.images.length)?.images[0];
   const fullWidth = '100vw';
-  const pair = '(max-width: 600px) 92vw, 44vw';
-  const tight = '(max-width: 700px) 44vw, (max-width: 1000px) 29vw, 22vw';
+  const pair = '(max-width: 950px) 44vw, 29vw';
+  const tight = '(max-width: 700px) 44vw, (max-width: 950px) 29vw, 20vw';
   const photo = (image, sizes, eager, zoom) => figure(image, copy(image), labels, sizes, eager, zoom);
   const heading = (tag, value) => value ? `<${tag}>${lines(value)}</${tag}>` : '';
   const section = (block, css, body, label = '') => body
@@ -65,7 +65,7 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
     : '';
 
   function renderBlock(block) {
-    const {type, id, fields: f, images} = block;
+    const {type, fields: f, images} = block;
     const introLink = link(f.button, f.url, 'portfolio-work-link', 'arrowDown');
     const title = heading('h2', f.title);
     const text = paragraphs(f.text);
@@ -96,10 +96,9 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
         const caption = kicker(f.kicker) + heading('h3', f.title) + credit;
         const detail = text + list(f.items, settings.contribution) + link(f.button, f.url, 'portfolio-original', 'arrowUpRight');
         const header = caption || detail ? `<div class="portfolio-project-heading">${caption ? `<div>${caption}</div>` : ''}${detail ? `<div class="portfolio-project-copy">${detail}</div>` : ''}</div>` : '';
-        const grid = images.map((image, index) => {
-          const wide = layout === 'wide' || (index === 0 && (layout === 'architecture' || ['rytmus', 'ektor'].includes(id)));
-          return photo(image, wide ? fullWidth : ['compact', 'triptych'].includes(layout) ? tight : pair);
-        }).join('');
+        const sizes = layout === 'wide' ? '(max-width: 540px) 88vw, 480px' :
+          ['compact', 'triptych'].includes(layout) ? tight : pair;
+        const grid = images.map(image => photo(image, sizes)).join('');
         return section(block, `portfolio-project portfolio-shell portfolio-project--${layout}`, header + (grid ? `<div class="portfolio-grid">${grid}</div>` : ''), f.title);
       }
       case 'about': {
@@ -122,6 +121,16 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
   }
 
   const rendered = blocks.map(block => ({...block, html: renderBlock(block)})).filter(block => block.html);
+  const sections = [];
+  for (let i = 0; i < rendered.length; i++) {
+    const block = rendered[i];
+    if (block.type === 'intro' && rendered[i + 1]?.type === 'cover') {
+      sections.push(`<div class="portfolio-hero">${block.html}${rendered[i + 1].html}</div>`);
+      i++;
+    } else {
+      sections.push(block.html);
+    }
+  }
   const nav = rendered.filter(block => block.fields.nav).map(block => `<a href="#${escape(block.id)}">${escape(block.fields.nav)}</a>`).join('');
   const brand = content.logo ? picture(content.logo, settings.brand, '142px', true) : escape(settings.brand);
   const brandUrl = portfolioLink(settings.brandUrl);
@@ -142,16 +151,17 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
   const modal = gallery && !preview ? `<dialog class="service-lightbox" aria-label="${escape(labels.enlarge)}"><button class="service-lightbox-close" type="button" aria-label="${escape(labels.close)}" autofocus>${svgIcon('close')}</button><img alt=""><p id="service-lightbox-caption" hidden></p></dialog>` : '';
   return `<!doctype html>
 <html lang="${locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${pageTitle}</title><meta name="robots" content="noindex, nofollow"><meta name="theme-color" content="#11100e">
+<title>${pageTitle}</title><meta name="robots" content="noindex, nofollow"><meta name="theme-color" content="#000000">
 <link rel="canonical" href="${pageUrl}"><meta property="og:url" content="${pageUrl}"><meta property="og:type" content="website"><meta property="og:title" content="${pageTitle}">
 ${description ? `<meta name="description" content="${description}"><meta property="og:description" content="${description}">` : ''}
 ${socialImage ? `<meta property="og:image" content="${escape(socialImage)}"><meta name="twitter:card" content="summary_large_image">` : ''}
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/service-pages.css"><link rel="stylesheet" href="/portfolio.css">
-${preview ? '<style>html{background:#11100e;scroll-behavior:auto}[data-portfolio-selected]{outline:2px solid #ff9d57;outline-offset:-2px}</style>' : gallery ? '<script type="module" src="/service-gallery.js"></script>' : ''}
+${preview ? '<style>html{background:var(--bg);scroll-behavior:auto}[data-portfolio-selected]{outline:2px solid var(--accent);outline-offset:-2px}</style>' : '<link rel="stylesheet" href="/cursor.css"><script type="module" src="/admin/cursor.js"></script>'}
+${gallery && !preview ? '<script type="module" src="/service-gallery.js"></script>' : ''}
 </head><body class="portfolio-page">
 ${settings.skip ? `<a href="#main" class="skip-link">${escape(settings.skip)}</a>` : ''}
 ${logo || nav || language ? `<header class="portfolio-header">${logo}${nav ? `<nav aria-label="${escape(settings.menu || (sk ? 'Navigácia' : 'Navigation'))}">${nav}</nav>` : ''}${language ? `<div class="portfolio-languages" role="group" aria-label="${escape(settings.language || (sk ? 'Jazyk' : 'Language'))}">${language}</div>` : ''}</header>` : ''}
-<main id="main">${rendered.map(block => block.html).join('\n')}</main>
+<main id="main">${sections.join('\n')}</main>
 <footer class="portfolio-footer portfolio-shell">${footer}${link(settings.back, '#main', '', 'arrowUp')}</footer>${modal}
 </body></html>`;
 }

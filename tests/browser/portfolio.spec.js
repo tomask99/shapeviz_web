@@ -24,7 +24,7 @@ for (const width of [390, 1536]) {
       const frame = panel.frameLocator('iframe');
       await expect(panel.getByRole('status')).toHaveText('Published portfolio loaded');
       await expect(frame.locator('#intro')).toBeVisible();
-      await expect(frame.locator('body')).toHaveCSS('background-color', 'rgb(17, 16, 14)');
+      await expect(frame.locator('body')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
 
       await panel.getByRole('button', {name:'Add block'}).click();
       await panel.getByLabel('Project name').fill('Nový projekt');
