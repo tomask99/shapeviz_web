@@ -2,7 +2,7 @@ import {svgIcon} from '../ui/icons.js';
 import {uploadGalleryImage} from './gallery-upload.js';
 import {renderPortfolioLayout} from '../site/portfolio-layout.js';
 import {
-  portfolioBlockTypes, portfolioFieldLimit, portfolioImageFields, portfolioLayouts, portfolioLimits, portfolioSettings,
+  portfolioBlockTypes, portfolioFieldLimit, portfolioImageFields, portfolioLayouts, portfolioLimits, portfolioSettings, refreshPortfolioBlock,
 } from '../site/portfolio-fields.js';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -394,6 +394,7 @@ export function mountPortfolio({root, api, notify}) {
       const saved = await api('site-portfolio-list');
       if (disposed) return;
       ({content, version} = saved);
+      content.blocks = content.blocks.map(refreshPortfolioBlock);
       dirty = false;
       workspace.hidden = false;
       active = content.blocks[0]?.id || null;

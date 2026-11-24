@@ -1,6 +1,6 @@
 import {svgIcon} from '../ui/icons.js';
 import {translate} from '../i18n/messages.js';
-import {portfolioLanguages, portfolioLayouts, portfolioLink} from './portfolio-fields.js';
+import {portfolioLanguages, portfolioLayouts, portfolioLink, refreshPortfolioBlock} from './portfolio-fields.js';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -66,9 +66,11 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
     previous: settings.previousImage || (sk ? 'Predchádzajúci obrázok' : 'Previous image'),
     next: settings.nextImage || (sk ? 'Nasledujúci obrázok' : 'Next image'),
   };
-  const blocks = content.blocks.map(block => ({...block, fields: copy(block)}));
+  const blocks = content.blocks.map(block => ({...block, fields: copy(refreshPortfolioBlock(block))}));
   const intro = blocks.find(block => block.type === 'intro');
   const landing = intro && intro === blocks[0];
+  const services = blocks.find(({type, fields}) => type === 'services' &&
+    Object.entries(fields).some(([key, value]) => key !== 'sectionLabel' && value));
   const projects = blocks.find(block => block.type === 'index' && (block.fields.title || blocks.some(other => other.type === 'project' && other.fields.title)))
     ?? blocks.find(block => block.type === 'project' && (block.fields.title || block.images.length));
   let primaryHeading = false;
@@ -96,19 +98,23 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
       case 'intro': {
         if (landing && block === intro) {
           primaryHeading = true;
+          const name = [f.title, f.secondTitle].filter(Boolean).join(' ').replace(/\.$/, '');
+          const explore = link(f.button, f.url, 'scroll-link micro', 'arrowDown');
+          const nextId = services?.id || projects?.id;
           return `<section id="${escape(block.id)}" data-portfolio-block="${escape(block.id)}" class="hero-stage" aria-labelledby="hero-heading">
             <div class="hero">
               <div class="hero-backdrop" aria-hidden="true">
                 <img src="/media/hero-wireframe-1920.webp" srcset="/media/hero-wireframe-960.webp 960w, /media/hero-wireframe-1920.webp 1920w" sizes="100vw" width="1920" height="2339" alt="" fetchpriority="high" decoding="async" draggable="false">
                 <img class="hero-wireframe" data-src="/media/hero-background-01-1920.webp" data-srcset="/media/hero-background-01-960.webp 960w, /media/hero-background-01-1920.webp 1920w" sizes="100vw" width="1920" height="2339" alt="" decoding="async" draggable="false">
               </div>
-              <div class="hero-top micro hero-fade"><span><i class="status-dot"></i> ${t('A VISUAL STUDIO')}</span><span>${t('IDEAS INTO IMPACT.')}</span></div>
-              <div class="hero-title-wrap"><div class="hero-annotation micro hero-fade"><span>${t('FORM. FEELING. IDENTITY.')}</span><span class="accent">${t('( HERE TO CREATE )')}</span></div>
+              <div class="hero-title-wrap">
+                <h1 id="hero-heading" class="sr-only">Portfolio</h1>
                 <div id="hero-title" aria-hidden="true">${Array.from('PORTFOLIO', letter => `<span>${letter}</span>`).join('')}</div>
                 <div class="hero-title-line hero-fade"></div>
               </div>
-              <div class="hero-bottom hero-fade"><div><p>${t('I create visuals')} <span>${t('that stay with you.')}</span></p><h1 id="hero-heading" class="hero-specialties"><span class="sr-only">Portfolio. </span>${t('I create 3D models, visualizations & videos.')}</h1></div>
-                ${projects ? `<a class="scroll-link micro" href="#${escape(projects.id)}">${t('SCROLL TO EXPLORE')} <span class="circle-arrow" aria-hidden="true">${svgIcon('arrowDown','arrow-icon')}</span></a>` : ''}
+              <div class="hero-bottom hero-fade">
+                ${name ? `<p class="portfolio-signature">${escape(name)}</p>` : ''}
+                ${nextId ? `<a class="scroll-link micro" href="#${escape(nextId)}">${t('SCROLL TO EXPLORE')} <span class="circle-arrow" aria-hidden="true">${svgIcon('arrowDown','arrow-icon')}</span></a>` : explore}
               </div>
             </div></section>`;
         }
@@ -121,9 +127,15 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
       case 'cover':
         return section(block, 'portfolio-cover', images.length ? photo(images[0], fullWidth, {eager: images[0] === cover}) : '');
       case 'services': {
-        const columns = [kicker(f.kicker) + title + text, kicker(f.secondKicker) + heading('h2', f.secondTitle) + paragraphs(f.secondText)]
+        const tag = f.sectionLabel ? 'h3' : 'h2';
+        const columns = [
+          kicker(f.kicker) + heading(tag, f.title) + text,
+          kicker(f.secondKicker) + heading(tag, f.secondTitle) + paragraphs(f.secondText),
+          heading(tag, f.thirdTitle) + paragraphs(f.thirdText),
+        ]
           .filter(Boolean).map(column => `<div>${column}</div>`).join('');
-        return section(block, 'portfolio-services portfolio-shell', columns, f.sectionLabel);
+        return section(block, 'portfolio-services portfolio-shell', columns ?
+          heading('h2', f.sectionLabel) + `<div class="portfolio-services-grid">${columns}</div>` : '', f.sectionLabel);
       }
       case 'index': {
         const label = settings.projectIndex || (sk ? 'Prejsť na projekt' : 'Jump to project');
@@ -153,9 +165,20 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
         const portrait = images.length ? `<div class="portfolio-portrait">${photo(images[0], '(max-width: 700px) 80vw, 30vw', {preview: false})}</div>` : '';
         return section(block, 'portfolio-about portfolio-shell', portrait + (detail ? `<div>${detail}</div>` : ''), f.title);
       }
-      case 'contact':
-        return section(block, 'portfolio-contact portfolio-shell', kicker(f.kicker) + title + text +
-          link(f.button, f.url, 'portfolio-email', 'arrowUpRight') + link(f.secondButton, f.secondUrl, 'portfolio-form-link'));
+      case 'contact': {
+        const detail = kicker(f.kicker) + title + text;
+        const email = link(f.button, f.url, 'portfolio-email', 'arrowUpRight');
+        const form = link(f.secondButton, f.secondUrl, 'portfolio-contact-link');
+        if (!detail && !email && !form) return '';
+        const personalAddress = 'kracovictomas99@gmail.com';
+        const personalMailto = `mailto:${personalAddress}`;
+        const personal = link(personalAddress, personalMailto, 'portfolio-email', 'arrowUpRight');
+        const cta = link(sk ? 'Napísať e-mail' : 'Send an email', personalMailto, 'portfolio-contact-cta', 'arrowUpRight');
+        const website = link(sk ? 'Web Shapeviz' : 'Shapeviz website', `/${locale}`, 'portfolio-contact-link', 'arrowUpRight');
+        return section(block, 'portfolio-contact portfolio-shell',
+          `<div class="portfolio-contact-copy">${detail}${cta}</div>` +
+          `<div class="portfolio-contact-actions">${personal}${f.url === personalMailto ? '' : email}<div class="portfolio-contact-links">${website}${form}</div></div>`);
+      }
       case 'text':
         return section(block, 'portfolio-text portfolio-shell', kicker(f.kicker) + title + text +
           link(f.button, f.url, 'portfolio-original', 'arrowUpRight'));
@@ -167,7 +190,6 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
   const rendered = blocks.filter((block, i) => !(i > 0 && block.type === 'cover' && blocks[i - 1] === intro))
     .map(block => ({...block, html: renderBlock(block)})).filter(block => block.html);
   const sections = rendered.map(block => block.html);
-  const nav = rendered.filter(block => block.fields.nav).map(block => `<a href="#${escape(block.id)}">${escape(block.fields.nav)}</a>`).join('');
   const brand = content.logo ? picture(content.logo, settings.brand, '142px', true) : escape(settings.brand);
   const brandUrl = portfolioLink(settings.brandUrl);
   const logo = brand && (brandUrl
@@ -178,10 +200,6 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
     const label = settings[lang + 'Link'];
     return label ? [`<a href="/portfolio${lang === 'en' ? '?lang=en' : ''}" lang="${lang}"${name ? ` aria-label="${escape(name)}"` : ''}${lang === locale ? ' aria-current="true"' : ''}>${escape(label)}</a>`] : [];
   }).join('');
-  const studioHeader = `<header class="site-header">
-    <a class="brand" href="/${locale}" aria-label="${t('Shapeviz — home')}"><img src="/media/shapeviz-logo.webp" alt="Shapeviz" width="360" height="75"></a>
-    <nav aria-label="${t('Main navigation')}"><a href="/${locale}#about">${t('Studio')}</a><a href="/${locale}#services">${t('Services')}</a><a href="/${locale}#work">${t('Work')}</a><a href="/articles${sk ? '?lang=sk' : ''}">${t('Articles')}</a><span class="shop-nav" data-shop-nav aria-disabled="true">${t('Shop')} <small>${t('Coming soon')}</small></span><a class="nav-contact" href="/${locale}#contact">${t('Contact me')} <span aria-hidden="true">${svgIcon('arrowUpRight','arrow-icon')}</span></a></nav>
-    <div class="language-switch" role="group" aria-label="${t('Language')}">${language}</div></header>`;
   const pageUrl = origin + (sk ? '/portfolio' : '/portfolio?lang=en');
   const description = escape(settings.description);
   const socialImage = cover ? new URL(imageSource(cover), origin).href : '';
@@ -205,10 +223,10 @@ ${socialImage ? `<meta property="og:image" content="${escape(socialImage)}"><met
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/service-pages.css"><link rel="stylesheet" href="/portfolio.css">
 ${preview ? '<style>html{background:var(--bg);scroll-behavior:auto}[data-portfolio-selected]{outline:2px solid var(--accent);outline-offset:-2px}</style>' : landing ? '<script type="module" src="/site/hero-motion.js"></script>' : '<link rel="stylesheet" href="/cursor.css"><script type="module" src="/admin/cursor.js"></script>'}
 ${gallery && !preview ? '<script type="module" src="/service-gallery.js"></script>' : ''}
-${landing && !preview ? '<script type="module" src="/shop/nav.js"></script>' : ''}
-</head><body class="portfolio-page">
+</head><body class="portfolio-page${landing ? ' portfolio-page--landing' : ''}">
 ${settings.skip ? `<a href="#main" class="skip-link">${escape(settings.skip)}</a>` : ''}
-${landing ? '<div id="fluid-glow" aria-hidden="true"><div class="glow-head"></div><div class="glow-tail"></div></div><div class="reading-progress" aria-hidden="true"></div>' + studioHeader : logo || nav || language ? `<header class="portfolio-header">${logo}${nav ? `<nav aria-label="${escape(settings.menu || (sk ? 'Navigácia' : 'Navigation'))}">${nav}</nav>` : ''}${language ? `<div class="portfolio-languages" role="group" aria-label="${escape(settings.language || (sk ? 'Jazyk' : 'Language'))}">${language}</div>` : ''}</header>` : ''}
+${landing ? '<div id="fluid-glow" aria-hidden="true"><div class="glow-head"></div><div class="glow-tail"></div></div><div class="reading-progress" aria-hidden="true"></div>' : ''}
+${logo || language ? `<header class="portfolio-header">${logo}${language ? `<div class="language-switch" role="group" aria-label="${escape(settings.language || (sk ? 'Jazyk' : 'Language'))}">${language}</div>` : ''}</header>` : ''}
 <main id="main">${sections.join('\n')}</main>
 <footer class="portfolio-footer portfolio-shell">${footer}${link(settings.back, '#main', '', 'arrowUp')}</footer>${modal}
 </body></html>`;

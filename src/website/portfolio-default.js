@@ -1,4 +1,5 @@
 import {portfolioProjects, portfolioHero} from './portfolio-projects.js';
+import {portfolioContact, portfolioServices} from '../../public/site/portfolio-fields.js';
 
 const asset = (folder, name, width, height) => ({
   src: `/media/${folder}/${name}-1920.webp`,
@@ -49,7 +50,7 @@ export const defaultPortfolio = {
   }),
   blocks: [
     block('intro', 'intro', {
-      kicker:'3D ARTIST / SHAPEVIZ', title:'Tomáš', secondTitle:'Krajčovič.',
+      kicker:'3D ARTIST / SHAPEVIZ', title:'Tomáš', secondTitle:'Krajčovič',
       text:['Tvorím objekty, priestory a obrazy,\nktoré vo vás niečo zanechajú.','I create objects, spaces and images\nthat leave an impression.'],
       button:['Vybrané práce','Selected work'], url:'#work',
     }),
@@ -57,13 +58,7 @@ export const defaultPortfolio = {
       'MCM Worldwide / tvorba 3D prostredia v spolupráci s The New Face',
       'MCM Worldwide / 3D environment creation with The New Face',
     ]]),
-    block('services', 'services', {
-      sectionLabel:['Služby','Services'], kicker:['01 / GEOMETRIA','01 / GEOMETRY'],
-      title:['Modelovanie','Modeling'],
-      text:['Nábytok, produkty a prostredia. Od proporcií po posledný šev, s čistou topológiou a UV mapovaním.','Furniture, products and environments. From proportions to the last seam, with clean topology and UV mapping.'],
-      secondKicker:['02 / ATMOSFÉRA','02 / ATMOSPHERE'], secondTitle:['Vizualizácie','Visualization'],
-      secondText:['Produktové CGI, interiéry a architektúra. Materiály, svetlo a kompozícia, ktoré dávajú obrazu charakter.','Product CGI, interiors and architecture. Materials, light and composition that give an image its character.'],
-    }),
+    {id: 'services', type: 'services', copy: portfolioServices, images: []},
     block('work', 'index', {title:['Projekty a spolupráce','Projects and collaborations'], nav:['Práce','Work']}),
     ...projects.map(project => block(project.id, 'project', {
       title: project.name, kicker: project.category, text: project.text, credit: project.collaboration || '',
@@ -83,12 +78,6 @@ export const defaultPortfolio = {
     }, [[{src:'/media/tomas-krajcovic-960.webp', small:'/media/tomas-krajcovic-480.webp', width:960, height:960, smallWidth:480},
       'Tomáš Krajčovič / Shapeviz', 'Tomáš Krajčovič / Shapeviz',
     ]]),
-    block('contact', 'contact', {
-      nav:['Kontakt','Contact'], kicker:['Ďalší projekt môže byť váš','The next project could be yours'],
-      title:['Vytvorme niečo\nspolu.','Let’s create\nsomething together.'],
-      button:'shapeviz3d@gmail.com', url:'mailto:shapeviz3d@gmail.com',
-      secondButton:['Alebo mi pošlite zadanie cez formulár','Or send your brief using the contact form'],
-      secondUrl:['/sk#project-form','/en#project-form'],
-    }),
+    {id: 'contact', type: 'contact', copy: portfolioContact, images: []},
   ],
 };
