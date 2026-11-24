@@ -103,7 +103,12 @@ for (const width of [390, 1536]) {
       await expect(target.locator('body')).toHaveText('Project destination');
       await target.close();
       const imagePreview = first.getByRole('link', {name:/Zväčšiť obrázok/});
-      await imagePreview.click();
+      await expect(imagePreview.locator('.service-image-zoom')).toHaveCount(0);
+      if (width === 390) await imagePreview.click();
+      else {
+        await imagePreview.focus();
+        await page.keyboard.press('Enter');
+      }
       const dialog = page.getByRole('dialog', {name:'Zväčšiť obrázok'});
       await expect(dialog).toBeVisible();
       await expect(dialog.locator('p')).toBeHidden();

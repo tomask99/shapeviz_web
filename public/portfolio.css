@@ -1,5 +1,6 @@
 .portfolio-page { --portfolio-image-radius: clamp(12px, 1.25vw, 20px); }
 .portfolio-page img, .portfolio-page .service-image { border-radius: var(--portfolio-image-radius); }
+.portfolio-page .service-image { cursor: pointer; }
 .portfolio-page > .studio-glow { z-index: -1; }
 .portfolio-page p { line-height: 1.65; }
 .portfolio-page figure { margin: 0; min-width: 0; }

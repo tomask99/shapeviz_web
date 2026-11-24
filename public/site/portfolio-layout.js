@@ -33,7 +33,8 @@ function figure(photo, copy, labels, sizes, {eager = false, preview = true, slid
   const render = picture(photo, alt, sizes, eager);
   if (!preview && !url) return `<figure>${render}</figure>`;
   const gallery = slide ? ` data-portfolio-slide="${escape(imageSource(photo))}" style="--photo-ratio:${Number(photo.width) / Number(photo.height)}"` : '';
-  return `<figure><a class="service-image" draggable="false" href="${escape(url || imageSource(photo))}"${gallery}${url ? (external ? ' target="_blank" rel="noopener noreferrer"' : '') : ' data-service-image'} aria-label="${escape((url ? labels.openLink : labels.enlarge) + description)}"><span class="service-image-clip">${render}</span><span class="service-image-zoom" aria-hidden="true">${svgIcon(url ? 'arrowUpRight' : 'search')}</span></a></figure>`;
+  const linkIcon = url ? `<span class="service-image-zoom" aria-hidden="true">${svgIcon('arrowUpRight')}</span>` : '';
+  return `<figure><a class="service-image" draggable="false" href="${escape(url || imageSource(photo))}"${gallery}${url ? (external ? ' target="_blank" rel="noopener noreferrer"' : '') : ' data-service-image'} aria-label="${escape((url ? labels.openLink : labels.enlarge) + description)}"><span class="service-image-clip">${render}</span>${linkIcon}</a></figure>`;
 }
 
 function list(value, label) {
