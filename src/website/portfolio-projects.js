@@ -71,9 +71,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-9-1.webp",
           "small": "/media/portfolio/pdf-9-1-small.webp",
-          "width": 432,
-          "height": 768,
-          "smallWidth": 432
+          "width": 720,
+          "height": 1280,
+          "smallWidth": 640
         },
         "Pucci / záber z kampane / 01",
         "Pucci / campaign frame / 01"
@@ -82,9 +82,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-9-2.webp",
           "small": "/media/portfolio/pdf-9-2-small.webp",
-          "width": 432,
-          "height": 768,
-          "smallWidth": 432
+          "width": 720,
+          "height": 1280,
+          "smallWidth": 640
         },
         "Pucci / záber z kampane / 02",
         "Pucci / campaign frame / 02"
@@ -93,9 +93,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-9-3.webp",
           "small": "/media/portfolio/pdf-9-3-small.webp",
-          "width": 432,
-          "height": 768,
-          "smallWidth": 432
+          "width": 720,
+          "height": 1280,
+          "smallWidth": 640
         },
         "Pucci / záber z kampane / 03",
         "Pucci / campaign frame / 03"
@@ -104,9 +104,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-9-4.webp",
           "small": "/media/portfolio/pdf-9-4-small.webp",
-          "width": 432,
-          "height": 768,
-          "smallWidth": 432
+          "width": 720,
+          "height": 1280,
+          "smallWidth": 640
         },
         "Pucci / záber z kampane / 04",
         "Pucci / campaign frame / 04"
@@ -115,9 +115,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-10-1.webp",
           "small": "/media/portfolio/pdf-10-1-small.webp",
-          "width": 480,
-          "height": 480,
-          "smallWidth": 480
+          "width": 1200,
+          "height": 1200,
+          "smallWidth": 640
         },
         "Pucci / model a materiály kabelky",
         "Pucci / bag model and materials"
@@ -137,9 +137,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-10-3.webp",
           "small": "/media/portfolio/pdf-10-3-small.webp",
-          "width": 480,
-          "height": 480,
-          "smallWidth": 480
+          "width": 1200,
+          "height": 1200,
+          "smallWidth": 640
         },
         "Pucci / detail materiálov",
         "Pucci / material detail"
@@ -148,9 +148,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-10-4.webp",
           "small": "/media/portfolio/pdf-10-4-small.webp",
-          "width": 450,
-          "height": 450,
-          "smallWidth": 450
+          "width": 900,
+          "height": 900,
+          "smallWidth": 640
         },
         "Pucci / druhý model kabelky",
         "Pucci / second bag model"
@@ -159,9 +159,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-10-5.webp",
           "small": "/media/portfolio/pdf-10-5-small.webp",
-          "width": 450,
-          "height": 450,
-          "smallWidth": 450
+          "width": 900,
+          "height": 900,
+          "smallWidth": 640
         },
         "Pucci / detail druhej kabelky",
         "Pucci / second bag detail"
@@ -181,9 +181,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-10-7.webp",
           "small": "/media/portfolio/pdf-10-7-small.webp",
-          "width": 450,
-          "height": 450,
-          "smallWidth": 450
+          "width": 900,
+          "height": 900,
+          "smallWidth": 640
         },
         "Pucci / druhý model bez materiálov",
         "Pucci / second untextured model"
@@ -745,8 +745,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-11-1.webp",
           "small": "/media/portfolio/pdf-11-1-small.webp",
-          "width": 648,
-          "height": 1152,
+          "width": 2160,
+          "height": 3840,
           "smallWidth": 640
         },
         "AMI Paris Bakery / scéna a detaily / 01",
@@ -756,8 +756,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-11-2.webp",
           "small": "/media/portfolio/pdf-11-2-small.webp",
-          "width": 648,
-          "height": 1152,
+          "width": 2160,
+          "height": 3840,
           "smallWidth": 640
         },
         "AMI Paris Bakery / scéna a detaily / 02",
@@ -767,8 +767,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-11-3.webp",
           "small": "/media/portfolio/pdf-11-3-small.webp",
-          "width": 648,
-          "height": 1152,
+          "width": 2160,
+          "height": 3840,
           "smallWidth": 640
         },
         "AMI Paris Bakery / scéna a detaily / 03",
@@ -778,8 +778,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/ami-bakery.webp",
           "small": "/media/portfolio/ami-bakery-small.webp",
-          "width": 1350,
-          "height": 2400,
+          "width": 2160,
+          "height": 3840,
           "smallWidth": 640
         },
         "AMI Paris Bakery / výklad pekárne",
@@ -789,8 +789,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-12-1.webp",
           "small": "/media/portfolio/pdf-12-1-small.webp",
-          "width": 648,
-          "height": 1152,
+          "width": 2160,
+          "height": 3840,
           "smallWidth": 640
         },
         "AMI Paris Christmas / scéna a detaily / 01",
@@ -800,9 +800,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-12-2.webp",
           "small": "/media/portfolio/pdf-12-2-small.webp",
-          "width": 432,
-          "height": 768,
-          "smallWidth": 432
+          "width": 1080,
+          "height": 1920,
+          "smallWidth": 640
         },
         "AMI Paris Christmas / scéna a detaily / 02",
         "AMI Paris Christmas / scene and details / 02"
@@ -811,9 +811,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-12-3.webp",
           "small": "/media/portfolio/pdf-12-3-small.webp",
-          "width": 432,
-          "height": 768,
-          "smallWidth": 432
+          "width": 1080,
+          "height": 1920,
+          "smallWidth": 640
         },
         "AMI Paris Christmas / scéna a detaily / 03",
         "AMI Paris Christmas / scene and details / 03"
@@ -822,9 +822,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-12-4.webp",
           "small": "/media/portfolio/pdf-12-4-small.webp",
-          "width": 432,
-          "height": 768,
-          "smallWidth": 432
+          "width": 1080,
+          "height": 1920,
+          "smallWidth": 640
         },
         "AMI Paris Christmas / scéna a detaily / 04",
         "AMI Paris Christmas / scene and details / 04"
@@ -926,8 +926,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-13-3.webp",
           "small": "/media/portfolio/pdf-13-3-small.webp",
-          "width": 800,
-          "height": 600,
+          "width": 2000,
+          "height": 1500,
           "smallWidth": 640
         },
         "HEVI / produktové modely a detaily / 03",
@@ -937,9 +937,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-13-4.webp",
           "small": "/media/portfolio/pdf-13-4-small.webp",
-          "width": 600,
-          "height": 450,
-          "smallWidth": 600
+          "width": 2000,
+          "height": 1500,
+          "smallWidth": 640
         },
         "HEVI / produktové modely a detaily / 04",
         "HEVI / product models and details / 04"
@@ -978,8 +978,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-20-1.webp",
           "small": "/media/portfolio/pdf-20-1-small.webp",
-          "width": 960,
-          "height": 1200,
+          "width": 1920,
+          "height": 2400,
           "smallWidth": 640
         },
         "Interiér / kuchyňa a obytný priestor / 01",
@@ -989,8 +989,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-20-2.webp",
           "small": "/media/portfolio/pdf-20-2-small.webp",
-          "width": 960,
-          "height": 1200,
+          "width": 1920,
+          "height": 2400,
           "smallWidth": 640
         },
         "Interiér / kuchyňa a obytný priestor / 02",
@@ -1000,8 +1000,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-21-1.webp",
           "small": "/media/portfolio/pdf-21-1-small.webp",
-          "width": 960,
-          "height": 1200,
+          "width": 1920,
+          "height": 2400,
           "smallWidth": 640
         },
         "Interiér / obývacia izba / 01",
@@ -1011,8 +1011,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-21-2.webp",
           "small": "/media/portfolio/pdf-21-2-small.webp",
-          "width": 960,
-          "height": 1200,
+          "width": 1920,
+          "height": 2400,
           "smallWidth": 640
         },
         "Interiér / obývacia izba / 02",
@@ -1022,8 +1022,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-22-1.webp",
           "small": "/media/portfolio/pdf-22-1-small.webp",
-          "width": 1000,
-          "height": 1250,
+          "width": 2000,
+          "height": 2500,
           "smallWidth": 640
         },
         "Kuchyňa / priestor a funkčný detail / 01",
@@ -1033,8 +1033,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-22-2.webp",
           "small": "/media/portfolio/pdf-22-2-small.webp",
-          "width": 1000,
-          "height": 1250,
+          "width": 2000,
+          "height": 2500,
           "smallWidth": 640
         },
         "Kuchyňa / priestor a funkčný detail / 02",
@@ -1044,8 +1044,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-23-1.webp",
           "small": "/media/portfolio/pdf-23-1-small.webp",
-          "width": 1680,
-          "height": 801,
+          "width": 2400,
+          "height": 1143,
           "smallWidth": 640
         },
         "Kuchyňa / celková kompozícia / 01",
@@ -1055,9 +1055,9 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-24-1.webp",
           "small": "/media/portfolio/pdf-24-1-small.webp",
-          "width": 600,
-          "height": 1068,
-          "smallWidth": 600
+          "width": 1500,
+          "height": 2669,
+          "smallWidth": 640
         },
         "Kuchyňa / materiály a detaily / 01",
         "Kitchen / materials and details / 01"
@@ -1066,8 +1066,8 @@ export const portfolioProjects = [
         {
           "src": "/media/portfolio/pdf-24-2.webp",
           "small": "/media/portfolio/pdf-24-2-small.webp",
-          "width": 1000,
-          "height": 1250,
+          "width": 2000,
+          "height": 2500,
           "smallWidth": 640
         },
         "Kuchyňa / materiály a detaily / 02",

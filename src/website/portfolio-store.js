@@ -96,7 +96,8 @@ export async function handlePortfolio({action, body, call, env, user}) {
   if (action === 'site-portfolio-list') {
     const [current] = await call(`${rowPath}&select=${selection}`);
     if (!current?.portfolio_version) throw fail(503, 'Portfolio storage is not ready.');
-    return {content: current.portfolio ?? defaultPortfolio, version: current.portfolio_version};
+    const content = current.portfolio == null ? defaultPortfolio : validatePortfolio(current.portfolio, env);
+    return {content, version: current.portfolio_version};
   }
   if (!Number.isSafeInteger(body?.version) || body.version < 1 || body.version >= 2147483647) throw conflict();
   const portfolio = validatePortfolio(body.content, env);
