@@ -3,6 +3,42 @@ import {readFile} from 'node:fs/promises';
 import {createApp} from '../../server.js';
 import {portfolioFixture} from '../helpers/portfolio-fixture.js';
 
+test('portfolio arrows show the new preview while its original loads and ignore late images', async ({page}) => {
+  await page.setViewportSize({width:390, height:850});
+  let finishOriginal;
+  const originalDelay = new Promise(resolve => { finishOriginal = resolve; });
+  await page.route('**/media/portfolio/pdf-5-2.webp', async route => {
+    await originalDelay;
+    // A later navigation can cancel the pending image request.
+    await route.fulfill({path:'public/media/portfolio/pdf-5-2.webp'}).catch(() => {});
+  });
+  try {
+    await page.goto('/portfolio');
+    const mcm = page.locator('#mcm .portfolio-grid img');
+    await mcm.first().scrollIntoViewIfNeeded();
+    await mcm.nth(1).evaluate(img => img.decode());
+    await mcm.first().click();
+    const dialog = page.getByRole('dialog');
+    const photo = dialog.locator('img');
+    const next = dialog.getByRole('button', {name:'Nasledujúci obrázok'});
+    const requestedOriginal = page.waitForRequest('**/media/portfolio/pdf-5-2.webp');
+    await next.click();
+    await requestedOriginal;
+    await expect(photo).toHaveAttribute('src', /pdf-5-2-small\.webp$/);
+    await expect(photo).toBeVisible();
+    await expect(dialog.locator('[data-gallery-count]')).toHaveText('2 / 7');
+
+    await next.click();
+    await expect(photo).toHaveAttribute('src', /pdf-5-3\.webp$/);
+    finishOriginal();
+    await page.unrouteAll({behavior:'wait'});
+    await expect(photo).toHaveAttribute('src', /pdf-5-3\.webp$/);
+    await expect(dialog.locator('[data-gallery-count]')).toHaveText('3 / 7');
+  } finally {
+    finishOriginal();
+  }
+});
+
 for (const width of [390, 1536]) {
   test(`MCM thumbnails and enlarged photos fill the available width or height at ${width}px`, async ({page}) => {
     await page.setViewportSize({width, height:940});

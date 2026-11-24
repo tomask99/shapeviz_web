@@ -8,10 +8,56 @@ if (dialog && typeof dialog.showModal === 'function') {
   const previous = dialog.querySelector('[data-gallery-prev]');
   const next = dialog.querySelector('[data-gallery-next]');
   const count = dialog.querySelector('[data-gallery-count]');
+  const status = dialog.querySelector('[data-gallery-status]');
   let trigger;
   let startedOutside = false;
   let slides = [];
   let position = 0;
+  let photoRequest = 0;
+  let pendingOriginal;
+
+  function cancelPhoto() {
+    photoRequest++;
+    pendingOriginal?.removeAttribute('src');
+    pendingOriginal = undefined;
+  }
+
+  async function showPortfolioPhoto(slide, thumbnail) {
+    cancelPhoto();
+    const request = photoRequest;
+    const original = new URL(slide.dataset.portfolioSlide || slide.href, document.baseURI).href;
+    const loadedPreview = thumbnail.complete && thumbnail.naturalWidth ? thumbnail.currentSrc : '';
+    const preview = new URL(loadedPreview || slide.dataset.portfolioPreview || original, document.baseURI).href;
+
+    image.toggleAttribute('data-gallery-pending', !loadedPreview);
+    status.textContent = loadedPreview ? '' : status.dataset.loading;
+    image.src = preview;
+    const previewReady = await image.decode().then(() => true, () => false);
+    if (request !== photoRequest) return;
+    if (previewReady) {
+      image.removeAttribute('data-gallery-pending');
+      status.textContent = '';
+    }
+
+    if (preview !== original) {
+      pendingOriginal = new Image();
+      pendingOriginal.src = original;
+      const originalReady = await pendingOriginal.decode().then(() => true, () => false);
+      if (request !== photoRequest) return;
+      pendingOriginal = undefined;
+      if (originalReady) {
+        image.src = original;
+        image.removeAttribute('data-gallery-pending');
+        status.textContent = '';
+        return;
+      }
+    }
+
+    if (!previewReady) {
+      image.removeAttribute('src');
+      status.textContent = status.dataset.error;
+    }
+  }
 
   function showSlide() {
     const slide = slides[position];
@@ -23,7 +69,8 @@ if (dialog && typeof dialog.showModal === 'function') {
       const ratio = Number(thumbnail.getAttribute('width')) / Number(thumbnail.getAttribute('height'));
       image.style.setProperty('--photo-ratio', ratio);
     }
-    image.src = slide.dataset.portfolioSlide || slide.href;
+    if (status) void showPortfolioPhoto(slide, thumbnail);
+    else image.src = slide.dataset.portfolioSlide || slide.href;
     caption.textContent = slide.closest('figure')?.querySelector('figcaption')?.textContent || '';
     caption.hidden = !caption.textContent;
     if (caption.hidden) dialog.removeAttribute('aria-describedby');
@@ -87,6 +134,8 @@ if (dialog && typeof dialog.showModal === 'function') {
     if (dialog.open) return;
     document.body.classList.remove('modal-open');
     trigger?.focus({preventScroll: true});
+    cancelPhoto();
+    if (status) status.textContent = '';
     image.removeAttribute('src');
     slides = [];
   });
