@@ -26,8 +26,6 @@
 .portfolio-cover { max-width: 1920px; margin-inline: auto; }
 .portfolio-cover .service-image { border-radius: 0; }
 .portfolio-cover img { width: 100%; height: auto; max-height: 820px; object-fit: cover; display: block; }
-.portfolio-page figcaption { padding-top: 12px; color: var(--muted); font-size: 11px; line-height: 1.5; }
-.portfolio-cover figcaption { padding-inline: var(--gutter); }
 .portfolio-services { display: grid; grid-template-columns: 1fr 1fr; gap: 10%; padding-block: clamp(38px, 5vw, 72px); }
 .portfolio-services:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
 .portfolio-services h2 { margin: 0 0 18px; font-size: clamp(32px, 3.5vw, 52px); letter-spacing: -.035em; }
@@ -103,7 +101,6 @@
   background: linear-gradient(90deg, rgba(0,0,0,.78), rgba(0,0,0,.15) 66%, transparent), linear-gradient(0deg, #000, transparent 55%);
 }
 .portfolio-hero .service-image-zoom { top: 20px; bottom: auto; right: var(--gutter); }
-.portfolio-hero figcaption { position: absolute; bottom: 24px; right: var(--gutter); max-width: 34%; padding: 0; text-align: right; color: var(--text); pointer-events: none; }
 .portfolio-hero .portfolio-intro {
   position: relative; z-index: 1; display: flex; flex-direction: column; justify-content: end;
   min-height: clamp(490px, 78svh, 880px); padding-block: 70px 54px; pointer-events: none;
@@ -118,7 +115,6 @@
 .portfolio-work-link svg { color: var(--accent); }
 .portfolio-about { display: grid; grid-template-columns: .8fr 1.2fr; gap: 10%; align-items: start; border-top: 1px solid var(--line); padding-block: 90px; }
 .portfolio-portrait img { display: block; width: 100%; height: auto; border-radius: 8px; }
-.portfolio-portrait figcaption { font-size: 12px; color: var(--muted); }
 .portfolio-about:has(> :only-child) .portfolio-portrait { max-width: 420px; }
 .portfolio-about h2 { margin: 0 0 30px; font-size: clamp(32px, 3.5vw, 52px); line-height: 1.1; letter-spacing: -.035em; }
 .portfolio-about > div > p:not(.portfolio-kicker) { max-width: 600px; color: var(--muted); font-size: 15px; }
@@ -198,7 +194,6 @@
 @media (max-width: 600px) {
   .portfolio-hero .portfolio-intro { min-height: clamp(500px, 76svh, 760px); padding-bottom: 72px; }
   .portfolio-hero .portfolio-intro :is(h1,h2) { font-size: clamp(44px, 12.8vw, 76px); }
-  .portfolio-hero figcaption { max-width: 85%; left: var(--gutter); right: auto; bottom: 18px; text-align: left; }
   .portfolio-services { grid-template-columns: 1fr; }
   .portfolio-intro :is(h1, h2) { font-size: clamp(44px, 14vw, 84px); }
   .portfolio-cover img { height: auto; object-fit: contain; }

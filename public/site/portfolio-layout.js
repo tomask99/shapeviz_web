@@ -27,14 +27,13 @@ function picture(photo, alt, sizes, eager) {
 
 function figure(photo, copy, labels, sizes, {eager = false, preview = true, slide = false} = {}) {
   const alt = clean(copy.alt) || clean(copy.caption);
-  const caption = clean(copy.caption) ? `<figcaption>${escape(copy.caption)}</figcaption>` : '';
   const description = alt ? ': ' + alt : '';
   const url = portfolioLink(clean(copy.url));
   const external = /^https?:\/\//i.test(url);
   const render = picture(photo, alt, sizes, eager);
-  if (!preview && !url) return `<figure>${render}${caption}</figure>`;
+  if (!preview && !url) return `<figure>${render}</figure>`;
   const gallery = slide ? ` data-portfolio-slide="${escape(imageSource(photo))}"` : '';
-  return `<figure><a class="service-image" draggable="false" href="${escape(url || imageSource(photo))}"${gallery}${url ? (external ? ' target="_blank" rel="noopener noreferrer"' : '') : ' data-service-image'} aria-label="${escape((url ? labels.openLink : labels.enlarge) + description)}"><span class="service-image-clip">${render}</span><span class="service-image-zoom" aria-hidden="true">${svgIcon(url ? 'arrowUpRight' : 'search')}</span></a>${caption}</figure>`;
+  return `<figure><a class="service-image" draggable="false" href="${escape(url || imageSource(photo))}"${gallery}${url ? (external ? ' target="_blank" rel="noopener noreferrer"' : '') : ' data-service-image'} aria-label="${escape((url ? labels.openLink : labels.enlarge) + description)}"><span class="service-image-clip">${render}</span><span class="service-image-zoom" aria-hidden="true">${svgIcon(url ? 'arrowUpRight' : 'search')}</span></a></figure>`;
 }
 
 function list(value, label) {

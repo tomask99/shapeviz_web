@@ -47,7 +47,7 @@ export const portfolioLayouts = {
 };
 
 export const portfolioImageFields = [
-  ['alt', 'Image description', 'short'], ['caption', 'Visible caption', 'short'],
+  ['alt', 'Image description', 'short'], ['caption', 'Fallback text for screen readers', 'short'],
   ['url', 'Image link URL', 'url'],
 ];
 
