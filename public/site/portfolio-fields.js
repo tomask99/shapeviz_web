@@ -19,8 +19,6 @@ export const portfolioSettings = [
   ['enlarge', 'Image preview accessible label'], ['close', 'Close preview accessible label'],
   ['openLink', 'Image link accessible label'], ['projectIndex', 'Project index accessible label'],
   ['contribution', 'Contributions accessible label'], ['credit', 'Collaboration label'],
-  ['gallery', 'Project gallery accessible label'], ['projectDetails', 'Project details link text'],
-  ['previousImage', 'Previous image accessible label'], ['nextImage', 'Next image accessible label'],
 ];
 
 export const portfolioBlockTypes = {
