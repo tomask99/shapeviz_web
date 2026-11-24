@@ -22,7 +22,7 @@ function picture(photo, alt, sizes, eager) {
   const srcset = photo.small && photo.smallWidth < photo.width
     ? ` srcset="${escape(relativeOrAbsolute(photo.small))} ${Number(photo.smallWidth)}w, ${escape(imageSource(photo))} ${Number(photo.width)}w" sizes="${sizes}"`
     : '';
-  return `<img src="${escape(imageSource(photo))}"${srcset} width="${Number(photo.width)}" height="${Number(photo.height)}" alt="${escape(alt)}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
+  return `<img draggable="false" src="${escape(imageSource(photo))}"${srcset} width="${Number(photo.width)}" height="${Number(photo.height)}" alt="${escape(alt)}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
 }
 
 function figure(photo, copy, labels, sizes, {eager = false, preview = true, slide = false} = {}) {
@@ -34,7 +34,7 @@ function figure(photo, copy, labels, sizes, {eager = false, preview = true, slid
   const render = picture(photo, alt, sizes, eager);
   if (!preview && !url) return `<figure>${render}${caption}</figure>`;
   const gallery = slide ? ` data-portfolio-slide="${escape(imageSource(photo))}"` : '';
-  return `<figure><a class="service-image" href="${escape(url || imageSource(photo))}"${gallery}${url ? (external ? ' target="_blank" rel="noopener noreferrer"' : '') : ' data-service-image'} aria-label="${escape((url ? labels.openLink : labels.enlarge) + description)}"><span class="service-image-clip">${render}</span><span class="service-image-zoom" aria-hidden="true">${svgIcon(url ? 'arrowUpRight' : 'search')}</span></a>${caption}</figure>`;
+  return `<figure><a class="service-image" draggable="false" href="${escape(url || imageSource(photo))}"${gallery}${url ? (external ? ' target="_blank" rel="noopener noreferrer"' : '') : ' data-service-image'} aria-label="${escape((url ? labels.openLink : labels.enlarge) + description)}"><span class="service-image-clip">${render}</span><span class="service-image-zoom" aria-hidden="true">${svgIcon(url ? 'arrowUpRight' : 'search')}</span></a>${caption}</figure>`;
 }
 
 function list(value, label) {
@@ -152,7 +152,7 @@ export function renderPortfolioLayout(content, locale, {origin, preview = false}
   const footer = settings.footer ? `<span>${escape(settings.footer.replaceAll('{year}', new Date().getFullYear()))}</span>` : '';
   const gallery = rendered.some(block => block.html.includes(' data-service-image'));
   const modal = gallery && !preview ? `<dialog class="service-lightbox portfolio-viewer" aria-label="${escape(labels.enlarge)}">
-    <button class="portfolio-viewer-photo" type="button" aria-label="${escape(labels.close)}" autofocus><img alt=""></button>
+    <button class="portfolio-viewer-photo" type="button" aria-label="${escape(labels.close)}" autofocus><img draggable="false" alt=""></button>
     <div class="portfolio-viewer-nav" data-gallery-nav hidden>
       <button type="button" data-gallery-prev aria-label="${escape(labels.previous)}">${svgIcon('arrowLeft')}</button>
       <button type="button" data-gallery-next aria-label="${escape(labels.next)}">${svgIcon('arrowRight')}</button>

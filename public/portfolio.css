@@ -114,13 +114,33 @@
 .portfolio-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; padding-block: 30px; color: var(--muted); font-size: 11px; }
 .portfolio-footer > a { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .portfolio-footer .legal-links { width: 100%; margin: 0; padding: 0; border: 0; }
-.portfolio-viewer { width: max-content; max-width: 100vw; max-height: 100dvh; padding: 0; border: 0; background: transparent; overflow: hidden; }
+.portfolio-page :is(img, .service-image, .portfolio-viewer) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.portfolio-page img::selection, .portfolio-viewer ::selection { background: transparent; }
+.portfolio-viewer {
+  width: min(1440px, 94vw, 156dvh);
+  aspect-ratio: 16 / 9;
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #100e0c;
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .portfolio-viewer { width: min(96vw, 70dvh); aspect-ratio: 4 / 5; }
+}
 .portfolio-viewer[open] { display: block; }
-.portfolio-viewer-photo { display: block; background: transparent; border: 0; padding: 0; cursor: zoom-out; }
-.portfolio-viewer-photo img { display: block; width: auto; height: auto; max-width: 100vw; max-height: 100dvh; border-radius: 0; }
+.portfolio-viewer-photo { position: absolute; inset: 0; width: 100%; height: 100%; background: transparent; border: 0; padding: 0; cursor: zoom-out; }
+.portfolio-viewer-photo img { display: block; width: 100%; height: 100%; max-width: none; max-height: none; object-fit: contain; border-radius: 0; pointer-events: none; }
 .portfolio-viewer-nav { position: absolute; inset: 0; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
 .portfolio-viewer-nav button { display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 0; background: transparent; color: white; pointer-events: auto; }
 .portfolio-viewer-nav svg { width: 28px; height: 28px; filter: drop-shadow(0 1px 2px #000) drop-shadow(0 0 3px #000); }
+.portfolio-viewer-nav button:is(:hover, :focus-visible) { color: var(--accent); }
 .portfolio-viewer button:focus-visible { outline-offset: -4px; }
 .portfolio-viewer-description { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 @media (max-width: 950px) {
